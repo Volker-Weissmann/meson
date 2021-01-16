@@ -61,6 +61,30 @@ except Exception:
 
 from glob import glob
 
+# Mapping of language to suffixes of files that should always be in that language
+# This means we can't include .h headers here since they could be C, C++, ObjC, etc.
+lang_suffixes = {
+    'c': ('c',),
+    'cpp': ('cpp', 'cc', 'cxx', 'c++', 'hh', 'hpp', 'ipp', 'hxx', 'ino', 'ixx'),
+    'cuda': ('cu',),
+    # f90, f95, f03, f08 are for free-form fortran ('f90' recommended)
+    # f, for, ftn, fpp are for fixed-form fortran ('f' or 'for' recommended)
+    'fortran': ('f90', 'f95', 'f03', 'f08', 'f', 'for', 'ftn', 'fpp'),
+    'd': ('d', 'di'),
+    'objc': ('m',),
+    'objcpp': ('mm',),
+    'rust': ('rs',),
+    'vala': ('vala', 'vapi', 'gs'),
+    'cs': ('cs',),
+    'swift': ('swift',),
+    'java': ('java',),
+}  # type: T.Dict[str, T.Tuple[str, ...]]
+suffix_to_lang = {}
+for key, value in lang_suffixes.items():
+    for suf in value:
+        assert suf not in suffix_to_lang, 'multiple languages share the same suffix'
+        suffix_to_lang[suf] = key
+
 if os.path.basename(sys.executable) == 'meson.exe':
     # In Windows and using the MSI installed executable.
     python_command = [sys.executable, 'runpython']
@@ -262,11 +286,15 @@ class FileMode:
         return perms
 
 class File:
-    def __init__(self, is_built: bool, subdir: str, fname: str):
+    def __init__(self, is_built: bool, subdir: str, fname: str, lang_overwrite: T.Union[str, None] = None):
         self.is_built = is_built
         self.subdir = subdir
         self.fname = fname
-        self.hash = hash((is_built, subdir, fname))
+        suffix = os.path.splitext(fname)[1].lower()[1:]
+        self.lang = suffix_to_lang[suffix]
+        if lang_overwrite is not None:
+            self.lang = lang_overwrite
+        self.hash = hash((is_built, subdir, fname, lang_overwrite))
 
     def __str__(self) -> str:
         return self.relative_name()
@@ -280,10 +308,10 @@ class File:
 
     @staticmethod
     @lru_cache(maxsize=None)
-    def from_source_file(source_root: str, subdir: str, fname: str) -> 'File':
+    def from_source_file(source_root: str, subdir: str, fname: str, lang_overwrite: T.Union[str, None] = None) -> 'File':
         if not os.path.isfile(os.path.join(source_root, subdir, fname)):
             raise MesonException('File %s does not exist.' % fname)
-        return File(False, subdir, fname)
+        return File(False, subdir, fname, lang_overwrite)
 
     @staticmethod
     def from_built_file(subdir: str, fname: str) -> 'File':

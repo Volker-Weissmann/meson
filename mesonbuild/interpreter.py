@@ -2351,6 +2351,7 @@ permitted_kwargs = {'add_global_arguments': {'language', 'native'},
                                            'variables',
                                            },
                     'executable': build.known_exe_kwargs,
+                    'files': {'language'},
                     'find_program': {'required', 'native', 'version', 'dirs'},
                     'generator': {'arguments',
                                   'output',
@@ -2695,9 +2696,9 @@ class Interpreter(InterpreterBase):
         return ModuleHolder(modname, self.modules[modname], self)
 
     @stringArgs
-    @noKwargs
     def func_files(self, node, args, kwargs):
-        return [mesonlib.File.from_source_file(self.environment.source_dir, self.subdir, fname) for fname in args]
+        lang_overwrite = kwargs['language'] if 'language' in kwargs else None
+        return [mesonlib.File.from_source_file(self.environment.source_dir, self.subdir, fname, lang_overwrite) for fname in args]
 
     # Used by declare_dependency() and pkgconfig.generate()
     def extract_variables(self, kwargs, argname='variables', list_new=False, dict_new=False):

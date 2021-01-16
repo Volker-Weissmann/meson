@@ -531,6 +531,7 @@ int dummy;
             self.generate_phony()
             self.add_build_comment(NinjaComment('Build rules for targets'))
             for t in ProgressBar(self.build.get_targets().values(), desc='Generating targets'):
+                print(self.is_rust_target(t))
                 self.generate_target(t)
             self.add_build_comment(NinjaComment('Test rules'))
             self.generate_tests()
@@ -694,7 +695,7 @@ int dummy;
     def is_rust_target(self, target):
         if len(target.sources) > 0:
             first_file = target.sources[0]
-            if first_file.fname.endswith('.rs'):
+            if first_file.lang == 'rust':
                 return True
         return False
 

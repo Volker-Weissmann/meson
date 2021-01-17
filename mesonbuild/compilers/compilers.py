@@ -52,7 +52,7 @@ lib_suffixes = ('a', 'lib', 'dll', 'dll.a', 'dylib', 'so')  # type: T.Tuple[str,
 lang_suffixes = {
     'c': ('c',),
     'cpp': ('cpp', 'CPP', 'cc', 'CC', 'C', 'cxx', 'CXX', 'c++', 'C++', 'ino', 'ixx', 'IXX',
-            'hh', 'HH', 'hpp', 'HPP', 'ipp', 'IPP', 'hxx', 'HXX'),
+            'hh', 'HH', 'H', 'hpp', 'HPP', 'ipp', 'IPP', 'hxx', 'HXX'),
     'cuda': ('cu',),
     # f90, f95, f03, f08 are for free-form fortran ('f90' recommended)
     # f, for, ftn, fpp are for fixed-form fortran ('f' or 'for' recommended)

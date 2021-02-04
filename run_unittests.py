@@ -2270,11 +2270,13 @@ class AllPlatformTests(BasePlatformTests):
         expected = {installpath: 0}
         for name in installpath.rglob('*'):
             expected[name] = 0
-        # Find logged files and directories
-        with Path(self.builddir, 'meson-logs', 'install-log.txt').open() as f:
-            logged = list(map(lambda l: Path(l.strip()),
-                              filter(lambda l: not l.startswith('#'),
-                                     f.readlines())))
+        def read_logs():
+            # Find logged files and directories
+            with Path(self.builddir, 'meson-logs', 'install-log.txt').open() as f:
+                return list(map(lambda l: Path(l.strip()),
+                                  filter(lambda l: not l.startswith('#'),
+                                         f.readlines())))
+        logged = read_logs()
         for name in logged:
             self.assertTrue(name in expected, 'Log contains extra entry {}'.format(name))
             expected[name] += 1
@@ -2282,6 +2284,13 @@ class AllPlatformTests(BasePlatformTests):
         for name, count in expected.items():
             self.assertGreater(count, 0, 'Log is missing entry for {}'.format(name))
             self.assertLess(count, 2, 'Log has multiple entries for {}'.format(name))
+
+        # Verify that with --dry-run we obtain the same logs but with nothing
+        # actually installed
+        windows_proof_rmtree(self.installdir)
+        self._run(self.meson_command + ['install', '--dry-run', '--destdir', self.installdir], workdir=self.builddir)
+        self.assertEqual(logged, read_logs())
+        self.assertFalse(os.path.exists(self.installdir))
 
     def test_uninstall(self):
         exename = os.path.join(self.installdir, 'usr/bin/prog' + exe_suffix)
@@ -2842,6 +2851,52 @@ class AllPlatformTests(BasePlatformTests):
         self.init(testdir, extra_args='-Db_lto=true')
         self.build()
         self.run_tests()
+
+    @skip_if_not_base_option('b_lto_threads')
+    def test_lto_threads(self):
+        testdir = os.path.join(self.common_test_dir, '6 linkshared')
+
+        env = get_fake_env(testdir, self.builddir, self.prefix)
+        cc = env.detect_c_compiler(MachineChoice.HOST)
+        if cc.get_id() == 'clang' and is_windows():
+            raise unittest.SkipTest('LTO not (yet) supported by windows clang')
+
+        self.init(testdir, extra_args=['-Db_lto=true', '-Db_lto_threads=8'])
+        self.build()
+        self.run_tests()
+
+        expected = set(cc.get_lto_compile_args(threads=8))
+        targets = self.introspect('--targets')
+        # This assumes all of the targets support lto
+        for t in targets:
+            for s in t['target_sources']:
+                for e in expected:
+                    self.assertIn(e, s['parameters'])
+
+    @skip_if_not_base_option('b_lto_mode')
+    @skip_if_not_base_option('b_lto_threads')
+    def test_lto_mode(self):
+        testdir = os.path.join(self.common_test_dir, '6 linkshared')
+
+        env = get_fake_env(testdir, self.builddir, self.prefix)
+        cc = env.detect_c_compiler(MachineChoice.HOST)
+        if cc.get_id() != 'clang':
+            raise unittest.SkipTest('Only clang currently supports thinLTO')
+        if cc.linker.id not in {'ld.lld', 'ld.gold', 'ld64', 'lld-link'}:
+            raise unittest.SkipTest('thinLTO requires ld.lld, ld.gold, ld64, or lld-link')
+        elif is_windows():
+            raise unittest.SkipTest('LTO not (yet) supported by windows clang')
+
+        self.init(testdir, extra_args=['-Db_lto=true', '-Db_lto_mode=thin', '-Db_lto_threads=8'])
+        self.build()
+        self.run_tests()
+
+        expected = set(cc.get_lto_compile_args(threads=8, mode='thin'))
+        targets = self.introspect('--targets')
+        # This assumes all of the targets support lto
+        for t in targets:
+            for s in t['target_sources']:
+                assert expected.issubset(set(s['parameters'])), f'Incorrect values for {t["name"]}'
 
     def test_dist_git(self):
         if not shutil.which('git'):

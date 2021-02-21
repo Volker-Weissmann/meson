@@ -1262,10 +1262,10 @@ def typeslistify(item: 'T.Union[_T, T.Sequence[_T]]',
     if isinstance(item, types):
         item = T.cast(T.List[_T], [item])
     if not isinstance(item, list):
-        raise MesonException('Item must be a list or one of {!r}'.format(types))
+        raise MesonException('Item must be a list or one of {!r}, not {!r}'.format(types, type(item)))
     for i in item:
         if i is not None and not isinstance(i, types):
-            raise MesonException('List item must be one of {!r}'.format(types))
+            raise MesonException('List item must be one of {!r}, not {!r}'.format(types, type(i)))
     return item
 
 
@@ -1910,7 +1910,6 @@ def _classify_argument(key: 'OptionKey') -> OptionType:
     """Classify arguments into groups so we know which dict to assign them to."""
 
     if key.name.startswith('b_'):
-        assert key.machine is MachineChoice.HOST, str(key)
         return OptionType.BASE
     elif key.lang is not None:
         return OptionType.COMPILER
@@ -2023,14 +2022,13 @@ class OptionKey:
         This takes strings like `mysubproject:build.myoption` and Creates an
         OptionKey out of them.
         """
-
         try:
             subproject, raw2 = raw.split(':')
         except ValueError:
             subproject, raw2 = '', raw
 
         if raw2.startswith('build.'):
-            raw3 = raw2.lstrip('build.')
+            raw3 = raw2.split('.', 1)[1]
             for_machine = MachineChoice.BUILD
         else:
             raw3 = raw2

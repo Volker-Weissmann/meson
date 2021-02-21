@@ -4,8 +4,11 @@ project('run target', 'c')
 # In cross builds exe_wrapper should be added if it exists.
 
 exe = executable('helloprinter', 'helloprinter.c')
-run_target('runhello',
-  command : [exe, 'argument'])
+
+if not meson.is_cross_build() or meson.can_run_host_binaries()
+  run_target('runhello',
+    command : [exe, 'argument'])
+endif
 
 converter = find_program('converter.py')
 
@@ -66,9 +69,37 @@ run_target('configure_script',
   command : conf
 )
 
+custom_target('configure_script_ct',
+  command: conf,
+  output: 'dummy.txt',
+  capture: true)
+
 # Target names that clash with potential builtin functionality.
 run_target('ctags',
   command : converter)
 
 run_target('clang-format',
   command : converter)
+
+# Check we can pass env to the program. Also check some string substitutions
+# that were added in 0.57.0 but not documented. This is documented behaviour
+# since 0.57.1.
+run_target('check-env',
+  command: [find_program('check-env.py'), '@SOURCE_ROOT@', '@BUILD_ROOT@',
+            '@CURRENT_SOURCE_DIR@'],
+  env: {'MY_ENV': '1'},
+)
+
+# Check some string substitutions that has always been done but never documented.
+# Some projects have been relying on this implementation detail. This is
+# documented behaviour since 0.57.1.
+custom_target('check-env-ct',
+  command: [find_program('check-env.py'), '@SOURCE_ROOT@', '@BUILD_ROOT@',
+            '@CURRENT_SOURCE_DIR@'],
+  env: {'MESON_SOURCE_ROOT': meson.source_root(),
+        'MESON_BUILD_ROOT': meson.build_root(),
+        'MESON_SUBDIR': meson.current_source_dir(),
+        'MESONINTROSPECT': 'fake value',
+        'MY_ENV': '1'},
+  output: 'check-env-ct',
+)

@@ -67,7 +67,7 @@ def run_exe(exe: ExecutableSerialisation, extra_env: T.Optional[dict] = None) ->
 
     if p.returncode != 0:
         if exe.pickled:
-            print('while executing {!r}'.format(cmd_args))
+            print(f'while executing {cmd_args!r}')
         if exe.verbose:
             return p.returncode
         if not exe.capture:
@@ -82,7 +82,7 @@ def run_exe(exe: ExecutableSerialisation, extra_env: T.Optional[dict] = None) ->
         try:
             with open(exe.capture, 'rb') as cur:
                 skip_write = cur.read() == stdout
-        except IOError:
+        except OSError:
             pass
         if not skip_write:
             with open(exe.capture, 'wb') as output:

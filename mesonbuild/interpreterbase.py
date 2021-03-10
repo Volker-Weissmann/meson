@@ -60,12 +60,12 @@ class InterpreterObject:
 TV_InterpreterObject = T.TypeVar('TV_InterpreterObject')
 
 class ObjectHolder(T.Generic[TV_InterpreterObject]):
-    def __init__(self, obj: InterpreterObject, subproject: T.Optional[str] = None) -> None:
-        self.held_object = obj        # type: InterpreterObject
-        self.subproject = subproject  # type: str
+    def __init__(self, obj: TV_InterpreterObject, subproject: str = '') -> None:
+        self.held_object = obj
+        self.subproject = subproject
 
     def __repr__(self) -> str:
-        return '<Holder: {!r}>'.format(self.held_object)
+        return f'<Holder: {self.held_object!r}>'
 
 class MesonVersionString(str):
     pass
@@ -101,7 +101,7 @@ def _get_callee_args(wrapped_args: T.Sequence[T.Any], want_subproject: bool = Fa
             kwargs = None
             subproject = wrapped_args[1].subproject
         else:
-            raise AssertionError('Unknown args: {!r}'.format(wrapped_args))
+            raise AssertionError(f'Unknown args: {wrapped_args!r}')
     elif n == 3:
         # Methods on objects (*Holder, MesonMain, etc) have 3 args: self, args, kwargs
         node = s.current_node
@@ -134,7 +134,7 @@ def _get_callee_args(wrapped_args: T.Sequence[T.Any], want_subproject: bool = Fa
         if want_subproject:
             subproject = wrapped_args[2].subproject
     else:
-        raise AssertionError('Unknown args: {!r}'.format(wrapped_args))
+        raise AssertionError(f'Unknown args: {wrapped_args!r}')
     # Sometimes interpreter methods are called internally with None instead of
     # empty list/dict
     args = args if args is not None else []
@@ -174,7 +174,7 @@ def builtinMethodNoKwargs(f: TV_func) -> TV_func:
         method_name = wrapped_args[2]
         kwargs = wrapped_args[4]
         if kwargs:
-            mlog.warning('Method {!r} does not take keyword arguments.'.format(method_name),
+            mlog.warning(f'Method {method_name!r} does not take keyword arguments.',
                          'This will become a hard error in the future',
                          location=node)
         return f(*wrapped_args, **wrapped_kwargs)
@@ -224,7 +224,7 @@ class permittedKwargs:
             s, node, args, kwargs, _ = _get_callee_args(wrapped_args)
             for k in kwargs:
                 if k not in self.permitted:
-                    mlog.warning('''Passed invalid keyword argument "{}".'''.format(k), location=node)
+                    mlog.warning(f'''Passed invalid keyword argument "{k}".''', location=node)
                     mlog.warning('This will become a hard error in the future.')
             return f(*wrapped_args, **wrapped_kwargs)
         return T.cast(TV_func, wrapped)
@@ -418,7 +418,7 @@ class FeatureCheckBase(metaclass=abc.ABCMeta):
         def wrapped(*wrapped_args: T.Any, **wrapped_kwargs: T.Any) -> T.Any:
             subproject = _get_callee_args(wrapped_args, want_subproject=True)[4]
             if subproject is None:
-                raise AssertionError('{!r}'.format(wrapped_args))
+                raise AssertionError(f'{wrapped_args!r}')
             self.use(subproject)
             return f(*wrapped_args, **wrapped_kwargs)
         return T.cast(TV_func, wrapped)
@@ -444,14 +444,14 @@ class FeatureNew(FeatureCheckBase):
 
     @staticmethod
     def get_warning_str_prefix(tv: str) -> str:
-        return 'Project specifies a minimum meson_version \'{}\' but uses features which were added in newer versions:'.format(tv)
+        return f'Project specifies a minimum meson_version \'{tv}\' but uses features which were added in newer versions:'
 
     def log_usage_warning(self, tv: str) -> None:
         args = [
-            'Project targeting', "'{}'".format(tv),
+            'Project targeting', f"'{tv}'",
             'but tried to use feature introduced in',
-            "'{}':".format(self.feature_version),
-            '{}.'.format(self.feature_name),
+            f"'{self.feature_version}':",
+            f'{self.feature_name}.',
         ]
         if self.extra_message:
             args.append(self.extra_message)
@@ -476,10 +476,10 @@ class FeatureDeprecated(FeatureCheckBase):
 
     def log_usage_warning(self, tv: str) -> None:
         args = [
-            'Project targeting', "'{}'".format(tv),
+            'Project targeting', f"'{tv}'",
             'but tried to use feature deprecated since',
-            "'{}':".format(self.feature_version),
-            '{}.'.format(self.feature_name),
+            f"'{self.feature_version}':",
+            f'{self.feature_name}.',
         ]
         if self.extra_message:
             args.append(self.extra_message)
@@ -505,7 +505,7 @@ class FeatureCheckKwargsBase(metaclass=abc.ABCMeta):
         def wrapped(*wrapped_args: T.Any, **wrapped_kwargs: T.Any) -> T.Any:
             kwargs, subproject = _get_callee_args(wrapped_args, want_subproject=True)[3:5]
             if subproject is None:
-                raise AssertionError('{!r}'.format(wrapped_args))
+                raise AssertionError(f'{wrapped_args!r}')
             for arg in self.kwargs:
                 if arg not in kwargs:
                     continue
@@ -708,6 +708,8 @@ class InterpreterBase:
             return self.evaluate_indexing(cur)
         elif isinstance(cur, mparser.TernaryNode):
             return self.evaluate_ternary(cur)
+        elif isinstance(cur, mparser.FormatStringNode):
+            return self.evaluate_fstring(cur)
         elif isinstance(cur, mparser.ContinueNode):
             raise ContinueRequest()
         elif isinstance(cur, mparser.BreakNode):
@@ -755,7 +757,7 @@ class InterpreterBase:
             if isinstance(result, Disabler):
                 return result
             if not(isinstance(result, bool)):
-                raise InvalidCode('If clause {!r} does not evaluate to true or false.'.format(result))
+                raise InvalidCode(f'If clause {result!r} does not evaluate to true or false.')
             if result:
                 prev_meson_version = mesonlib.project_meson_versions[self.subproject]
                 if self.tmp_meson_version:
@@ -926,6 +928,24 @@ The result of this is undefined and will become a hard error in a future Meson r
         else:
             return self.evaluate_statement(node.falseblock)
 
+    @FeatureNew('format strings', '0.58.0')
+    def evaluate_fstring(self, node: mparser.FormatStringNode) -> TYPE_var:
+        assert(isinstance(node, mparser.FormatStringNode))
+
+        def replace(match: T.Match[str]) -> str:
+            var = str(match.group(1))
+            try:
+                val = self.variables[var]
+                if not isinstance(val, (str, int, float, bool)):
+                    raise InvalidCode(f'Identifier "{var}" does not name a formattable variable ' +
+                        '(has to be an integer, a string, a floating point number or a boolean).')
+
+                return str(val)
+            except KeyError:
+                raise InvalidCode(f'Identifier "{var}" does not name a variable.')
+
+        return re.sub(r'@([_a-zA-Z][_0-9a-zA-Z]*)@', replace, node.value)
+
     def evaluate_foreach(self, node: mparser.ForeachClauseNode) -> None:
         assert(isinstance(node, mparser.ForeachClauseNode))
         items = self.evaluate_statement(node.items)
@@ -1067,7 +1087,7 @@ The result of this is undefined and will become a hard error in a future Meson r
                 return Disabler()
         if method_name == 'extract_objects':
             if not isinstance(obj, ObjectHolder):
-                raise InvalidArguments('Invalid operation "extract_objects" on variable "{}"'.format(object_name))
+                raise InvalidArguments(f'Invalid operation "extract_objects" on variable "{object_name}"')
             self.validate_extraction(obj.held_object)
         obj.current_node = node
         return obj.method_call(method_name, args, kwargs)
@@ -1161,7 +1181,7 @@ The result of this is undefined and will become a hard error in a future Meson r
             try:
                 return int(obj)
             except Exception:
-                raise InterpreterException('String {!r} cannot be converted to int'.format(obj))
+                raise InterpreterException(f'String {obj!r} cannot be converted to int')
         elif method_name == 'join':
             if len(posargs) != 1:
                 raise InterpreterException('Join() takes exactly one argument.')
@@ -1192,6 +1212,13 @@ The result of this is undefined and will become a hard error in a future Meson r
                     raise InterpreterException('substring() argument must be an int')
                 end = posargs[1]
             return obj[start:end]
+        elif method_name == 'replace':
+            FeatureNew.single_use('str.replace', '0.58.0', self.subproject)
+            if len(posargs) != 2:
+                raise InterpreterException('replace() takes exactly two arguments.')
+            if not isinstance(posargs[0], str) or not isinstance(posargs[1], str):
+                raise InterpreterException('replace() requires that both arguments be strings')
+            return obj.replace(posargs[0], posargs[1])
         raise InterpreterException('Unknown method "%s" for a string.' % method_name)
 
     def format_string(self, templ: str, args: T.List[TYPE_nvar]) -> str:
@@ -1206,7 +1233,7 @@ The result of this is undefined and will become a hard error in a future Meson r
         def arg_replace(match: T.Match[str]) -> str:
             idx = int(match.group(1))
             if idx >= len(arg_strings):
-                raise InterpreterException('Format placeholder @{}@ out of range.'.format(idx))
+                raise InterpreterException(f'Format placeholder @{idx}@ out of range.')
             return arg_strings[idx]
 
         return re.sub(r'@(\d+)@', arg_replace, templ)
@@ -1283,7 +1310,7 @@ The result of this is undefined and will become a hard error in a future Meson r
                     return self.evaluate_statement(fallback)
                 return fallback
 
-            raise InterpreterException('Key {!r} is not in the dictionary.'.format(key))
+            raise InterpreterException(f'Key {key!r} is not in the dictionary.')
 
         if method_name == 'keys':
             if len(posargs) != 0:
@@ -1326,7 +1353,7 @@ The result of this is undefined and will become a hard error in a future Meson r
             raise InterpreterException('Kwargs argument must not contain a "kwargs" entry. Points for thinking meta, though. :P')
         for k, v in to_expand.items():
             if k in kwargs:
-                raise InterpreterException('Entry "{}" defined both as a keyword argument and in a "kwarg" entry.'.format(k))
+                raise InterpreterException(f'Entry "{k}" defined both as a keyword argument and in a "kwarg" entry.')
             kwargs[k] = v
         return kwargs
 

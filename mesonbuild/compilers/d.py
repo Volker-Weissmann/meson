@@ -153,6 +153,9 @@ class DmdLikeCompilerMixin(CompilerMixinBase):
     def get_feature_args(self, kwargs: T.Dict[str, T.Any], build_to_src: str) -> T.List[str]:
         # TODO: using a TypeDict here would improve this
         res = []
+        # get_feature_args can be called multiple times for the same target when there is generated source
+        # so we have to copy the kwargs (target.d_features) dict before popping from it
+        kwargs = kwargs.copy()
         if 'unittest' in kwargs:
             unittest = kwargs.pop('unittest')
             unittest_arg = d_feature_args[self.id]['unittest']
@@ -180,10 +183,10 @@ class DmdLikeCompilerMixin(CompilerMixinBase):
                     if int(d) > debug_level:
                         debug_level = int(d)
                 else:
-                    res.append('{0}={1}'.format(debug_arg, d))
+                    res.append(f'{debug_arg}={d}')
 
             if debug_level >= 0:
-                res.append('{0}={1}'.format(debug_arg, debug_level))
+                res.append(f'{debug_arg}={debug_level}')
 
         if 'versions' in kwargs:
             version_level = -1
@@ -204,10 +207,10 @@ class DmdLikeCompilerMixin(CompilerMixinBase):
                     if int(v) > version_level:
                         version_level = int(v)
                 else:
-                    res.append('{0}={1}'.format(version_arg, v))
+                    res.append(f'{version_arg}={v}')
 
             if version_level >= 0:
-                res.append('{0}={1}'.format(version_arg, version_level))
+                res.append(f'{version_arg}={version_level}')
 
         if 'import_dirs' in kwargs:
             import_dirs = kwargs.pop('import_dirs')
@@ -220,13 +223,15 @@ class DmdLikeCompilerMixin(CompilerMixinBase):
             for idir_obj in import_dirs:
                 basedir = idir_obj.get_curdir()
                 for idir in idir_obj.get_incdirs():
+                    bldtreedir = os.path.join(basedir, idir)
                     # Avoid superfluous '/.' at the end of paths when d is '.'
                     if idir not in ('', '.'):
-                        expdir = os.path.join(basedir, idir)
+                        expdir = bldtreedir
                     else:
                         expdir = basedir
                     srctreedir = os.path.join(build_to_src, expdir)
-                    res.append('{0}{1}'.format(import_dir_arg, srctreedir))
+                    res.append(f'{import_dir_arg}{srctreedir}')
+                    res.append(f'{import_dir_arg}{bldtreedir}')
 
         if kwargs:
             raise EnvironmentException('Unknown D compiler feature(s) selected: %s' % ', '.join(kwargs.keys()))
@@ -525,6 +530,9 @@ class DCompiler(Compiler):
     def get_feature_args(self, kwargs: T.Dict[str, T.Any], build_to_src: str) -> T.List[str]:
         # TODO: using a TypeDict here would improve this
         res = []
+        # get_feature_args can be called multiple times for the same target when there is generated source
+        # so we have to copy the kwargs (target.d_features) dict before popping from it
+        kwargs = kwargs.copy()
         if 'unittest' in kwargs:
             unittest = kwargs.pop('unittest')
             unittest_arg = d_feature_args[self.id]['unittest']
@@ -552,10 +560,10 @@ class DCompiler(Compiler):
                     if int(d) > debug_level:
                         debug_level = int(d)
                 else:
-                    res.append('{0}={1}'.format(debug_arg, d))
+                    res.append(f'{debug_arg}={d}')
 
             if debug_level >= 0:
-                res.append('{0}={1}'.format(debug_arg, debug_level))
+                res.append(f'{debug_arg}={debug_level}')
 
         if 'versions' in kwargs:
             version_level = -1
@@ -576,10 +584,10 @@ class DCompiler(Compiler):
                     if int(v) > version_level:
                         version_level = int(v)
                 else:
-                    res.append('{0}={1}'.format(version_arg, v))
+                    res.append(f'{version_arg}={v}')
 
             if version_level >= 0:
-                res.append('{0}={1}'.format(version_arg, version_level))
+                res.append(f'{version_arg}={version_level}')
 
         if 'import_dirs' in kwargs:
             import_dirs = kwargs.pop('import_dirs')
@@ -592,13 +600,15 @@ class DCompiler(Compiler):
             for idir_obj in import_dirs:
                 basedir = idir_obj.get_curdir()
                 for idir in idir_obj.get_incdirs():
+                    bldtreedir = os.path.join(basedir, idir)
                     # Avoid superfluous '/.' at the end of paths when d is '.'
                     if idir not in ('', '.'):
-                        expdir = os.path.join(basedir, idir)
+                        expdir = bldtreedir
                     else:
                         expdir = basedir
                     srctreedir = os.path.join(build_to_src, expdir)
-                    res.append('{0}{1}'.format(import_dir_arg, srctreedir))
+                    res.append(f'{import_dir_arg}{srctreedir}')
+                    res.append(f'{import_dir_arg}{bldtreedir}')
 
         if kwargs:
             raise EnvironmentException('Unknown D compiler feature(s) selected: %s' % ', '.join(kwargs.keys()))
@@ -759,7 +769,7 @@ class LLVMDCompiler(DmdLikeCompilerMixin, DCompiler):
 
     @classmethod
     def use_linker_args(cls, linker: str) -> T.List[str]:
-        return ['-linker={}'.format(linker)]
+        return [f'-linker={linker}']
 
     def get_linker_always_args(self) -> T.List[str]:
         args = super().get_linker_always_args()

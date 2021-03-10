@@ -23,7 +23,6 @@ import pickle
 import re
 import typing as T
 import hashlib
-import copy
 
 from .. import build
 from .. import dependencies
@@ -66,7 +65,7 @@ class TestProtocol(enum.Enum):
             return cls.GTEST
         elif string == 'rust':
             return cls.RUST
-        raise MesonException('unknown test format {}'.format(string))
+        raise MesonException(f'unknown test format {string}')
 
     def __str__(self) -> str:
         cls = type(self)
@@ -100,20 +99,18 @@ class InstallData:
         self.strip_bin = strip_bin
         self.install_umask = install_umask
         self.targets: T.List[TargetInstallData] = []
-        self.headers: 'InstallType' = []
-        self.man: 'InstallType' = []
-        self.data: 'InstallType' = []
-        self.po_package_name: str = ''
-        self.po = []
+        self.headers: T.List[InstallDataBase] = []
+        self.man: T.List[InstallDataBase] = []
+        self.data: T.List[InstallDataBase] = []
         self.install_scripts: T.List[ExecutableSerialisation] = []
-        self.install_subdirs: 'InstallSubdirsType' = []
+        self.install_subdirs: T.List[SubdirInstallData] = []
         self.mesonintrospect = mesonintrospect
         self.version = version
 
 class TargetInstallData:
     def __init__(self, fname: str, outdir: str, aliases: T.Dict[str, str], strip: bool,
                  install_name_mappings: T.Dict, rpath_dirs_to_remove: T.Set[bytes],
-                 install_rpath: str, install_mode: 'FileMode', optional: bool = False):
+                 install_rpath: str, install_mode: 'FileMode', subproject: str, optional: bool = False):
         self.fname = fname
         self.outdir = outdir
         self.aliases = aliases
@@ -122,7 +119,20 @@ class TargetInstallData:
         self.rpath_dirs_to_remove = rpath_dirs_to_remove
         self.install_rpath = install_rpath
         self.install_mode = install_mode
+        self.subproject = subproject
         self.optional = optional
+
+class InstallDataBase:
+    def __init__(self, path: str, install_path: str, install_mode: 'FileMode', subproject: str):
+        self.path = path
+        self.install_path = install_path
+        self.install_mode = install_mode
+        self.subproject = subproject
+
+class SubdirInstallData(InstallDataBase):
+    def __init__(self, path: str, install_path: str, install_mode: 'FileMode', exclude, subproject: str):
+        super().__init__(path, install_path, install_mode, subproject)
+        self.exclude = exclude
 
 class ExecutableSerialisation:
     def __init__(self, cmd_args, env: T.Optional[build.EnvironmentVariables] = None, exe_wrapper=None,
@@ -138,6 +148,7 @@ class ExecutableSerialisation:
         self.pickled = False
         self.skip_if_destdir = False
         self.verbose = False
+        self.subproject = ''
 
 class TestSerialisation:
     def __init__(self, name: str, project: str, suite: str, fname: T.List[str],
@@ -271,14 +282,14 @@ class Backend:
             return os.path.join(self.get_target_dir(target), target.get_filename())
         elif isinstance(target, (build.CustomTarget, build.CustomTargetIndex)):
             if not target.is_linkable_target():
-                raise MesonException('Tried to link against custom target "{}", which is not linkable.'.format(target.name))
+                raise MesonException(f'Tried to link against custom target "{target.name}", which is not linkable.')
             return os.path.join(self.get_target_dir(target), target.get_filename())
         elif isinstance(target, build.Executable):
             if target.import_filename:
                 return os.path.join(self.get_target_dir(target), target.get_import_filename())
             else:
                 return None
-        raise AssertionError('BUG: Tried to link to {!r} which is not linkable'.format(target))
+        raise AssertionError(f'BUG: Tried to link to {target!r} which is not linkable')
 
     @lru_cache(maxsize=None)
     def get_target_dir(self, target):
@@ -324,7 +335,7 @@ class Backend:
     def get_unity_source_file(self, target, suffix, number):
         # There is a potential conflict here, but it is unlikely that
         # anyone both enables unity builds and has a file called foo-unity.cpp.
-        osrc = '{}-unity{}.{}'.format(target.name, number, suffix)
+        osrc = f'{target.name}-unity{number}.{suffix}'
         return mesonlib.File.from_built_file(self.get_target_private_dir(target), osrc)
 
     def generate_unity_files(self, target, unity_src):
@@ -357,7 +368,7 @@ class Backend:
                     ofile = init_language_file(comp.get_default_suffix(), unity_file_number)
                     unity_file_number += 1
                     files_in_current = 0
-                ofile.write('#include<{}>\n'.format(src))
+                ofile.write(f'#include<{src}>\n')
                 files_in_current += 1
             if ofile:
                 ofile.close()
@@ -432,7 +443,7 @@ class Backend:
         else:
             if exe_cmd[0].endswith('.jar'):
                 exe_cmd = ['java', '-jar'] + exe_cmd
-            elif exe_cmd[0].endswith('.exe') and not (mesonlib.is_windows() or mesonlib.is_cygwin()):
+            elif exe_cmd[0].endswith('.exe') and not (mesonlib.is_windows() or mesonlib.is_cygwin() or mesonlib.is_wsl()):
                 exe_cmd = ['mono'] + exe_cmd
             exe_wrapper = None
 
@@ -494,7 +505,7 @@ class Backend:
         data = bytes(str(es.env) + str(es.cmd_args) + str(es.workdir) + str(capture),
                      encoding='utf-8')
         digest = hashlib.sha1(data).hexdigest()
-        scratch_file = 'meson_exe_{0}_{1}.dat'.format(basename, digest)
+        scratch_file = f'meson_exe_{basename}_{digest}.dat'
         exe_data = os.path.join(self.environment.get_scratch_dir(), scratch_file)
         with open(exe_data, 'wb') as f:
             pickle.dump(es, f)
@@ -564,7 +575,7 @@ class Backend:
                 for dir in symbols_match.group(1).split(':'):
                     # Prevent usage of --just-symbols to specify rpath
                     if Path(dir).is_dir():
-                        raise MesonException('Invalid arg for --just-symbols, {} is a directory.'.format(dir))
+                        raise MesonException(f'Invalid arg for --just-symbols, {dir} is a directory.')
         return dirs
 
     def rpaths_for_bundled_shared_libraries(self, target, exclude_system=True):
@@ -590,7 +601,7 @@ class Backend:
                 continue
             if libdir.startswith(self.environment.get_source_dir()):
                 rel_to_src = libdir[len(self.environment.get_source_dir()) + 1:]
-                assert not os.path.isabs(rel_to_src), 'rel_to_src: {} is absolute'.format(rel_to_src)
+                assert not os.path.isabs(rel_to_src), f'rel_to_src: {rel_to_src} is absolute'
                 paths.append(os.path.join(self.build_to_src, rel_to_src))
             else:
                 paths.append(libdir)
@@ -706,7 +717,7 @@ class Backend:
     def create_msvc_pch_implementation(self, target, lang, pch_header):
         # We have to include the language in the file name, otherwise
         # pch.c and pch.cpp will both end up as pch.obj in VS backends.
-        impl_name = 'meson_pch-{}.{}'.format(lang, lang)
+        impl_name = f'meson_pch-{lang}.{lang}'
         pch_rel_to_build = os.path.join(self.get_target_private_dir(target), impl_name)
         # Make sure to prepend the build dir, since the working directory is
         # not defined. Otherwise, we might create the file in the wrong path.
@@ -822,7 +833,7 @@ class Backend:
         args = []
         for d in deps:
             if not (d.is_linkable_target()):
-                raise RuntimeError('Tried to link with a non-library target "{}".'.format(d.get_basename()))
+                raise RuntimeError(f'Tried to link with a non-library target "{d.get_basename()}".')
             arg = self.get_target_filename_for_linking(d)
             if not arg:
                 continue
@@ -972,7 +983,7 @@ class Backend:
         with open(ifilename, 'w') as f:
             f.write(json.dumps(mfobj))
         # Copy file from, to, and with mode unchanged
-        d.data.append((ifilename, ofilename, None))
+        d.data.append(InstallDataBase(ifilename, ofilename, None, ''))
 
     def get_regen_filelist(self):
         '''List of all files whose alteration means that the build
@@ -1000,7 +1011,7 @@ class Backend:
             # to the future by a minuscule amount, less than
             # 0.001 seconds. I don't know why.
             if delta > 0.001:
-                raise MesonException('Clock skew detected. File {} has a time stamp {:.4f}s in the future.'.format(absf, delta))
+                raise MesonException(f'Clock skew detected. File {absf} has a time stamp {delta:.4f}s in the future.')
 
     def build_target_to_cmd_array(self, bt):
         if isinstance(bt, build.BuildTarget):
@@ -1025,7 +1036,7 @@ class Backend:
             m = regex.search(arg)
             while m is not None:
                 index = int(m.group(1))
-                src = '@OUTPUT{}@'.format(index)
+                src = f'@OUTPUT{index}@'
                 arg = arg.replace(src, os.path.join(private_dir, output_list[index]))
                 m = regex.search(arg)
             newargs.append(arg)
@@ -1228,7 +1239,7 @@ class Backend:
 
         for s in self.build.postconf_scripts:
             name = ' '.join(s.cmd_args)
-            mlog.log('Running postconf script {!r}'.format(name))
+            mlog.log(f'Running postconf script {name!r}')
             run_exe(s, env)
 
     def create_install_data(self) -> InstallData:
@@ -1297,7 +1308,7 @@ class Backend:
                     i = TargetInstallData(self.get_target_filename(t), outdirs[0],
                                           t.get_aliases(), should_strip, mappings,
                                           t.rpath_dirs_to_remove,
-                                          t.install_rpath, install_mode)
+                                          t.install_rpath, install_mode, t.subproject)
                     d.targets.append(i)
 
                     if isinstance(t, (build.SharedLibrary, build.SharedModule, build.Executable)):
@@ -1315,14 +1326,15 @@ class Backend:
                             # Install the import library; may not exist for shared modules
                             i = TargetInstallData(self.get_target_filename_for_linking(t),
                                                   implib_install_dir, {}, False, {}, set(), '', install_mode,
-                                                  optional=isinstance(t, build.SharedModule))
+                                                  t.subproject, optional=isinstance(t, build.SharedModule))
                             d.targets.append(i)
 
                         if not should_strip and t.get_debug_filename():
                             debug_file = os.path.join(self.get_target_dir(t), t.get_debug_filename())
                             i = TargetInstallData(debug_file, outdirs[0],
                                                   {}, False, {}, set(), '',
-                                                  install_mode, optional=True)
+                                                  install_mode, t.subproject,
+                                                  optional=True)
                             d.targets.append(i)
                 # Install secondary outputs. Only used for Vala right now.
                 if num_outdirs > 1:
@@ -1331,7 +1343,8 @@ class Backend:
                         if outdir is False:
                             continue
                         f = os.path.join(self.get_target_dir(t), output)
-                        i = TargetInstallData(f, outdir, {}, False, {}, set(), None, install_mode)
+                        i = TargetInstallData(f, outdir, {}, False, {}, set(), None,
+                                              install_mode, t.subproject)
                         d.targets.append(i)
             elif isinstance(t, build.CustomTarget):
                 # If only one install_dir is specified, assume that all
@@ -1345,7 +1358,7 @@ class Backend:
                     for output in t.get_outputs():
                         f = os.path.join(self.get_target_dir(t), output)
                         i = TargetInstallData(f, outdirs[0], {}, False, {}, set(), None, install_mode,
-                                              optional=not t.build_by_default)
+                                              t.subproject, optional=not t.build_by_default)
                         d.targets.append(i)
                 else:
                     for output, outdir in zip(t.get_outputs(), outdirs):
@@ -1354,23 +1367,11 @@ class Backend:
                             continue
                         f = os.path.join(self.get_target_dir(t), output)
                         i = TargetInstallData(f, outdir, {}, False, {}, set(), None, install_mode,
-                                              optional=not t.build_by_default)
+                                              t.subproject, optional=not t.build_by_default)
                         d.targets.append(i)
 
     def generate_custom_install_script(self, d: InstallData) -> None:
-        result: T.List[ExecutableSerialisation] = []
-        srcdir = self.environment.get_source_dir()
-        builddir = self.environment.get_build_dir()
-        for i in self.build.install_scripts:
-            fixed_args = []
-            for a in i.cmd_args:
-                a = a.replace('@SOURCE_ROOT@', srcdir)
-                a = a.replace('@BUILD_ROOT@', builddir)
-                fixed_args.append(a)
-            es = copy.copy(i)
-            es.cmd_args = fixed_args
-            result.append(es)
-        d.install_scripts = result
+        d.install_scripts = self.build.install_scripts
 
     def generate_header_install(self, d: InstallData) -> None:
         incroot = self.environment.get_includedir()
@@ -1387,7 +1388,7 @@ class Backend:
                     msg = 'Invalid header type {!r} can\'t be installed'
                     raise MesonException(msg.format(f))
                 abspath = f.absolute_path(srcdir, builddir)
-                i = (abspath, outdir, h.get_custom_install_mode())
+                i = InstallDataBase(abspath, outdir, h.get_custom_install_mode(), h.subproject)
                 d.headers.append(i)
 
     def generate_man_install(self, d: InstallData) -> None:
@@ -1398,10 +1399,16 @@ class Backend:
                 num = f.split('.')[-1]
                 subdir = m.get_custom_install_dir()
                 if subdir is None:
-                    subdir = os.path.join(manroot, 'man' + num)
+                    if m.locale:
+                        subdir = os.path.join(manroot, m.locale, 'man' + num)
+                    else:
+                        subdir = os.path.join(manroot, 'man' + num)
+                fname = f.fname
+                if m.locale: # strip locale from file name
+                    fname = fname.replace(f'.{m.locale}', '')
                 srcabs = f.absolute_path(self.environment.get_source_dir(), self.environment.get_build_dir())
-                dstabs = os.path.join(subdir, os.path.basename(f.fname))
-                i = (srcabs, dstabs, m.get_custom_install_mode())
+                dstabs = os.path.join(subdir, os.path.basename(fname))
+                i = InstallDataBase(srcabs, dstabs, m.get_custom_install_mode(), m.subproject)
                 d.man.append(i)
 
     def generate_data_install(self, d: InstallData):
@@ -1416,7 +1423,7 @@ class Backend:
             for src_file, dst_name in zip(de.sources, de.rename):
                 assert(isinstance(src_file, mesonlib.File))
                 dst_abs = os.path.join(subdir, dst_name)
-                i = (src_file.absolute_path(srcdir, builddir), dst_abs, de.install_mode)
+                i = InstallDataBase(src_file.absolute_path(srcdir, builddir), dst_abs, de.install_mode, de.subproject)
                 d.data.append(i)
 
     def generate_subdir_install(self, d: InstallData) -> None:
@@ -1432,8 +1439,8 @@ class Backend:
                                    sd.install_dir)
             if not sd.strip_directory:
                 dst_dir = os.path.join(dst_dir, os.path.basename(src_dir))
-            d.install_subdirs.append(
-                (src_dir, dst_dir, sd.install_mode, sd.exclude))
+            i = SubdirInstallData(src_dir, dst_dir, sd.install_mode, sd.exclude, sd.subproject)
+            d.install_subdirs.append(i)
 
     def get_introspection_data(self, target_id: str, target: build.Target) -> T.List[T.Dict[str, T.Union[bool, str, T.List[T.Union[str, T.Dict[str, T.Union[str, T.List[str], bool]]]]]]]:
         '''

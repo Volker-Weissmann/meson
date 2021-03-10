@@ -186,7 +186,7 @@ class CudaCompiler(Compiler):
 
     @classmethod
     def _shield_nvcc_list_arg(cls, arg: str, listmode: bool=True) -> str:
-        """
+        r"""
         Shield an argument against both splitting by NVCC's list-argument
         parse logic, and interpretation by any shell.
 
@@ -256,7 +256,7 @@ class CudaCompiler(Compiler):
             # Shield individual strings, without listmode, then return them with
             # escaped commas between them.
             l = [cls._shield_nvcc_list_arg(s, listmode=False) for s in l]
-            return '\,'.join(l)
+            return r'\,'.join(l)
 
     @classmethod
     def _to_host_flags(cls, flags: T.List[str], phase: _Phase = _Phase.COMPILER) -> T.List[str]:
@@ -514,7 +514,7 @@ class CudaCompiler(Compiler):
         mlog.debug(stde)
         mlog.debug('-----')
         if pc.returncode != 0:
-            raise EnvironmentException('Compiler {0} can not compile programs.'.format(self.name_string()))
+            raise EnvironmentException(f'Compiler {self.name_string()} can not compile programs.')
 
         # Run sanity check (if possible)
         if self.is_cross:
@@ -533,7 +533,7 @@ class CudaCompiler(Compiler):
         mlog.debug('-----')
         pe.wait()
         if pe.returncode != 0:
-            raise EnvironmentException('Executables created by {0} compiler {1} are not runnable.'.format(self.language, self.name_string()))
+            raise EnvironmentException(f'Executables created by {self.language} compiler {self.name_string()} are not runnable.')
 
         # Interpret the result of the sanity test.
         # As mentioned above, it is not only a sanity test but also a GPU
@@ -624,6 +624,12 @@ class CudaCompiler(Compiler):
         # give us more control over options like "optimize for space" (which nvcc doesn't support):
         # return self._to_host_flags(self.host_compiler.get_optimization_args(optimization_level))
         return cuda_optimization_args[optimization_level]
+
+    def sanitizer_compile_args(self, value: str) -> T.List[str]:
+        return self._to_host_flags(self.host_compiler.sanitizer_compile_args(value))
+
+    def sanitizer_link_args(self, value: str) -> T.List[str]:
+        return self._to_host_flags(self.host_compiler.sanitizer_link_args(value))
 
     def get_debug_args(self, is_debug: bool) -> T.List[str]:
         return cuda_debug_args[is_debug]

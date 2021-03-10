@@ -27,6 +27,7 @@ topic](https://github.com/topics/meson).
  - [Cozy](https://github.com/geigi/cozy), a modern audio book player for Linux and macOS using GTK+ 3
  - [dav1d](https://code.videolan.org/videolan/dav1d), an AV1 decoder
  - [dbus-broker](https://github.com/bus1/dbus-broker), Linux D-Bus Message Broker
+ - [DOSBox Staging](https://github.com/dosbox-staging/dosbox-staging), DOS/x86 emulator
  - [DPDK](http://dpdk.org/browse/dpdk), Data Plane Development Kit, a set of libraries and drivers for fast packet processing
  - [DXVK](https://github.com/doitsujin/dxvk), a Vulkan-based Direct3D 11 implementation for Linux using Wine
  - [elementary OS](https://github.com/elementary/), Linux desktop oriented distribution
@@ -120,6 +121,7 @@ format files
  - [Polari](https://gitlab.gnome.org/GNOME/polari), an IRC client
  - [qboot](https://github.com/bonzini/qboot), a minimal x86 firmware for booting Linux kernels
  - [radare2](https://github.com/radare/radare2), unix-like reverse engineering framework and commandline tools (not the default)
+ - [Rizin](https://rizin.re), Free and Open Source Reverse Engineering Framework
  - [QEMU](https://qemu.org), a processor emulator and virtualizer
  - [RxDock](https://gitlab.com/rxdock/rxdock), a protein-ligand docking software designed for high throughput virtual screening (fork of rDock)
  - [scrcpy](https://github.com/Genymobile/scrcpy), a cross platform application that provides display and control of Android devices connected on USB or over TCP/IP

@@ -55,6 +55,7 @@ if T.TYPE_CHECKING:
         wd: str
         destdir: str
         dry_run: bool
+        skip_subprojects: str
 
 
 symlink_warning = '''Warning: trying to copy a symlink that points to a file. This will copy the file,
@@ -77,7 +78,9 @@ def add_arguments(parser: argparse.Namespace) -> None:
     parser.add_argument('--destdir', default=None,
                         help='Sets or overrides DESTDIR environment. (Since 0.57.0)')
     parser.add_argument('--dry-run', '-n', action='store_true',
-                        help='Doesn\'t actually install, but print logs.')
+                        help='Doesn\'t actually install, but print logs. (Since 0.57.0)')
+    parser.add_argument('--skip-subprojects', nargs='?', const='*', default='',
+                        help='Do not install files from given subprojects. (Since 0.58.0)')
 
 class DirMaker:
     def __init__(self, lf: T.TextIO, makedirs: T.Callable[..., None]):
@@ -145,7 +148,7 @@ def set_chown(path: str, user: T.Optional[str] = None, group: T.Optional[str] = 
         Use a real function rather than a lambda to help mypy out. Also real
         functions are faster.
         """
-        real_os_chown(path, gid, uid, dir_fd=dir_fd, follow_symlinks=follow_symlinks)
+        real_os_chown(path, uid, gid, dir_fd=dir_fd, follow_symlinks=follow_symlinks)
 
     try:
         os.chown = chown
@@ -284,6 +287,10 @@ class Installer:
         self.lf = lf
         self.preserved_file_count = 0
         self.dry_run = options.dry_run
+        # [''] means skip none,
+        # ['*'] means skip all,
+        # ['sub1', ...] means skip only those.
+        self.skip_subprojects = [i.strip() for i in options.skip_subprojects.split(',')]
 
     def mkdir(self, *args: T.Any, **kwargs: T.Any) -> None:
         if not self.dry_run:
@@ -352,6 +359,11 @@ class Installer:
             return run_exe(*args, **kwargs)
         return 0
 
+    def install_subproject(self, subproject: str) -> bool:
+        if subproject and (subproject in self.skip_subprojects or '*' in self.skip_subprojects):
+            return False
+        return True
+
     def log(self, msg: str) -> None:
         if not self.options.quiet:
             print(msg)
@@ -380,7 +392,7 @@ class Installer:
                 raise RuntimeError('Destination {!r} already exists and is not '
                                    'a file'.format(to_file))
             if self.should_preserve_existing_file(from_file, to_file):
-                append_to_log(self.lf, '# Preserving old file {}\n'.format(to_file))
+                append_to_log(self.lf, f'# Preserving old file {to_file}\n')
                 self.preserved_file_count += 1
                 return False
             self.remove(to_file)
@@ -389,7 +401,7 @@ class Installer:
             dirmaker, outdir = makedirs
             # Create dirs if needed
             dirmaker.makedirs(outdir, exist_ok=True)
-        self.log('Installing {} to {}'.format(from_file, outdir))
+        self.log(f'Installing {from_file} to {outdir}')
         if os.path.islink(from_file):
             if not os.path.exists(from_file):
                 # Dangling symlink. Replicate as is.
@@ -431,9 +443,9 @@ class Installer:
                      each element of the set is a path relative to src_dir.
         '''
         if not os.path.isabs(src_dir):
-            raise ValueError('src_dir must be absolute, got {}'.format(src_dir))
+            raise ValueError(f'src_dir must be absolute, got {src_dir}')
         if not os.path.isabs(dst_dir):
-            raise ValueError('dst_dir must be absolute, got {}'.format(dst_dir))
+            raise ValueError(f'dst_dir must be absolute, got {dst_dir}')
         if exclude is not None:
             exclude_files, exclude_dirs = exclude
         else:
@@ -451,7 +463,7 @@ class Installer:
                 if os.path.isdir(abs_dst):
                     continue
                 if os.path.exists(abs_dst):
-                    print('Tried to copy directory {} but a file of that name already exists.'.format(abs_dst))
+                    print(f'Tried to copy directory {abs_dst} but a file of that name already exists.')
                     sys.exit(1)
                 dm.makedirs(abs_dst)
                 self.copystat(abs_src, abs_dst)
@@ -463,7 +475,7 @@ class Installer:
                     continue
                 abs_dst = os.path.join(dst_dir, filepart)
                 if os.path.isdir(abs_dst):
-                    print('Tried to copy file {} but a directory of that name already exists.'.format(abs_dst))
+                    print(f'Tried to copy file {abs_dst} but a directory of that name already exists.')
                     sys.exit(1)
                 parent_dir = os.path.dirname(abs_dst)
                 if not os.path.isdir(parent_dir):
@@ -521,43 +533,48 @@ class Installer:
                 raise
 
     def install_subdirs(self, d: InstallData, dm: DirMaker, destdir: str, fullprefix: str) -> None:
-        for (src_dir, dst_dir, mode, exclude) in d.install_subdirs:
+        for i in d.install_subdirs:
+            if not self.install_subproject(i.subproject):
+                continue
             self.did_install_something = True
-            full_dst_dir = get_destdir_path(destdir, fullprefix, dst_dir)
-            self.log('Installing subdir {} to {}'.format(src_dir, full_dst_dir))
+            full_dst_dir = get_destdir_path(destdir, fullprefix, i.install_path)
+            self.log(f'Installing subdir {i.path} to {full_dst_dir}')
             dm.makedirs(full_dst_dir, exist_ok=True)
-            self.do_copydir(d, src_dir, full_dst_dir, exclude, mode, dm)
+            self.do_copydir(d, i.path, full_dst_dir, i.exclude, i.install_mode, dm)
 
     def install_data(self, d: InstallData, dm: DirMaker, destdir: str, fullprefix: str) -> None:
         for i in d.data:
-            fullfilename = i[0]
-            outfilename = get_destdir_path(destdir, fullprefix, i[1])
-            mode = i[2]
+            if not self.install_subproject(i.subproject):
+                continue
+            fullfilename = i.path
+            outfilename = get_destdir_path(destdir, fullprefix, i.install_path)
             outdir = os.path.dirname(outfilename)
             if self.do_copyfile(fullfilename, outfilename, makedirs=(dm, outdir)):
                 self.did_install_something = True
-            self.set_mode(outfilename, mode, d.install_umask)
+            self.set_mode(outfilename, i.install_mode, d.install_umask)
 
     def install_man(self, d: InstallData, dm: DirMaker, destdir: str, fullprefix: str) -> None:
         for m in d.man:
-            full_source_filename = m[0]
-            outfilename = get_destdir_path(destdir, fullprefix, m[1])
+            if not self.install_subproject(m.subproject):
+                continue
+            full_source_filename = m.path
+            outfilename = get_destdir_path(destdir, fullprefix, m.install_path)
             outdir = os.path.dirname(outfilename)
-            install_mode = m[2]
             if self.do_copyfile(full_source_filename, outfilename, makedirs=(dm, outdir)):
                 self.did_install_something = True
-            self.set_mode(outfilename, install_mode, d.install_umask)
+            self.set_mode(outfilename, m.install_mode, d.install_umask)
 
     def install_headers(self, d: InstallData, dm: DirMaker, destdir: str, fullprefix: str) -> None:
         for t in d.headers:
-            fullfilename = t[0]
+            if not self.install_subproject(t.subproject):
+                continue
+            fullfilename = t.path
             fname = os.path.basename(fullfilename)
-            outdir = get_destdir_path(destdir, fullprefix, t[1])
+            outdir = get_destdir_path(destdir, fullprefix, t.install_path)
             outfilename = os.path.join(outdir, fname)
-            install_mode = t[2]
             if self.do_copyfile(fullfilename, outfilename, makedirs=(dm, outdir)):
                 self.did_install_something = True
-            self.set_mode(outfilename, install_mode, d.install_umask)
+            self.set_mode(outfilename, t.install_mode, d.install_umask)
 
     def run_install_script(self, d: InstallData, destdir: str, fullprefix: str) -> None:
         env = {'MESON_SOURCE_ROOT': d.source_dir,
@@ -570,31 +587,35 @@ class Installer:
             env['MESON_INSTALL_QUIET'] = '1'
 
         for i in d.install_scripts:
+            if not self.install_subproject(i.subproject):
+                continue
             name = ' '.join(i.cmd_args)
             if i.skip_if_destdir and destdir:
-                self.log('Skipping custom install script because DESTDIR is set {!r}'.format(name))
+                self.log(f'Skipping custom install script because DESTDIR is set {name!r}')
                 continue
             self.did_install_something = True  # Custom script must report itself if it does nothing.
-            self.log('Running custom install script {!r}'.format(name))
+            self.log(f'Running custom install script {name!r}')
             try:
                 rc = self.run_exe(i, env)
             except OSError:
-                print('FAILED: install script \'{}\' could not be run, stopped'.format(name))
+                print(f'FAILED: install script \'{name}\' could not be run, stopped')
                 # POSIX shells return 127 when a command could not be found
                 sys.exit(127)
             if rc != 0:
-                print('FAILED: install script \'{}\' exit code {}, stopped'.format(name, rc))
+                print(f'FAILED: install script \'{name}\' exit code {rc}, stopped')
                 sys.exit(rc)
 
     def install_targets(self, d: InstallData, dm: DirMaker, destdir: str, fullprefix: str) -> None:
         for t in d.targets:
+            if not self.install_subproject(t.subproject):
+                continue
             if not os.path.exists(t.fname):
                 # For example, import libraries of shared modules are optional
                 if t.optional:
-                    self.log('File {!r} not found, skipping'.format(t.fname))
+                    self.log(f'File {t.fname!r} not found, skipping')
                     continue
                 else:
-                    raise RuntimeError('File {!r} could not be found'.format(t.fname))
+                    raise RuntimeError(f'File {t.fname!r} could not be found')
             file_copied = False # not set when a directory is copied
             fname = check_for_stampfile(t.fname)
             outdir = get_destdir_path(destdir, fullprefix, t.outdir)
@@ -606,7 +627,7 @@ class Installer:
             install_name_mappings = t.install_name_mappings
             install_mode = t.install_mode
             if not os.path.exists(fname):
-                raise RuntimeError('File {!r} could not be found'.format(fname))
+                raise RuntimeError(f'File {fname!r} could not be found')
             elif os.path.isfile(fname):
                 file_copied = self.do_copyfile(fname, outname, makedirs=(dm, outdir))
                 self.set_mode(outname, install_mode, d.install_umask)
@@ -618,8 +639,8 @@ class Installer:
                     returncode, stdo, stde = self.Popen_safe(d.strip_bin + [outname])
                     if returncode != 0:
                         print('Could not strip file.\n')
-                        print('Stdout:\n{}\n'.format(stdo))
-                        print('Stderr:\n{}\n'.format(stde))
+                        print(f'Stdout:\n{stdo}\n')
+                        print(f'Stderr:\n{stde}\n')
                         sys.exit(1)
                 if fname.endswith('.js'):
                     # Emscripten outputs js files and optionally a wasm file.
@@ -634,7 +655,7 @@ class Installer:
                 dm.makedirs(outdir, exist_ok=True)
                 self.do_copydir(d, fname, outname, None, install_mode, dm)
             else:
-                raise RuntimeError('Unknown file type for {!r}'.format(fname))
+                raise RuntimeError(f'Unknown file type for {fname!r}')
             printed_symlink_error = False
             for alias, to in aliases.items():
                 try:
@@ -674,7 +695,7 @@ def rebuild_all(wd: str) -> bool:
 
     ret = subprocess.run(ninja + ['-C', wd]).returncode
     if ret != 0:
-        print('Could not rebuild {}'.format(wd))
+        print(f'Could not rebuild {wd}')
         return False
 
     return True

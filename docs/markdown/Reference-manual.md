@@ -580,6 +580,9 @@ Returns a [disabler object](#disabler-object).
 
 Print the argument string and halts the build process.
 
+*(since 0.58.0)* Can take more than one argument that will be separated by
+space.
+
 ### environment()
 
 ``` meson
@@ -1062,7 +1065,7 @@ arguments. The following keyword arguments are supported:
 
   `install_mode: 'rw-r--r--'` for just the file mode
 
-  `install_mode: ['rw-r--r--', 'nobody', 'nobody']` for the file mode and the user/group
+  `install_mode: ['rw-r--r--', 'nobody', 'nogroup']` for the file mode and the user/group
 
   `install_mode: ['rw-r-----', 0, 0]` for the file mode and uid/gid
 
@@ -1129,6 +1132,11 @@ Accepts the following keywords:
 - `install_mode` *(since 0.47.0)*: can be used to specify the file mode in symbolic
   format and optionally the owner/uid and group/gid for the installed files.
   An example value could be `['rwxr-sr-x', 'root', 'root']`.
+
+- `locale` *(since 0.58.0)*: can be used to specify the locale into which the
+  man page will be installed within the manual page directory tree.
+  An example manual might be `foo.fr.1` with a locale of `fr`, such
+  that `{mandir}/{locale}/man{num}/foo.1` becomes the installed file.
 
 *(since 0.49.0)* [manpages are no longer compressed
  implicitly][install_man_49].
@@ -1353,6 +1361,7 @@ dictionaries does not guarantee ordering. `key` must be string,
 
 - an integer, boolean or string
 - *since 0.57.0* an external program or a dependency
+- *since 0.58.0* a feature option
 - a list of those.
 
 `summary()` can be called multiple times as long as the same
@@ -1976,9 +1985,9 @@ the following methods.
   the "native" compiler if we're not.
 
 - `get_cross_property(propname, fallback_value)`:
-  *Consider `get_external_property()` instead*. Returns the given
-  property from a cross file, the optional fallback_value is returned
-  if not cross compiling or the given property is not found.
+  *Deprecated since 0.58.0, use `get_external_property()` instead*.
+  Returns the given property from a cross file, the optional fallback_value
+  is returned if not cross compiling or the given property is not found.
 
 - `get_external_property(propname, fallback_value, native: true/false)`
   *(since 0.54.0)*: returns the given property from a native or cross file.
@@ -1987,6 +1996,13 @@ the following methods.
   native file, even when cross-compiling.
   If `native: false` or not specified, variable is retrieved from the
   cross-file if cross-compiling, and from the native-file when not cross-compiling.
+
+- `has_external_property(propname, native: true/false)`
+  *(since 0.58.0)*: checks whether the given property exist in a native or
+  cross file. The optional `native: true` forces checking for the variable
+  in the native file, even when cross-compiling.
+  If `native: false` or not specified, the variable is checked for in the
+  cross-file if cross-compiling, and in the native-file when not cross-compiling.
 
 - `can_run_host_binaries()` *(since 0.55.0)*: returns true if the build machine can run
   binaries compiled for the host. This returns true unless you are
@@ -2118,6 +2134,9 @@ are immutable, all operations return their results as a new string.
 - `join(list_of_strings)`: the opposite of split, for example
   `'.'.join(['a', 'b', 'c']` yields `'a.b.c'`.
 
+- `replace('old_substr', 'new_str')`: replaces instances of `old_substr` in the
+  string with `new_str` and returns a new string
+
 - `split(split_character)`: splits the string at the specified
   character (or whitespace if not set) and returns the parts in an
   array.
@@ -2220,8 +2239,7 @@ the following methods:
   the positional argument, you can specify external dependencies to
   use with `dependencies` keyword argument.
 
-- `cmd_array()`: returns an array containing the command arguments for
-  the current compiler.
+- `cmd_array()`: returns an array containing the command(s) for the compiler.
 
 - `compiles(code)`: returns true if the code fragment given in the
   positional argument compiles, you can specify external dependencies

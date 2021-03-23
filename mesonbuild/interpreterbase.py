@@ -70,6 +70,20 @@ class ObjectHolder(T.Generic[TV_InterpreterObject]):
 class MesonVersionString(str):
     pass
 
+class RangeHolder(InterpreterObject):
+    def __init__(self, start: int, stop: int, step: int) -> None:
+        super().__init__()
+        self.range = range(start, stop, step)
+
+    def __iter__(self) -> T.Iterator[int]:
+        return iter(self.range)
+
+    def __getitem__(self, key: int) -> int:
+        return self.range[key]
+
+    def __len__(self) -> int:
+        return len(self.range)
+
 # Decorators for method calls.
 
 def check_stringlist(a: T.Any, msg: str = 'Arguments must be strings.') -> None:
@@ -286,8 +300,8 @@ def typed_pos_args(name: str, *types: T.Union[T.Type, T.Tuple[T.Type, ...]],
 
             # These are implementation programming errors, end users should never see them.
             assert isinstance(args, list), args
-            assert max_varargs >= 0, 'max_varrags cannot be negative'
-            assert min_varargs >= 0, 'min_varrags cannot be negative'
+            assert max_varargs >= 0, 'max_varags cannot be negative'
+            assert min_varargs >= 0, 'min_varags cannot be negative'
             assert optargs is None or varargs is None, \
                 'varargs and optargs not supported together as this would be ambiguous'
 
@@ -950,7 +964,7 @@ The result of this is undefined and will become a hard error in a future Meson r
         assert(isinstance(node, mparser.ForeachClauseNode))
         items = self.evaluate_statement(node.items)
 
-        if isinstance(items, list):
+        if isinstance(items, (list, RangeHolder)):
             if len(node.varnames) != 1:
                 raise InvalidArguments('Foreach on array does not unpack')
             varname = node.varnames[0]

@@ -25,6 +25,7 @@ import typing as T
 from . import environment
 from . import dependencies
 from . import mlog
+from . import programs
 from .mesonlib import (
     File, MesonException, MachineChoice, PerMachine, OrderedSet, listify,
     extract_as_list, typeslistify, stringlistify, classify_unity_sources,
@@ -229,6 +230,7 @@ class Build:
         self.find_overrides = {}
         self.searched_programs = set() # The list of all programs that have been searched for.
         self.dependency_overrides = PerMachine({}, {})
+        self.devenv: T.List[EnvironmentVariables] = []
 
     def get_build_targets(self):
         build_targets = OrderedDict()
@@ -393,7 +395,7 @@ class ExtractedObjects:
         ]
 
 class EnvironmentVariables:
-    def __init__(self):
+    def __init__(self) -> None:
         self.envvars = []
         # The set of all env vars we have operations for. Only used for self.has_name()
         self.varnames = set()
@@ -402,41 +404,36 @@ class EnvironmentVariables:
         repr_str = "<{0}: {1}>"
         return repr_str.format(self.__class__.__name__, self.envvars)
 
-    def add_var(self, method, name, args, kwargs):
-        self.varnames.add(name)
-        self.envvars.append((method, name, args, kwargs))
-
-    def has_name(self, name):
+    def has_name(self, name: str) -> bool:
         return name in self.varnames
 
-    def get_value(self, values, kwargs):
-        separator = kwargs.get('separator', os.pathsep)
+    def set(self, name: str, values: T.List[str], separator: str = os.pathsep) -> None:
+        self.varnames.add(name)
+        self.envvars.append((self._set, name, values, separator))
 
-        value = ''
-        for var in values:
-            value += separator + var
-        return separator, value.strip(separator)
+    def append(self, name: str, values: T.List[str], separator: str = os.pathsep) -> None:
+        self.varnames.add(name)
+        self.envvars.append((self._append, name, values, separator))
 
-    def set(self, env, name, values, kwargs):
-        return self.get_value(values, kwargs)[1]
+    def prepend(self, name: str, values: T.List[str], separator: str = os.pathsep) -> None:
+        self.varnames.add(name)
+        self.envvars.append((self._prepend, name, values, separator))
 
-    def append(self, env, name, values, kwargs):
-        sep, value = self.get_value(values, kwargs)
-        if name in env:
-            return env[name] + sep + value
-        return value
+    def _set(self, env: T.Dict[str, str], name: str, values: T.List[str], separator: str) -> str:
+        return separator.join(values)
 
-    def prepend(self, env, name, values, kwargs):
-        sep, value = self.get_value(values, kwargs)
-        if name in env:
-            return value + sep + env[name]
+    def _append(self, env: T.Dict[str, str], name: str, values: T.List[str], separator: str) -> str:
+        curr = env.get(name)
+        return separator.join(values if curr is None else [curr] + values)
 
-        return value
+    def _prepend(self, env: T.Dict[str, str], name: str, values: T.List[str], separator: str) -> str:
+        curr = env.get(name)
+        return separator.join(values if curr is None else values + [curr])
 
     def get_env(self, full_env: T.Dict[str, str]) -> T.Dict[str, str]:
         env = full_env.copy()
-        for method, name, values, kwargs in self.envvars:
-            env[name] = method(full_env, name, values, kwargs)
+        for method, name, values, separator in self.envvars:
+            env[name] = method(full_env, name, values, separator)
         return env
 
 class Target:
@@ -1490,7 +1487,7 @@ class Generator:
         if len(args) != 1:
             raise InvalidArguments('Generator requires exactly one positional argument: the executable')
         exe = unholder(args[0])
-        if not isinstance(exe, (Executable, dependencies.ExternalProgram)):
+        if not isinstance(exe, (Executable, programs.ExternalProgram)):
             raise InvalidArguments('First generator argument must be an executable.')
         self.exe = exe
         self.depfile = None
@@ -1614,7 +1611,7 @@ class GeneratedList:
         self.depend_files = []
         self.preserve_path_from = preserve_path_from
         self.extra_args = extra_args if extra_args is not None else []
-        if isinstance(self.generator.exe, dependencies.ExternalProgram):
+        if isinstance(self.generator.exe, programs.ExternalProgram):
             if not self.generator.exe.found():
                 raise InvalidArguments('Tried to use not-found external program as generator')
             path = self.generator.exe.get_path()
@@ -2180,7 +2177,7 @@ class CommandBase:
             elif isinstance(c, File):
                 self.depend_files.append(c)
                 final_cmd.append(c)
-            elif isinstance(c, dependencies.ExternalProgram):
+            elif isinstance(c, programs.ExternalProgram):
                 if not c.found():
                     raise InvalidArguments('Tried to use not-found external program in "command"')
                 path = c.get_path()

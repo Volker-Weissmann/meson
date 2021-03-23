@@ -25,6 +25,7 @@ modules = [
     'mesonbuild/interpreterbase.py',
     'mesonbuild/linkers.py',
     'mesonbuild/mcompile.py',
+    'mesonbuild/mdevenv.py',
     'mesonbuild/mesonlib/platform.py',
     'mesonbuild/mesonlib/universal.py',
     'mesonbuild/minit.py',
@@ -37,6 +38,7 @@ modules = [
     'mesonbuild/msetup.py',
     'mesonbuild/mtest.py',
     'mesonbuild/optinterpreter.py',
+    'mesonbuild/programs.py',
 
     'run_mypy.py',
     'run_single_test.py',

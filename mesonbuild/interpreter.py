@@ -22,7 +22,7 @@ from . import compilers
 from .wrap import wrap, WrapMode
 from . import mesonlib
 from .mesonlib import FileMode, MachineChoice, OptionKey, Popen_safe, listify, extract_as_list, has_path_sep, unholder
-from .dependencies import ExternalProgram
+from .programs import ExternalProgram, NonExistingExternalProgram, OverrideProgram
 from .dependencies import InternalDependency, Dependency, NotFoundDependency, DependencyException
 from .depfile import DepFile
 from .interpreterbase import InterpreterBase, typed_pos_args
@@ -30,9 +30,8 @@ from .interpreterbase import check_stringlist, flatten, noPosargs, noKwargs, str
 from .interpreterbase import InterpreterException, InvalidArguments, InvalidCode, SubdirDoneRequest
 from .interpreterbase import InterpreterObject, MutableInterpreterObject, Disabler, disablerIfNotFound
 from .interpreterbase import FeatureNew, FeatureDeprecated, FeatureNewKwargs, FeatureDeprecatedKwargs
-from .interpreterbase import ObjectHolder, MesonVersionString
+from .interpreterbase import ObjectHolder, MesonVersionString, RangeHolder
 from .interpreterbase import TYPE_var, TYPE_nkwargs
-from .interpreterbase import typed_pos_args
 from .modules import ModuleReturnValue, ModuleObject, ModuleState
 from .cmake import CMakeInterpreter
 from .backend.backends import TestProtocol, Backend, ExecutableSerialisation
@@ -71,10 +70,6 @@ def stringifyUserArguments(args, quote=False):
     elif isinstance(args, str):
         return f"'{args}'" if quote else args
     raise InvalidArguments('Function accepts only strings, integers, lists, dictionaries and lists thereof.')
-
-
-class OverrideProgram(dependencies.ExternalProgram):
-    pass
 
 
 class FeatureOptionHolder(InterpreterObject, ObjectHolder[coredata.UserFeatureOption]):
@@ -256,8 +251,8 @@ class EnvironmentVariablesHolder(MutableInterpreterObject, ObjectHolder[build.En
         if isinstance(initial_values, dict):
             for k, v in initial_values.items():
                 self.set_method([k, v], {})
-        elif isinstance(initial_values, list):
-            for e in initial_values:
+        elif initial_values is not None:
+            for e in mesonlib.stringlistify(initial_values):
                 if '=' not in e:
                     raise InterpreterException('Env var definition must be of type key=val.')
                 (k, val) = e.split('=', 1)
@@ -266,43 +261,51 @@ class EnvironmentVariablesHolder(MutableInterpreterObject, ObjectHolder[build.En
                 if ' ' in k:
                     raise InterpreterException('Env var key must not have spaces in it.')
                 self.set_method([k, val], {})
-        elif initial_values:
-            raise AssertionError('Unsupported EnvironmentVariablesHolder initial_values')
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         repr_str = "<{0}: {1}>"
         return repr_str.format(self.__class__.__name__, self.held_object.envvars)
 
-    def add_var(self, method, args, kwargs):
-        if not isinstance(kwargs.get("separator", ""), str):
+    def unpack_separator(self, kwargs: T.Dict[str, T.Any]) -> str:
+        separator = kwargs.get('separator', os.pathsep)
+        if not isinstance(separator, str):
             raise InterpreterException("EnvironmentVariablesHolder methods 'separator'"
                                        " argument needs to be a string.")
-        if len(args) < 2:
-            raise InterpreterException("EnvironmentVariablesHolder methods require at least"
-                                       "2 arguments, first is the name of the variable and"
-                                       " following one are values")
+        return separator
+
+    def warn_if_has_name(self, name: str) -> None:
         # Warn when someone tries to use append() or prepend() on an env var
         # which already has an operation set on it. People seem to think that
         # multiple append/prepend operations stack, but they don't.
-        if method != self.held_object.set and self.held_object.has_name(args[0]):
-            mlog.warning('Overriding previous value of environment variable {!r} with a new one'
-                         .format(args[0]), location=self.current_node)
-        self.held_object.add_var(method, args[0], args[1:], kwargs)
+        if self.held_object.has_name(name):
+            mlog.warning(f'Overriding previous value of environment variable {name!r} with a new one',
+                         location=self.current_node)
 
     @stringArgs
     @permittedKwargs({'separator'})
-    def set_method(self, args, kwargs):
-        self.add_var(self.held_object.set, args, kwargs)
+    @typed_pos_args('environment.set', str, varargs=str, min_varargs=1)
+    def set_method(self, args: T.Tuple[str, T.List[str]], kwargs: T.Dict[str, T.Any]) -> None:
+        name, values = args
+        separator = self.unpack_separator(kwargs)
+        self.held_object.set(name, values, separator)
 
     @stringArgs
     @permittedKwargs({'separator'})
-    def append_method(self, args, kwargs):
-        self.add_var(self.held_object.append, args, kwargs)
+    @typed_pos_args('environment.append', str, varargs=str, min_varargs=1)
+    def append_method(self, args: T.Tuple[str, T.List[str]], kwargs: T.Dict[str, T.Any]) -> None:
+        name, values = args
+        separator = self.unpack_separator(kwargs)
+        self.warn_if_has_name(name)
+        self.held_object.append(name, values, separator)
 
     @stringArgs
     @permittedKwargs({'separator'})
-    def prepend_method(self, args, kwargs):
-        self.add_var(self.held_object.prepend, args, kwargs)
+    @typed_pos_args('environment.prepend', str, varargs=str, min_varargs=1)
+    def prepend_method(self, args: T.Tuple[str, T.List[str]], kwargs: T.Dict[str, T.Any]) -> None:
+        name, values = args
+        separator = self.unpack_separator(kwargs)
+        self.warn_if_has_name(name)
+        self.held_object.prepend(name, values, separator)
 
 
 class ConfigurationDataHolder(MutableInterpreterObject, ObjectHolder[build.ConfigurationData]):
@@ -505,10 +508,15 @@ class DependencyHolder(InterpreterObject, ObjectHolder[Dependency]):
         return DependencyHolder(pdep, self.subproject)
 
     @FeatureNew('dep.get_variable', '0.51.0')
-    @noPosargs
+    @typed_pos_args('dep.get_variable', optargs=[str])
     @permittedKwargs({'cmake', 'pkgconfig', 'configtool', 'internal', 'default_value', 'pkgconfig_define'})
     @FeatureNewKwargs('dep.get_variable', '0.54.0', ['internal'])
-    def variable_method(self, args, kwargs):
+    def variable_method(self, args: T.Tuple[T.Optional[str]], kwargs: T.Dict[str, T.Any]) -> str:
+        default_varname = args[0]
+        if default_varname is not None:
+            FeatureNew('0.58.0', 'Positional argument to dep.get_variable()').use(self.subproject)
+            for k in ['cmake', 'pkgconfig', 'configtool', 'internal']:
+                kwargs.setdefault(k, default_varname)
         return self.held_object.get_variable(**kwargs)
 
     @FeatureNew('dep.include_type', '0.52.0')
@@ -1905,6 +1913,7 @@ class MesonMain(InterpreterObject):
                              'get_external_property': self.get_external_property_method,
                              'has_external_property': self.has_external_property_method,
                              'backend': self.backend_method,
+                             'add_devenv': self.add_devenv_method,
                              })
 
     def _find_source_script(self, prog: T.Union[str, mesonlib.File, ExecutableHolder], args):
@@ -1918,9 +1927,9 @@ class MesonMain(InterpreterObject):
             found = self._found_source_scripts[key]
         elif isinstance(prog, mesonlib.File):
             prog = prog.rel_to_builddir(self.interpreter.environment.source_dir)
-            found = dependencies.ExternalProgram(prog, search_dir=self.interpreter.environment.build_dir)
+            found = ExternalProgram(prog, search_dir=self.interpreter.environment.build_dir)
         else:
-            found = dependencies.ExternalProgram(prog, search_dir=search_dir)
+            found = ExternalProgram(prog, search_dir=search_dir)
 
         if found.found():
             self._found_source_scripts[key] = found
@@ -1963,7 +1972,7 @@ class MesonMain(InterpreterObject):
             elif isinstance(a, build.ConfigureFile):
                 new = True
                 script_args.append(os.path.join(a.subdir, a.targetname))
-            elif isinstance(a, dependencies.ExternalProgram):
+            elif isinstance(a, ExternalProgram):
                 script_args.extend(a.command)
                 new = True
             else:
@@ -2015,7 +2024,8 @@ class MesonMain(InterpreterObject):
             FeatureNew.single_use('Passing file object to script parameter of add_dist_script',
                                   '0.57.0', self.interpreter.subproject)
         if self.interpreter.subproject != '':
-            raise InterpreterException('add_dist_script may not be used in a subproject.')
+            FeatureNew.single_use('Calling "add_dist_script" in a subproject',
+                                  '0.58.0', self.interpreter.subproject)
         script_args = self._process_script_args('add_dist_script', args[1:], allow_built=True)
         script = self._find_source_script(args[0], script_args)
         self.build.dist_scripts.append(script)
@@ -2149,7 +2159,7 @@ class MesonMain(InterpreterObject):
             if not os.path.exists(abspath):
                 raise InterpreterException('Tried to override %s with a file that does not exist.' % name)
             exe = OverrideProgram(name, abspath)
-        if not isinstance(exe, (dependencies.ExternalProgram, build.Executable)):
+        if not isinstance(exe, (ExternalProgram, build.Executable)):
             raise InterpreterException('Second argument must be an external program or executable.')
         self.interpreter.add_find_program_override(name, exe)
 
@@ -2230,6 +2240,16 @@ class MesonMain(InterpreterObject):
         prop_name = args[0]
         for_machine = self.interpreter.machine_from_native_kwarg(kwargs)
         return prop_name in self.interpreter.environment.properties[for_machine]
+
+    @FeatureNew('add_devenv', '0.58.0')
+    @noKwargs
+    @typed_pos_args('add_devenv', (str, list, dict, EnvironmentVariablesHolder))
+    def add_devenv_method(self, args: T.Union[str, list, dict, EnvironmentVariablesHolder], kwargs: T.Dict[str, T.Any]) -> None:
+        env = args[0]
+        if isinstance(env, (str, list, dict)):
+            env = EnvironmentVariablesHolder(env)
+        self.build.devenv.append(env.held_object)
+
 
 known_library_kwargs = (
     build.known_shlib_kwargs |
@@ -2429,7 +2449,12 @@ class Interpreter(InterpreterBase):
     def get_non_matching_default_options(self) -> T.Iterator[T.Tuple[str, str, coredata.UserOption]]:
         for def_opt_name, def_opt_value in self.project_default_options.items():
             cur_opt_value = self.coredata.options.get(def_opt_name)
-            if cur_opt_value is not None and def_opt_value != cur_opt_value.value:
+            try:
+                if cur_opt_value is not None and cur_opt_value.validate_value(def_opt_value) != cur_opt_value.value:
+                    yield (str(def_opt_name), def_opt_value, cur_opt_value)
+            except mesonlib.MesonException:
+                # Since the default value does not validate, it cannot be in use
+                # Report the user-specified value as non-matching
                 yield (str(def_opt_name), def_opt_value, cur_opt_value)
 
     def build_func_dict(self):
@@ -2486,7 +2511,8 @@ class Interpreter(InterpreterBase):
                            'static_library': self.func_static_lib,
                            'both_libraries': self.func_both_lib,
                            'test': self.func_test,
-                           'vcs_tag': self.func_vcs_tag
+                           'vcs_tag': self.func_vcs_tag,
+                           'range': self.func_range,
                            })
         if 'MESON_UNIT_TEST' in os.environ:
             self.funcs.update({'exception': self.func_exception})
@@ -2513,7 +2539,7 @@ class Interpreter(InterpreterBase):
             return DataHolder(item)
         elif isinstance(item, dependencies.Dependency):
             return DependencyHolder(item, self.subproject)
-        elif isinstance(item, dependencies.ExternalProgram):
+        elif isinstance(item, ExternalProgram):
             return ExternalProgramHolder(item, self.subproject)
         elif isinstance(item, ModuleObject):
             return ModuleObjectHolder(item, self)
@@ -2546,7 +2572,7 @@ class Interpreter(InterpreterBase):
             elif isinstance(v, Test):
                 self.build.tests.append(v)
             elif isinstance(v, (int, str, bool, Disabler, ObjectHolder, build.GeneratedList,
-                                dependencies.ExternalProgram)):
+                                ExternalProgram)):
                 pass
             else:
                 raise InterpreterException('Module returned a value of unknown type.')
@@ -3394,12 +3420,12 @@ external dependencies (including libraries) must go to "dependencies".''')
             else:
                 raise InvalidArguments('find_program only accepts strings and '
                                        'files, not {!r}'.format(exename))
-            extprog = dependencies.ExternalProgram(exename, search_dir=search_dir,
-                                                   extra_search_dirs=extra_search_dirs,
-                                                   silent=True)
+            extprog = ExternalProgram(exename, search_dir=search_dir,
+                                      extra_search_dirs=extra_search_dirs,
+                                      silent=True)
             progobj = ExternalProgramHolder(extprog, self.subproject)
             if progobj.found():
-                extra_info.append('({})'.format(' '.join(progobj.get_command())))
+                extra_info.append(f"({' '.join(progobj.get_command())})")
                 return progobj
 
     def program_from_overrides(self, command_names, extra_info):
@@ -3427,7 +3453,7 @@ external dependencies (including libraries) must go to "dependencies".''')
         self.build.find_overrides[name] = exe
 
     def notfound_program(self, args):
-        return ExternalProgramHolder(dependencies.NonExistingExternalProgram(' '.join(args)), self.subproject)
+        return ExternalProgramHolder(NonExistingExternalProgram(' '.join(args)), self.subproject)
 
     # TODO update modules to always pass `for_machine`. It is bad-form to assume
     # the host machine.
@@ -3485,7 +3511,7 @@ external dependencies (including libraries) must go to "dependencies".''')
         if progobj is None:
             progobj = self.program_from_system(args, search_dirs, extra_info)
         if progobj is None and args[0].endswith('python3'):
-            prog = dependencies.ExternalProgram('python3', mesonlib.python_command, silent=True)
+            prog = ExternalProgram('python3', mesonlib.python_command, silent=True)
             progobj = ExternalProgramHolder(prog, self.subproject) if prog.found() else None
         if progobj is None and fallback and required:
             progobj = self.find_program_fallback(fallback, args, required, extra_info)
@@ -3704,13 +3730,6 @@ external dependencies (including libraries) must go to "dependencies".''')
         if not d.found() and not_found_message:
             self.message_impl([not_found_message])
             self.message_impl([not_found_message])
-        # Ensure the correct include type
-        if 'include_type' in kwargs:
-            wanted = kwargs['include_type']
-            actual = d.include_type_method([], {})
-            if wanted != actual:
-                mlog.debug(f'Current include type of {name} is {actual}. Converting to requested {wanted}')
-                d = d.as_system_method([wanted], {})
         # Override this dependency to have consistent results in subsequent
         # dependency lookups.
         if name and d.found():
@@ -3719,6 +3738,13 @@ external dependencies (including libraries) must go to "dependencies".''')
             if identifier not in self.build.dependency_overrides[for_machine]:
                 self.build.dependency_overrides[for_machine][identifier] = \
                     build.DependencyOverride(d.held_object, node, explicit=False)
+        # Ensure the correct include type
+        if 'include_type' in kwargs:
+            wanted = kwargs['include_type']
+            actual = d.include_type_method([], {})
+            if wanted != actual:
+                mlog.debug(f'Current include type of {name} is {actual}. Converting to requested {wanted}')
+                d = d.as_system_method([wanted], {})
         return d
 
     def dependency_impl(self, name, display_name, kwargs, force_fallback=False):
@@ -4002,12 +4028,14 @@ This will become a hard error in the future.''' % kwargs['input'], location=self
 
         cleaned_args = []
         for i in unholder(listify(all_args)):
-            if not isinstance(i, (str, build.BuildTarget, build.CustomTarget, dependencies.ExternalProgram, mesonlib.File)):
+            if not isinstance(i, (str, build.BuildTarget, build.CustomTarget, ExternalProgram, mesonlib.File)):
                 mlog.debug('Wrong type:', str(i))
                 raise InterpreterException('Invalid argument to run_target.')
-            if isinstance(i, dependencies.ExternalProgram) and not i.found():
+            if isinstance(i, ExternalProgram) and not i.found():
                 raise InterpreterException(f'Tried to use non-existing executable {i.name!r}')
             cleaned_args.append(i)
+        if isinstance(cleaned_args[0], str):
+            cleaned_args[0] = self.func_find_program(node, cleaned_args[0], {})
         name = args[0]
         if not isinstance(name, str):
             raise InterpreterException('First argument must be a string.')
@@ -4072,7 +4100,6 @@ This will become a hard error in the future.''' % kwargs['input'], location=self
             env = EnvironmentVariablesHolder(envlist)
             env = env.held_object
         else:
-            envlist = listify(envlist)
             # Convert from array to environment object
             env = EnvironmentVariablesHolder(envlist)
             env = env.held_object
@@ -4571,6 +4598,28 @@ put in the include directories by default so you only need to do
 include_directories('.') if you intend to use the result in a
 different subdirectory.
 ''')
+            else:
+                try:
+                    self.validate_within_subproject(a, '')
+                except InterpreterException:
+                    mlog.warning('include_directories sandbox violation!')
+                    print(f'''The project is trying to access the directory {a} which belongs to a different
+subproject. This is a problem as it hardcodes the relative paths of these two projeccts.
+This makes it impossible to compile the project in any other directory layout and also
+prevents the subproject from changing its own directory layout.
+
+Instead of poking directly at the internals the subproject should be executed and 
+it should set a variable that the caller can then use. Something like:
+
+# In subproject
+some_dep = declare_depencency(include_directories: include_directories('include'))
+
+# In parent project
+some_dep = depencency('some')
+executable(..., dependencies: [some_dep])
+
+This warning will become a hard error in a future Meson release. 
+''')
             absdir_src = os.path.join(absbase_src, a)
             absdir_build = os.path.join(absbase_build, a)
             if not os.path.isdir(absdir_src) and not os.path.isdir(absdir_build):
@@ -4594,7 +4643,7 @@ different subdirectory.
             for i in inp:
                 if isinstance(i, str):
                     exe_wrapper.append(i)
-                elif isinstance(i, dependencies.ExternalProgram):
+                elif isinstance(i, ExternalProgram):
                     if not i.found():
                         raise InterpreterException('Tried to use non-found executable.')
                     exe_wrapper += i.get_command()
@@ -4772,6 +4821,10 @@ Try setting b_lundef to false instead.'''.format(self.coredata.options[OptionKey
     def validate_within_subproject(self, subdir, fname):
         srcdir = Path(self.environment.source_dir)
         norm = Path(srcdir, subdir, fname).resolve()
+        if os.path.isdir(norm):
+            inputtype = 'directory'
+        else:
+            inputtype = 'file'
         if srcdir not in norm.parents:
             # Grabbing files outside the source tree is ok.
             # This is for vendor stuff like:
@@ -4780,9 +4833,9 @@ Try setting b_lundef to false instead.'''.format(self.coredata.options[OptionKey
             return
         project_root = Path(srcdir, self.root_subdir)
         if project_root not in norm.parents:
-            raise InterpreterException(f'Sandbox violation: Tried to grab file {norm.name} outside current (sub)project.')
+            raise InterpreterException(f'Sandbox violation: Tried to grab {inputtype} {norm.name} outside current (sub)project.')
         if project_root / self.subproject_dir in norm.parents:
-            raise InterpreterException(f'Sandbox violation: Tried to grab file {norm.name} from a nested subproject.')
+            raise InterpreterException(f'Sandbox violation: Tried to grab {inputtype} {norm.name} from a nested subproject.')
 
     def source_strings_to_files(self, sources: T.List[str]) -> T.List[mesonlib.File]:
         mesonlib.check_direntry_issues(sources)
@@ -5009,3 +5062,24 @@ This will become a hard error in the future.''', location=self.current_node)
             raise InvalidCode('Is_disabler takes one argument.')
         varname = args[0]
         return isinstance(varname, Disabler)
+
+    @noKwargs
+    @FeatureNew('range', '0.58.0')
+    @typed_pos_args('range', int, optargs=[int, int])
+    def func_range(self, node, args: T.Tuple[int, T.Optional[int], T.Optional[int]], kwargs: T.Dict[str, T.Any]) -> RangeHolder:
+        start, stop, step = args
+        # Just like Python's range, we allow range(stop), range(start, stop), or
+        # range(start, stop, step)
+        if stop is None:
+            stop = start
+            start = 0
+        if step is None:
+            step = 1
+        # This is more strict than Python's range()
+        if start < 0:
+            raise InterpreterException('start cannot be negative')
+        if stop < start:
+            raise InterpreterException('stop cannot be less than start')
+        if step < 1:
+            raise InterpreterException('step must be >=1')
+        return RangeHolder(start, stop, step)

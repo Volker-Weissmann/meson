@@ -16,12 +16,12 @@ import os, subprocess, shlex
 from pathlib import Path
 import typing as T
 
-from . import ExtensionModule, ModuleReturnValue
+from . import ExtensionModule, ModuleReturnValue, ModuleState
 from .. import mlog, build
 from ..mesonlib import (MesonException, Popen_safe, MachineChoice,
-                       get_variable_regex, do_replacement)
+                       get_variable_regex, do_replacement, extract_as_list)
 from ..interpreterbase import InterpreterObject, InterpreterException, FeatureNew
-from ..interpreterbase import stringArgs, permittedKwargs
+from ..interpreterbase import stringArgs, permittedKwargs, typed_pos_args
 from ..interpreter import Interpreter, DependencyHolder
 from ..compilers.compilers import CFLAGS_MAPPING, CEXE_MAPPING
 from ..dependencies.base import InternalDependency, PkgConfigDependency
@@ -59,13 +59,13 @@ class ExternalProject(InterpreterObject):
         self.verbose = verbose
         self.user_env = env
 
-        self.name = self.subdir.name
         self.src_dir = Path(self.env.get_source_dir(), self.subdir)
         self.build_dir = Path(self.env.get_build_dir(), self.subdir, 'build')
         self.install_dir = Path(self.env.get_build_dir(), self.subdir, 'dist')
         self.prefix = Path(self.env.coredata.get_option(OptionKey('prefix')))
         self.libdir = Path(self.env.coredata.get_option(OptionKey('libdir')))
         self.includedir = Path(self.env.coredata.get_option(OptionKey('includedir')))
+        self.name = self.src_dir.name
 
         # On Windows if the prefix is "c:/foo" and DESTDIR is "c:/bar", `make`
         # will install files into "c:/bar/c:/foo" which is an invalid path.
@@ -92,7 +92,7 @@ class ExternalProject(InterpreterObject):
 
         d = [('PREFIX', '--prefix=@PREFIX@', self.prefix.as_posix()),
              ('LIBDIR', '--libdir=@PREFIX@/@LIBDIR@', self.libdir.as_posix()),
-             ('INCLUDEDIR', '--includedir=@PREFIX@/@INCLUDEDIR@', self.includedir.as_posix()),
+             ('INCLUDEDIR', None, self.includedir.as_posix()),
              ]
         self._validate_configure_options(d)
 
@@ -140,6 +140,8 @@ class ExternalProject(InterpreterObject):
         # Ensure the user at least try to pass basic info to the build system,
         # like the prefix, libdir, etc.
         for key, default, val in variables:
+            if default is None:
+                continue
             key_format = f'@{key}@'
             for option in self.configure_options:
                 if key_format in option:
@@ -253,15 +255,18 @@ class ExternalProjectModule(ExtensionModule):
     @FeatureNew('External build system Module', '0.56.0')
     def __init__(self, interpreter):
         super().__init__(interpreter)
+        self.methods.update({'add_project': self.add_project,
+                             })
 
     @stringArgs
     @permittedKwargs({'configure_options', 'cross_configure_options', 'verbose', 'env'})
-    def add_project(self, state, args, kwargs):
-        if len(args) != 1:
-            raise InterpreterException('add_project takes exactly one positional argument')
+    @typed_pos_args('add_project', str)
+    def add_project(self, state: ModuleState, args: T.Tuple[str], kwargs: T.Dict[str, T.Any]):
         configure_command = args[0]
-        configure_options = kwargs.get('configure_options', [])
-        cross_configure_options = kwargs.get('cross_configure_options', ['--host=@HOST@'])
+        configure_options = extract_as_list(kwargs, 'configure_options')
+        cross_configure_options = extract_as_list(kwargs, 'cross_configure_options')
+        if not cross_configure_options:
+            cross_configure_options = ['--host=@HOST@']
         verbose = kwargs.get('verbose', False)
         env = self.interpreter.unpack_env_kwarg(kwargs)
         project = ExternalProject(self.interpreter,

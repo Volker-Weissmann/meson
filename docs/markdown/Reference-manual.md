@@ -1861,6 +1861,36 @@ which to build the targets.
 If you desire more specific behavior than what this command provides,
 you should use `custom_target`.
 
+### range()
+
+``` meson
+    rangeobject range(stop)
+    rangeobject range(start, stop[, step])
+```
+
+*Since 0.58.0*
+
+Return an opaque object that can be only be used in `foreach` statements.
+- `start` must be integer greater or equal to 0. Defaults to 0.
+- `stop` must be integer greater or equal to `start`.
+- `step` must be integer greater or equal to 1. Defaults to 1.
+
+It cause the `foreach` loop to be called with the value from `start` included
+to `stop` excluded with an increment of `step` after each loop.
+
+```meson
+# Loop 15 times with i from 0 to 14 included.
+foreach i : range(15)
+   ...
+endforeach
+```
+
+The range object can also be assigned to a variable and indexed.
+```meson
+r = range(5, 10, 2)
+assert(r[2] == 9)
+```
+
 ## Built-in objects
 
 These are built-in objects that are always available.
@@ -1877,16 +1907,25 @@ the following methods.
   archived. Note that this runs the script file that is in the
   _staging_ directory, not the one in the source directory. If the
   script file can not be found in the staging directory, it is a hard
-  error. This command can only invoked from the main project, calling
-  it from a subproject is a hard error. *(since 0.49.0)* Accepts multiple arguments
-  for the script. *(since 0.54.0)* The `MESON_SOURCE_ROOT` and `MESON_BUILD_ROOT`
-  environment variables are set when dist scripts are run.
-
+  error. The `MESON_DIST_ROOT` environment variables is set when dist scripts is
+  run.
+  *(since 0.49.0)* Accepts multiple arguments for the script.
+  *(since 0.54.0)* The `MESON_SOURCE_ROOT` and `MESON_BUILD_ROOT`
+  environment variables are set when dist scripts are run. They are path to the
+  root source and build directory of the main project, even when the script
+  comes from a subproject.
   *(since 0.55.0)* The output of `configure_file`, `files`, and `find_program`
   as well as strings.
-
   *(since 0.57.0)* `file` objects and the output of `configure_file` may be
   used as the `script_name` parameter.
+  *(since 0.58.0)* This command can be invoked from a subproject, it was a hard
+  error in earlier versions. Subproject dist scripts will only be executed
+  when running `meson dist --include-subprojects`. `MESON_PROJECT_SOURCE_ROOT`,
+  `MESON_PROJECT_BUILD_ROOT` and `MESON_PROJECT_DIST_ROOT` environment
+  variables are set when dist scripts are run. They are identical to
+  `MESON_SOURCE_ROOT`, `MESON_BUILD_ROOT` and `MESON_DIST_ROOT` for main project
+  scripts, but for subproject scripts they have the path to the root of the
+  subproject appended, usually `subprojects/<subproject-name>`.
 
 - `add_install_script(script_name, arg1, arg2, ...)`: causes the script
   given as an argument to be run during the install step, this script
@@ -2054,6 +2093,19 @@ the following methods.
   function call.
 
 - `version()`: return a string with the version of Meson.
+
+- `add_devenv()`: *(Since 0.58.0)* add an [`environment()`](#environment) object
+  to the list of environments that will be applied when using [`meson devenv`](Commands.md#devenv)
+  command line. This is useful for developpers who wish to use the project without
+  installing it, it is often needed to set for example the path to plugins
+  directory, etc. Alternatively, a list or dictionary can be passed as first
+  argument.
+  ``` meson
+  devenv = environment()
+  devenv.set('PLUGINS_PATH', meson.current_build_dir())
+  ...
+  meson.add_devenv(devenv)
+  ```
 
 ### `build_machine` object
 
@@ -2635,7 +2687,7 @@ an external dependency with the following methods:
    - includes: any include_directories
    - sources: any compiled or static sources the dependency has
 
- - `get_variable(cmake : str, pkgconfig : str, configtool : str,
+ - `get_variable(varname, cmake : str, pkgconfig : str, configtool : str,
    internal: str, default_value : str, pkgconfig_define : [str, str])`
    *(since 0.51.0)*: a generic variable getter method, which replaces the
    get_*type*_variable methods. This allows one to get the variable
@@ -2643,8 +2695,12 @@ an external dependency with the following methods:
    was found. If default_value is set and the value cannot be gotten
    from the object then default_value is returned, if it is not set
    then an error is raised.
-
    *(since 0.54.0)* added `internal` keyword.
+   *(since 0.58.0)* added `varname` as first positional argument. It is used as
+   default value for `cmake`, `pkgconfig`, `configtool` and `internal` keyword
+   arguments. It is useful in the common case where `pkgconfig` and `internal`
+   use the same variable name, in which case it's easier to write `dep.get_variable('foo')`
+   instead of `dep.get_variable(pkgconfig: 'foo', internal: 'foo')`.
 
 ### `disabler` object
 

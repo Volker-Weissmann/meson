@@ -56,12 +56,13 @@ from mesonbuild.ast import AstInterpreter
 from mesonbuild.mesonlib import (
     BuildDirLock, LibType, MachineChoice, PerMachine, Version, is_windows,
     is_osx, is_cygwin, is_dragonflybsd, is_openbsd, is_haiku, is_sunos,
-    windows_proof_rmtree, python_command, version_compare, split_args,
-    quote_arg, relpath, is_linux, git
+    windows_proof_rmtree, windows_proof_rm, python_command,
+    version_compare, split_args, quote_arg, relpath, is_linux, git
 )
 from mesonbuild.environment import detect_ninja
 from mesonbuild.mesonlib import MesonException, EnvironmentException, OptionKey
-from mesonbuild.dependencies import PkgConfigDependency, ExternalProgram
+from mesonbuild.dependencies import PkgConfigDependency
+from mesonbuild.programs import ExternalProgram
 import mesonbuild.dependencies.base
 from mesonbuild.build import Target, ConfigurationData
 import mesonbuild.modules.pkgconfig
@@ -2385,6 +2386,15 @@ class AllPlatformTests(BasePlatformTests):
         self.run_target('check-env')
         self.run_target('check-env-ct')
 
+    def test_run_target_subdir(self):
+        '''
+        Test that run_targets are run from the correct directory
+        https://github.com/mesonbuild/meson/issues/957
+        '''
+        testdir = os.path.join(self.common_test_dir, '52 run target')
+        self.init(testdir)
+        self.run_target('textprinter')
+
     def test_install_introspection(self):
         '''
         Tests that the Meson introspection API exposes install filenames correctly
@@ -2487,6 +2497,7 @@ class AllPlatformTests(BasePlatformTests):
 
     def test_uninstall(self):
         exename = os.path.join(self.installdir, 'usr/bin/prog' + exe_suffix)
+        dirname = os.path.join(self.installdir, 'usr/share/dir')
         testdir = os.path.join(self.common_test_dir, '8 install')
         self.init(testdir)
         self.assertPathDoesNotExist(exename)
@@ -2494,6 +2505,7 @@ class AllPlatformTests(BasePlatformTests):
         self.assertPathExists(exename)
         self.uninstall()
         self.assertPathDoesNotExist(exename)
+        self.assertPathDoesNotExist(dirname)
 
     def test_forcefallback(self):
         testdir = os.path.join(self.unit_test_dir, '31 forcefallback')
@@ -3180,6 +3192,10 @@ class AllPlatformTests(BasePlatformTests):
                 _git_init(project_dir)
                 self.init(project_dir)
                 self.build('dist')
+
+                self.new_builddir()
+                self.init(project_dir, extra_args=['-Dsub:broken_dist_script=false'])
+                self._run(self.meson_command + ['dist', '--include-subprojects'], workdir=self.builddir)
         except PermissionError:
             # When run under Windows CI, something (virus scanner?)
             # holds on to the git files so cleaning up the dir
@@ -3993,7 +4009,8 @@ class AllPlatformTests(BasePlatformTests):
 
         # Verify default values when passing no args that affect the
         # configuration, and as a bonus, test that --profile-self works.
-        self.init(testdir, extra_args=['--profile-self', '--fatal-meson-warnings'])
+        out = self.init(testdir, extra_args=['--profile-self', '--fatal-meson-warnings'])
+        self.assertNotIn('[default: true]', out)
         obj = mesonbuild.coredata.load(self.builddir)
         self.assertEqual(obj.options[OptionKey('default_library')].value, 'static')
         self.assertEqual(obj.options[OptionKey('warning_level')].value, '1')
@@ -5570,6 +5587,46 @@ class AllPlatformTests(BasePlatformTests):
         self.setconf('-Duse-sub=true')
         self.build()
 
+    def test_devenv(self):
+        testdir = os.path.join(self.unit_test_dir, '91 devenv')
+        self.init(testdir)
+        self.build()
+
+        cmd = self.meson_command + ['devenv', '-C', self.builddir]
+        script = os.path.join(testdir, 'test-devenv.py')
+        app = os.path.join(self.builddir, 'app')
+        self._run(cmd + python_command + [script])
+        self.assertEqual('This is text.', self._run(cmd + [app]).strip())
+
+    def test_clang_format(self):
+        if self.backend is not Backend.ninja:
+            raise unittest.SkipTest(f'Skipping clang-format tests with {self.backend.name} backend')
+        if not shutil.which('clang-format'):
+            raise unittest.SkipTest('clang-format not found')
+
+        testdir = os.path.join(self.unit_test_dir, '93 clangformat')
+        newdir = os.path.join(self.builddir, 'testdir')
+        shutil.copytree(testdir, newdir)
+        self.new_builddir()
+        self.init(newdir)
+
+        # Should reformat 1 file but not return error
+        output = self.build('clang-format')
+        self.assertEqual(1, output.count('File reformatted:'))
+
+        # Reset source tree then try again with clang-format-check, it should
+        # return an error code this time.
+        windows_proof_rmtree(newdir)
+        shutil.copytree(testdir, newdir)
+        with self.assertRaises(subprocess.CalledProcessError):
+            output = self.build('clang-format-check')
+            self.assertEqual(1, output.count('File reformatted:'))
+
+        # All code has been reformatted already, so it should be no-op now.
+        output = self.build('clang-format')
+        self.assertEqual(0, output.count('File reformatted:'))
+        self.build('clang-format-check')
+
 
 class FailureTests(BasePlatformTests):
     '''
@@ -5784,12 +5841,16 @@ class FailureTests(BasePlatformTests):
            contain required keys.
         '''
         tdir = os.path.join(self.unit_test_dir, '20 subproj dep variables')
+        stray_file = os.path.join(tdir, 'subprojects/subsubproject.wrap')
+        if os.path.exists(stray_file):
+            windows_proof_rm(stray_file)
         out = self.init(tdir, inprocess=True)
         self.assertRegex(out, r"Neither a subproject directory nor a .*nosubproj.wrap.* file was found")
         self.assertRegex(out, r'Function does not take positional arguments.')
         self.assertRegex(out, r'Dependency .*somenotfounddep.* from subproject .*subprojects/somesubproj.* found: .*NO.*')
         self.assertRegex(out, r'Dependency .*zlibproxy.* from subproject .*subprojects.*somesubproj.* found: .*YES.*')
         self.assertRegex(out, r'Missing key .*source_filename.* in subsubproject.wrap')
+        windows_proof_rm(stray_file)
 
     def test_exception_exit_status(self):
         '''
@@ -6205,7 +6266,7 @@ class WindowsTests(BasePlatformTests):
             raise unittest.SkipTest(f'C++ modules only work with the Ninja backend (not {self.backend.name}).')
         if 'VSCMD_VER' not in os.environ:
             raise unittest.SkipTest('C++ modules is only supported with Visual Studio.')
-        if version_compare(os.environ['VSCMD_VER'], '<16.9.0'):
+        if version_compare(os.environ['VSCMD_VER'], '<16.10.0'):
             raise unittest.SkipTest('C++ modules are only supported with VS 2019 Preview or newer.')
         self.init(os.path.join(self.unit_test_dir, '87 cpp modules'))
         self.build()
@@ -7316,6 +7377,18 @@ class LinuxlikeTests(BasePlatformTests):
         libpath = Path(self.builddir) / '../relativepath/lib'
         link_args = ['-L' + libpath.as_posix(), '-lrelativepath']
         self.assertEqual(relative_path_dep.get_link_args(), link_args)
+
+    @skipIfNoPkgconfig
+    def test_pkgconfig_duplicate_path_entries(self):
+        testdir = os.path.join(self.unit_test_dir, '111 pkgconfig duplicate path entries')
+        pkg_dir = os.path.join(testdir, 'pkgconfig')
+
+        env = get_fake_env(testdir, self.builddir, self.prefix)
+        env.coredata.set_options({OptionKey('pkg_config_path'): pkg_dir}, subproject='')
+
+        PkgConfigDependency.setup_env({}, env, MachineChoice.HOST, pkg_dir)
+        pkg_config_path = env.coredata.options[OptionKey('pkg_config_path')].value
+        self.assertTrue(len(pkg_config_path) == 1)
 
     @skipIfNoPkgconfig
     def test_pkgconfig_internal_libraries(self):

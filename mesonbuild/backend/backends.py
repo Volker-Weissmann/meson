@@ -26,6 +26,7 @@ import hashlib
 
 from .. import build
 from .. import dependencies
+from .. import programs
 from .. import mesonlib
 from .. import mlog
 from ..compilers import LANGUAGES_USING_LDFLAGS
@@ -140,7 +141,7 @@ class ExecutableSerialisation:
         self.cmd_args = cmd_args
         self.env = env
         if exe_wrapper is not None:
-            assert(isinstance(exe_wrapper, dependencies.ExternalProgram))
+            assert(isinstance(exe_wrapper, programs.ExternalProgram))
         self.exe_runner = exe_wrapper
         self.workdir = workdir
         self.extra_paths = extra_paths
@@ -152,7 +153,7 @@ class ExecutableSerialisation:
 
 class TestSerialisation:
     def __init__(self, name: str, project: str, suite: str, fname: T.List[str],
-                 is_cross_built: bool, exe_wrapper: T.Optional[dependencies.ExternalProgram],
+                 is_cross_built: bool, exe_wrapper: T.Optional[programs.ExternalProgram],
                  needs_exe_wrapper: bool, is_parallel: bool, cmd_args: T.List[str],
                  env: build.EnvironmentVariables, should_fail: bool,
                  timeout: T.Optional[int], workdir: T.Optional[str],
@@ -164,7 +165,7 @@ class TestSerialisation:
         self.fname = fname
         self.is_cross_built = is_cross_built
         if exe_wrapper is not None:
-            assert(isinstance(exe_wrapper, dependencies.ExternalProgram))
+            assert(isinstance(exe_wrapper, programs.ExternalProgram))
         self.exe_runner = exe_wrapper
         self.is_parallel = is_parallel
         self.cmd_args = cmd_args
@@ -406,7 +407,7 @@ class Backend:
                                      env: T.Optional[build.EnvironmentVariables] = None):
         exe = cmd[0]
         cmd_args = cmd[1:]
-        if isinstance(exe, dependencies.ExternalProgram):
+        if isinstance(exe, programs.ExternalProgram):
             exe_cmd = exe.get_command()
             exe_for_machine = exe.for_machine
         elif isinstance(exe, build.BuildTarget):
@@ -490,7 +491,7 @@ class Backend:
                     ['--internal', 'exe', '--capture', capture, '--'] + es.cmd_args),
                     ', '.join(reasons))
 
-        if isinstance(exe, (dependencies.ExternalProgram,
+        if isinstance(exe, (programs.ExternalProgram,
                             build.BuildTarget, build.CustomTarget)):
             basename = exe.name
         elif isinstance(exe, mesonlib.File):
@@ -897,11 +898,11 @@ class Backend:
         arr = []
         for t in sorted(tests, key=lambda tst: -1 * tst.priority):
             exe = t.get_exe()
-            if isinstance(exe, dependencies.ExternalProgram):
+            if isinstance(exe, programs.ExternalProgram):
                 cmd = exe.get_command()
             else:
                 cmd = [os.path.join(self.environment.get_build_dir(), self.get_target_filename(t.get_exe()))]
-            if isinstance(exe, (build.BuildTarget, dependencies.ExternalProgram)):
+            if isinstance(exe, (build.BuildTarget, programs.ExternalProgram)):
                 test_for_machine = exe.for_machine
             else:
                 # E.g. an external verifier or simulator program run on a generated executable.
@@ -1223,10 +1224,10 @@ class Backend:
     def get_run_target_env(self, target: build.RunTarget) -> build.EnvironmentVariables:
         env = target.env if target.env else build.EnvironmentVariables()
         introspect_cmd = join_args(self.environment.get_build_command() + ['introspect'])
-        env.add_var(env.set, 'MESON_SOURCE_ROOT', [self.environment.get_source_dir()], {})
-        env.add_var(env.set, 'MESON_BUILD_ROOT', [self.environment.get_build_dir()], {})
-        env.add_var(env.set, 'MESON_SUBDIR', [target.subdir], {})
-        env.add_var(env.set, 'MESONINTROSPECT', [introspect_cmd], {})
+        env.set('MESON_SOURCE_ROOT', [self.environment.get_source_dir()])
+        env.set('MESON_BUILD_ROOT', [self.environment.get_build_dir()])
+        env.set('MESON_SUBDIR', [target.subdir])
+        env.set('MESONINTROSPECT', [introspect_cmd])
         return env
 
     def run_postconf_scripts(self) -> None:
@@ -1491,3 +1492,22 @@ class Backend:
             }]
 
         return []
+
+    def get_devenv(self) -> build.EnvironmentVariables:
+        env = build.EnvironmentVariables()
+        extra_paths = set()
+        for t in self.build.get_targets().values():
+            cross_built = not self.environment.machines.matches_build_machine(t.for_machine)
+            can_run = not cross_built or not self.environment.need_exe_wrapper()
+            in_bindir = t.should_install() and not t.get_install_dir(self.environment)[1]
+            if isinstance(t, build.Executable) and can_run and in_bindir:
+                # Add binaries that are going to be installed in bindir into PATH
+                # so they get used by default instead of searching on system when
+                # in developer environment.
+                extra_paths.add(os.path.join(self.environment.get_build_dir(), self.get_target_dir(t)))
+                if mesonlib.is_windows() or mesonlib.is_cygwin():
+                    # On windows we cannot rely on rpath to run executables from build
+                    # directory. We have to add in PATH the location of every DLL needed.
+                    extra_paths.update(self.determine_windows_extra_paths(t, []))
+        env.prepend('PATH', list(extra_paths))
+        return env

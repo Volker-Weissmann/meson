@@ -224,6 +224,8 @@ class Backend:
         self.source_dir = self.environment.get_source_dir()
         self.build_to_src = mesonlib.relpath(self.environment.get_source_dir(),
                                              self.environment.get_build_dir())
+        self.src_to_build = mesonlib.relpath(self.environment.get_build_dir(),
+                                             self.environment.get_source_dir())
 
     def generate(self) -> None:
         raise RuntimeError('generate is not implemented in {}'.format(type(self).__name__))
@@ -260,15 +262,22 @@ class Backend:
             return self.environment.coredata.validate_option_value(option_name, override)
         return self.environment.coredata.get_option(option_name.evolve(subproject=target.subproject))
 
-    def get_source_dir_include_args(self, target, compiler):
+    def get_source_dir_include_args(self, target, compiler, *, absolute_path=False):
         curdir = target.get_subdir()
-        tmppath = os.path.normpath(os.path.join(self.build_to_src, curdir))
+        if absolute_path:
+            lead = self.source_dir
+        else:
+            lead = self.build_to_src
+        tmppath = os.path.normpath(os.path.join(lead, curdir))
         return compiler.get_include_args(tmppath, False)
 
-    def get_build_dir_include_args(self, target, compiler):
-        curdir = target.get_subdir()
-        if curdir == '':
-            curdir = '.'
+    def get_build_dir_include_args(self, target, compiler, *, absolute_path=False):
+        if absolute_path:
+            curdir = os.path.join(self.build_dir, target.get_subdir())
+        else:
+            curdir = target.get_subdir()
+            if curdir == '':
+                curdir = '.'
         return compiler.get_include_args(curdir, False)
 
     def get_target_filename_for_linking(self, target):
@@ -1130,12 +1139,22 @@ class Backend:
                     deps.append(os.path.join(self.build_to_src, target.subdir, i))
         return deps
 
+    def get_custom_target_output_dir(self, target):
+        # The XCode backend is special. A target foo/bar does
+        # not go to ${BUILDDIR}/foo/bar but instead to
+        # ${BUILDDIR}/${BUILDTYPE}/foo/bar.
+        # Currently we set the include dir to be the former,
+        # and not the latter. Thus we need this extra customisation
+        # point. If in the future we make include dirs et al match
+        # ${BUILDDIR}/${BUILDTYPE} instead, this becomes unnecessary.
+        return self.get_target_dir(target)
+
     def eval_custom_target_command(self, target, absolute_outputs=False):
         # We want the outputs to be absolute only when using the VS backend
         # XXX: Maybe allow the vs backend to use relative paths too?
         source_root = self.build_to_src
         build_root = '.'
-        outdir = self.get_target_dir(target)
+        outdir = self.get_custom_target_output_dir(target)
         if absolute_outputs:
             source_root = self.environment.get_source_dir()
             build_root = self.environment.get_build_dir()
@@ -1181,18 +1200,6 @@ class Backend:
                     else:
                         pdir = self.get_target_private_dir(target)
                     i = i.replace('@PRIVATE_DIR@', pdir)
-                if '@PRIVATE_OUTDIR_' in i:
-                    match = re.search(r'@PRIVATE_OUTDIR_(ABS_)?([^/\s*]*)@', i)
-                    if not match:
-                        msg = 'Custom target {!r} has an invalid argument {!r}' \
-                              ''.format(target.name, i)
-                        raise MesonException(msg)
-                    source = match.group(0)
-                    if match.group(1) is None and not target.absolute_paths:
-                        lead_dir = ''
-                    else:
-                        lead_dir = self.environment.get_build_dir()
-                    i = i.replace(source, os.path.join(lead_dir, outdir))
             else:
                 err_msg = 'Argument {0} is of unknown type {1}'
                 raise RuntimeError(err_msg.format(str(i), str(type(i))))
@@ -1496,18 +1503,33 @@ class Backend:
     def get_devenv(self) -> build.EnvironmentVariables:
         env = build.EnvironmentVariables()
         extra_paths = set()
+        library_paths = set()
         for t in self.build.get_targets().values():
             cross_built = not self.environment.machines.matches_build_machine(t.for_machine)
             can_run = not cross_built or not self.environment.need_exe_wrapper()
-            in_bindir = t.should_install() and not t.get_install_dir(self.environment)[1]
-            if isinstance(t, build.Executable) and can_run and in_bindir:
+            in_default_dir = t.should_install() and not t.get_install_dir(self.environment)[1]
+            if not can_run or not in_default_dir:
+                continue
+            tdir = os.path.join(self.environment.get_build_dir(), self.get_target_dir(t))
+            if isinstance(t, build.Executable):
                 # Add binaries that are going to be installed in bindir into PATH
                 # so they get used by default instead of searching on system when
                 # in developer environment.
-                extra_paths.add(os.path.join(self.environment.get_build_dir(), self.get_target_dir(t)))
+                extra_paths.add(tdir)
                 if mesonlib.is_windows() or mesonlib.is_cygwin():
                     # On windows we cannot rely on rpath to run executables from build
                     # directory. We have to add in PATH the location of every DLL needed.
                     extra_paths.update(self.determine_windows_extra_paths(t, []))
+            elif isinstance(t, build.SharedLibrary):
+                # Add libraries that are going to be installed in libdir into
+                # LD_LIBRARY_PATH. This allows running system applications using
+                # that library.
+                library_paths.add(tdir)
+        if mesonlib.is_windows() or mesonlib.is_cygwin():
+            extra_paths.update(library_paths)
+        elif mesonlib.is_osx():
+            env.prepend('DYLD_LIBRARY_PATH', list(library_paths))
+        else:
+            env.prepend('LD_LIBRARY_PATH', list(library_paths))
         env.prepend('PATH', list(extra_paths))
         return env

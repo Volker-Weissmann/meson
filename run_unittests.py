@@ -50,8 +50,8 @@ import mesonbuild.environment
 import mesonbuild.mesonlib
 import mesonbuild.coredata
 import mesonbuild.modules.gnome
-from mesonbuild.interpreter import Interpreter, ObjectHolder
-from mesonbuild.interpreterbase import typed_pos_args, InvalidArguments
+from mesonbuild.interpreter import Interpreter
+from mesonbuild.interpreterbase import typed_pos_args, InvalidArguments, ObjectHolder
 from mesonbuild.ast import AstInterpreter
 from mesonbuild.mesonlib import (
     BuildDirLock, LibType, MachineChoice, PerMachine, Version, is_windows,
@@ -2525,17 +2525,6 @@ class AllPlatformTests(BasePlatformTests):
         self.build()
         self.run_tests()
 
-    def test_env_ops_dont_stack(self):
-        '''
-        Test that env ops prepend/append do not stack, and that this usage issues a warning
-        '''
-        testdir = os.path.join(self.unit_test_dir, '63 test env does not stack')
-        out = self.init(testdir)
-        self.assertRegex(out, r'WARNING: Overriding.*TEST_VAR_APPEND')
-        self.assertRegex(out, r'WARNING: Overriding.*TEST_VAR_PREPEND')
-        self.assertNotRegex(out, r'WARNING: Overriding.*TEST_VAR_SET')
-        self.run_tests()
-
     def test_testrepeat(self):
         testdir = os.path.join(self.common_test_dir, '207 tap tests')
         self.init(testdir)
@@ -4180,12 +4169,12 @@ class AllPlatformTests(BasePlatformTests):
         # Parent project warns correctly
         self.assertRegex(out, "WARNING: Project targeting '>=0.45'.*'0.47.0': dict")
         # Subprojects warn correctly
-        self.assertRegex(out, r"\|WARNING: Project targeting '>=0.40'.*'0.44.0': disabler")
-        self.assertRegex(out, r"\|WARNING: Project targeting '!=0.40'.*'0.44.0': disabler")
+        self.assertRegex(out, r"\| WARNING: Project targeting '>=0.40'.*'0.44.0': disabler")
+        self.assertRegex(out, r"\| WARNING: Project targeting '!=0.40'.*'0.44.0': disabler")
         # Subproject has a new-enough meson_version, no warning
         self.assertNotRegex(out, "WARNING: Project targeting.*Python")
         # Ensure a summary is printed in the subproject and the outer project
-        self.assertRegex(out, r"\|WARNING: Project specifies a minimum meson_version '>=0.40'")
+        self.assertRegex(out, r"\| WARNING: Project specifies a minimum meson_version '>=0.40'")
         self.assertRegex(out, r"\| \* 0.44.0: {'disabler'}")
         self.assertRegex(out, "WARNING: Project specifies a minimum meson_version '>=0.45'")
         self.assertRegex(out, " * 0.47.0: {'dict'}")
@@ -5627,6 +5616,45 @@ class AllPlatformTests(BasePlatformTests):
         self.assertEqual(0, output.count('File reformatted:'))
         self.build('clang-format-check')
 
+    def test_custom_target_implicit_include(self):
+        testdir = os.path.join(self.unit_test_dir, '94 custominc')
+        self.init(testdir)
+        self.build()
+        compdb = self.get_compdb()
+        matches = 0
+        for c in compdb:
+            if 'prog.c' in c['file']:
+                self.assertNotIn('easytogrepfor', c['command'])
+                matches += 1
+        self.assertEqual(matches, 1)
+        matches = 0
+        for c in compdb:
+            if 'prog2.c' in c['file']:
+                self.assertIn('easytogrepfor', c['command'])
+                matches += 1
+        self.assertEqual(matches, 1)
+
+    def test_env_flags_to_linker(self) -> None:
+        # Compilers that act as drivers should add their compiler flags to the
+        # linker, those that do not shouldn't
+        with mock.patch.dict(os.environ, {'CFLAGS': '-DCFLAG', 'LDFLAGS': '-flto'}):
+            env = get_fake_env()
+
+            # Get the compiler so we know which compiler class to mock.
+            cc = env.detect_compiler_for('c', MachineChoice.HOST)
+            cc_type = type(cc)
+
+            # Test a compiler that acts as a linker
+            with mock.patch.object(cc_type, 'INVOKES_LINKER', True):
+                cc = env.detect_compiler_for('c', MachineChoice.HOST)
+                link_args = env.coredata.get_external_link_args(cc.for_machine, cc.language)
+                self.assertEqual(sorted(link_args), sorted(['-DCFLAG', '-flto']))
+
+            # And one that doesn't
+            with mock.patch.object(cc_type, 'INVOKES_LINKER', False):
+                cc = env.detect_compiler_for('c', MachineChoice.HOST)
+                link_args = env.coredata.get_external_link_args(cc.for_machine, cc.language)
+                self.assertEqual(sorted(link_args), sorted(['-flto']))
 
 class FailureTests(BasePlatformTests):
     '''
@@ -6455,6 +6483,7 @@ class LinuxlikeTests(BasePlatformTests):
         self.assertEqual(libhello_nolib.get_link_args(), [])
         self.assertEqual(libhello_nolib.get_compile_args(), [])
         self.assertEqual(libhello_nolib.get_pkgconfig_variable('foo', {}), 'bar')
+        self.assertEqual(libhello_nolib.get_pkgconfig_variable('prefix', {}), self.prefix)
 
     def test_pkgconfig_gen_deps(self):
         '''
@@ -6604,10 +6633,10 @@ class LinuxlikeTests(BasePlatformTests):
         mesonlog = self.get_meson_log()
         if qt4 == 0:
             self.assertRegex('\n'.join(mesonlog),
-                             r'Run-time dependency qt4 \(modules: Core\) found: YES 4.* \(pkg-config\)\n')
+                             r'Run-time dependency qt4 \(modules: Core\) found: YES 4.* \(pkg-config\)')
         if qt5 == 0:
             self.assertRegex('\n'.join(mesonlog),
-                             r'Run-time dependency qt5 \(modules: Core\) found: YES 5.* \(pkg-config\)\n')
+                             r'Run-time dependency qt5 \(modules: Core\) found: YES 5.* \(pkg-config\)')
 
     @skip_if_not_base_option('b_sanitize')
     def test_generate_gir_with_address_sanitizer(self):
@@ -6638,7 +6667,7 @@ class LinuxlikeTests(BasePlatformTests):
         # Confirm that the dependency was found with qmake
         mesonlog = self.get_meson_log()
         self.assertRegex('\n'.join(mesonlog),
-                         r'Run-time dependency qt5 \(modules: Core\) found: YES .* \((qmake|qmake-qt5)\)\n')
+                         r'Run-time dependency qt5 \(modules: Core\) found: YES .* \(qmake\)\n')
 
     def test_qt6dependency_qmake_detection(self):
         '''
@@ -6658,7 +6687,7 @@ class LinuxlikeTests(BasePlatformTests):
         # Confirm that the dependency was found with qmake
         mesonlog = self.get_meson_log()
         self.assertRegex('\n'.join(mesonlog),
-                         r'Run-time dependency qt6 \(modules: Core\) found: YES .* \((qmake|qmake-qt6)\)\n')
+                         r'Run-time dependency qt6 \(modules: Core\) found: YES .* \(qmake\)\n')
 
     def glob_sofiles_without_privdir(self, g):
         files = glob(g)
@@ -9173,7 +9202,7 @@ class CrossFileTests(BasePlatformTests):
             for section, entries in values.items():
                 f.write(f'[{section}]\n')
                 for k, v in entries.items():
-                    f.write(f"{k}='{v}'\n")
+                    f.write(f"{k}={v!r}\n")
         return filename
 
     def test_cross_file_dirs(self):
@@ -9296,13 +9325,15 @@ class CrossFileTests(BasePlatformTests):
 
     def test_builtin_options_conf_overrides_env(self):
         testcase = os.path.join(self.common_test_dir, '2 cpp')
-        config = self.helper_create_cross_file({'built-in options': {'pkg_config_path': '/native'}})
-        cross = self.helper_create_cross_file({'built-in options': {'pkg_config_path': '/cross'}})
+        config = self.helper_create_cross_file({'built-in options': {'pkg_config_path': '/native', 'cpp_args': '-DFILE'}})
+        cross = self.helper_create_cross_file({'built-in options': {'pkg_config_path': '/cross', 'cpp_args': '-DFILE'}})
 
         self.init(testcase, extra_args=['--native-file', config, '--cross-file', cross],
-                  override_envvars={'PKG_CONFIG_PATH': '/bar', 'PKG_CONFIG_PATH_FOR_BUILD': '/dir'})
+                  override_envvars={'PKG_CONFIG_PATH': '/bar', 'PKG_CONFIG_PATH_FOR_BUILD': '/dir',
+                                    'CXXFLAGS': '-DENV', 'CXXFLAGS_FOR_BUILD': '-DENV'})
         configuration = self.introspect('--buildoptions')
         found = 0
+        expected = 4
         for each in configuration:
             if each['name'] == 'pkg_config_path':
                 self.assertEqual(each['value'], ['/cross'])
@@ -9310,9 +9341,48 @@ class CrossFileTests(BasePlatformTests):
             elif each['name'] == 'build.pkg_config_path':
                 self.assertEqual(each['value'], ['/native'])
                 found += 1
+            elif each['name'].endswith('cpp_args'):
+                self.assertEqual(each['value'], ['-DFILE'])
+                found += 1
+            if found == expected:
+                break
+        self.assertEqual(found, expected, 'Did not find all sections.')
+
+    def test_for_build_env_vars(self) -> None:
+        testcase = os.path.join(self.common_test_dir, '2 cpp')
+        config = self.helper_create_cross_file({'built-in options': {}})
+        cross = self.helper_create_cross_file({'built-in options': {}})
+
+        self.init(testcase, extra_args=['--native-file', config, '--cross-file', cross],
+                  override_envvars={'PKG_CONFIG_PATH': '/bar', 'PKG_CONFIG_PATH_FOR_BUILD': '/dir'})
+        configuration = self.introspect('--buildoptions')
+        found = 0
+        for each in configuration:
+            if each['name'] == 'pkg_config_path':
+                self.assertEqual(each['value'], ['/bar'])
+                found += 1
+            elif each['name'] == 'build.pkg_config_path':
+                self.assertEqual(each['value'], ['/dir'])
+                found += 1
             if found == 2:
                 break
         self.assertEqual(found, 2, 'Did not find all sections.')
+
+    def test_project_options_native_only(self) -> None:
+        # Do not load project options from a native file when doing a cross
+        # build
+        testcase = os.path.join(self.unit_test_dir, '19 array option')
+        config = self.helper_create_cross_file({'project options': {'list': ['bar', 'foo']}})
+        cross = self.helper_create_cross_file({'binaries': {}})
+
+        self.init(testcase, extra_args=['--native-file', config, '--cross-file', cross])
+        configuration = self.introspect('--buildoptions')
+        for each in configuration:
+            if each['name'] == 'list':
+                self.assertEqual(each['value'], ['foo', 'bar'])
+                break
+        else:
+            self.fail('Did not find expected option.')
 
 
 class TAPParserTests(unittest.TestCase):

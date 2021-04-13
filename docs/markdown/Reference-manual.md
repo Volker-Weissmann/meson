@@ -1632,8 +1632,7 @@ platforms, notably OSX.  Consider using a
 ```
 
 Builds a static library with the given sources. Positional and keyword
-arguments are otherwise the same as for [`library`](#library), but it
-has one argument the others don't have:
+arguments are as for [`library`](#library), as well as:
 
  - `pic` *(since 0.36.0)*: builds the library as positional
    independent code (so it can be linked into a shared library). This
@@ -1989,6 +1988,9 @@ the following methods.
   root directory. *(deprecated since 0.56.0)*: this function will return the
   build root of the parent project if called from a subproject, which is usually
   not what you want. Try using `current_build_dir()` or `project_build_root()`.
+  In the rare cases where the root of the main project is needed,
+  use `global_build_root()` that has the same behaviour but with a more explicit
+  name.
 
 - `source_root()`: returns a string with the absolute path to the
   source root directory. Note: you should use the `files()` function
@@ -1997,12 +1999,25 @@ the following methods.
   *(deprecated since 0.56.0)*: This function will return the source root of the
   parent project if called from a subproject, which is usually not what you want.
   Try using `current_source_dir()` or `project_source_root()`.
+  In the rare cases where the root of the main project is needed,
+  use `global_source_root()` that has the same behaviour but with a more explicit
+  name.
 
 - `project_build_root()` *(since 0.56.0)*: returns a string with the absolute path
   to the build root directory of the current (sub)project.
 
 - `project_source_root()` *(since 0.56.0)*: returns a string with the absolute path
   to the source root directory of the current (sub)project.
+
+- `global_build_root()` *(since 0.58.0)*: returns a string with the absolute path
+  to the build root directory. This function will return the build root of the
+  main project if called from a subproject, which is usually not what you want.
+  It is usually preferable to use `current_build_dir()` or `project_build_root()`.
+
+- `global_source_root()` *(since 0.58.0)*: returns a string with the absolute path
+  to the source root directory. This function will return the source root of the
+  main project if called from a subproject, which is usually not what you want.
+  It is usually preferable to use `current_source_dir()` or `project_source_root()`.
 
 - `current_build_dir()`: returns a string with the absolute path to the
   current build directory.
@@ -2752,8 +2767,19 @@ tests and other functions. It has the following methods.
   joined by the separator, e.g.  `env.set('FOO', 'BAR'),` sets envvar
   `FOO` to value `BAR`. See `append()` above for how separators work.
 
-**Note:** All these methods overwrite the previously-defined value(s)
-if called twice with the same `varname`.
+*Since 0.58.0* `append()` and `prepend()` methods can be called multiple times
+on the same `varname`. Earlier Meson versions would warn and only the last
+operation took effect.
+
+```meson
+env = environment()
+
+# MY_PATH will be '0:1:2:3'
+env.set('MY_PATH', '1')
+env.append('MY_PATH', '2')
+env.append('MY_PATH', '3')
+env.prepend('MY_PATH', '0')
+```
 
 ### `external library` object
 

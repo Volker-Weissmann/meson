@@ -1234,18 +1234,28 @@ def get_global_options(lang: str,
     description = f'Extra arguments passed to the {lang}'
     argkey = OptionKey('args', lang=lang, machine=for_machine)
     largkey = argkey.evolve('link_args')
+    envkey = argkey.evolve('env_args')
+
+    comp_key = argkey if argkey in env.options else envkey
+
+    comp_options = env.options.get(comp_key, [])
+    link_options = env.options.get(largkey, [])
 
     cargs = coredata.UserArrayOption(
         description + ' compiler',
-        env.options.get(argkey, []), split_args=True, user_input=True, allow_dups=True)
+        comp_options, split_args=True, user_input=True, allow_dups=True)
+
     largs = coredata.UserArrayOption(
         description + ' linker',
-        env.options.get(largkey, []), split_args=True, user_input=True, allow_dups=True)
+        link_options, split_args=True, user_input=True, allow_dups=True)
 
-    # This needs to be done here, so that if we have string values in the env
-    # options that we can safely combine them *after* they've been split
-    if comp.INVOKES_LINKER:
-        largs.set_value(largs.value + cargs.value)
+    if comp.INVOKES_LINKER and comp_key == envkey:
+        # If the compiler acts as a linker driver, and we're using the
+        # environment variable flags for both the compiler and linker
+        # arguments, then put the compiler flags in the linker flags as well.
+        # This is how autotools works, and the env vars freature is for
+        # autotools compatibility.
+        largs.extend_value(comp_options)
 
     opts: 'KeyedOptionDictType' = {argkey: cargs, largkey: largs}
 

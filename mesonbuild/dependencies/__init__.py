@@ -21,7 +21,9 @@ from .base import (  # noqa: F401
     InternalDependency, PkgConfigDependency, CMakeDependency,
     find_external_dependency, get_dep_identifier, packages,
     _packages_accept_language, DependencyFactory)
-from .dev import ValgrindDependency, gmock_factory, gtest_factory, llvm_factory, zlib_factory
+from .dev import (
+    ValgrindDependency, JDKSystemDependency, gmock_factory, gtest_factory,
+    llvm_factory, zlib_factory)
 from .coarrays import coarray_factory
 from .mpi import mpi_factory
 from .scalapack import scalapack_factory
@@ -31,7 +33,8 @@ from .misc import (
     shaderc_factory, threads_factory,
 )
 from .platform import AppleFrameworks
-from .ui import GnuStepDependency, Qt4Dependency, Qt5Dependency, Qt6Dependency, WxDependency, gl_factory, sdl2_factory, vulkan_factory
+from .qt import qt4_factory, qt5_factory, qt6_factory
+from .ui import GnuStepDependency, WxDependency, gl_factory, sdl2_factory, vulkan_factory
 
 """Dependency representations and discovery logic.
 
@@ -195,6 +198,7 @@ packages.update({
     'llvm': llvm_factory,
     'valgrind': ValgrindDependency,
     'zlib': zlib_factory,
+    'jdk': JDKSystemDependency,
 
     'boost': BoostDependency,
     'cuda': CudaDependency,
@@ -225,9 +229,9 @@ packages.update({
     # From ui:
     'gl': gl_factory,
     'gnustep': GnuStepDependency,
-    'qt4': Qt4Dependency,
-    'qt5': Qt5Dependency,
-    'qt6': Qt6Dependency,
+    'qt4': qt4_factory,
+    'qt5': qt5_factory,
+    'qt6': qt6_factory,
     'sdl2': sdl2_factory,
     'wxwidgets': WxDependency,
     'vulkan': vulkan_factory,

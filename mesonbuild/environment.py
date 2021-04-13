@@ -642,7 +642,9 @@ class Environment:
             binaries.build = BinaryTable(config.get('binaries', {}))
             properties.build = Properties(config.get('properties', {}))
             cmakevars.build = CMakeVariables(config.get('cmake', {}))
-            self._load_machine_file_options(config, properties.build, MachineChoice.BUILD)
+            self._load_machine_file_options(
+                config, properties.build,
+                MachineChoice.BUILD if self.coredata.cross_files else MachineChoice.HOST)
 
         ## Read in cross file(s) to override host machine configuration
 
@@ -661,12 +663,6 @@ class Environment:
                 if self.coredata.is_per_machine_option(key):
                     self.options[key.as_build()] = value
             self._load_machine_file_options(config, properties.host, MachineChoice.HOST)
-        else:
-            # IF we aren't cross compiling, but we hav ea native file, the
-            # native file is for the host. This is due to an mismatch between
-            # meson internals which talk about build an host, and external
-            # interfaces which talk about native and cross.
-            self.options = {k.as_host(): v for k, v in self.options.items()}
 
 
         ## "freeze" now initialized configuration, and "save" to the class.
@@ -749,12 +745,20 @@ class Environment:
 
     def _load_machine_file_options(self, config: 'ConfigParser', properties: Properties, machine: MachineChoice) -> None:
         """Read the contents of a Machine file and put it in the options store."""
+
+        # Look for any options in the deprecated paths section, warn about
+        # those, then assign them. They will be overwritten by the ones in the
+        # "built-in options" section if they're in both sections.
         paths = config.get('paths')
         if paths:
             mlog.deprecation('The [paths] section is deprecated, use the [built-in options] section instead.')
             for k, v in paths.items():
                 self.options[OptionKey.from_string(k).evolve(machine=machine)] = v
-        deprecated_properties = set()
+
+        # Next look for compiler options in the "properties" section, this is
+        # also deprecated, and these will also be overwritten by the "built-in
+        # options" section. We need to remove these from this section, as well.
+        deprecated_properties: T.Set[str] = set()
         for lang in compilers.all_languages:
             deprecated_properties.add(lang + '_args')
             deprecated_properties.add(lang + '_link_args')
@@ -763,6 +767,7 @@ class Environment:
                 mlog.deprecation(f'{k} in the [properties] section of the machine file is deprecated, use the [built-in options] section.')
                 self.options[OptionKey.from_string(k).evolve(machine=machine)] = v
                 del properties.properties[k]
+
         for section, values in config.items():
             if ':' in section:
                 subproject, section = section.split(':')
@@ -777,9 +782,11 @@ class Environment:
                     if key.subproject:
                         raise MesonException('Do not set subproject options in [built-in options] section, use [subproject:built-in options] instead.')
                     self.options[key.evolve(subproject=subproject, machine=machine)] = v
-            elif section == 'project options':
+            elif section == 'project options' and machine is MachineChoice.HOST:
+                # Project options are only for the host machine, we don't want
+                # to read these from the native file
                 for k, v in values.items():
-                    # Project options are always for the machine machine
+                    # Project options are always for the host machine
                     key = OptionKey.from_string(k)
                     if key.subproject:
                         raise MesonException('Do not set subproject options in [built-in options] section, use [subproject:built-in options] instead.')
@@ -828,12 +835,29 @@ class Environment:
                             key = key.evolve(lang=lang)
                             env_opts[key].extend(p_list)
                     elif keyname == 'cppflags':
-                        key = OptionKey('args', machine=for_machine, lang='c')
+                        key = OptionKey('env_args', machine=for_machine, lang='c')
                         for lang in compilers.compilers.LANGUAGES_USING_CPPFLAGS:
                             key = key.evolve(lang=lang)
                             env_opts[key].extend(p_list)
                     else:
                         key = OptionKey.from_string(keyname).evolve(machine=for_machine)
+                        if evar in compilers.compilers.CFLAGS_MAPPING.values():
+                            # If this is an environment variable, we have to
+                            # store it separately until the compiler is
+                            # instantiated, as we don't know whether the
+                            # compiler will want to use these arguments at link
+                            # time and compile time (instead of just at compile
+                            # time) until we're instantiating that `Compiler`
+                            # object. This is required so that passing
+                            # `-Dc_args=` on the command line and `$CFLAGS`
+                            # have subtely differen behavior. `$CFLAGS` will be
+                            # added to the linker command line if the compiler
+                            # acts as a linker driver, `-Dc_args` will not.
+                            #
+                            # We stil use the original key as the base here, as
+                            # we want to inhert the machine and the compiler
+                            # language
+                            key = key.evolve('env_args')
                         env_opts[key].extend(p_list)
 
         # Only store options that are not already in self.options,
@@ -857,12 +881,13 @@ class Environment:
                 self.binaries[for_machine].binaries.setdefault(name, mesonlib.split_args(p_env))
 
     def _set_default_properties_from_env(self) -> None:
-        """Properties which can alkso be set from the environment."""
+        """Properties which can also be set from the environment."""
         # name, evar, split
         opts: T.List[T.Tuple[str, T.List[str], bool]] = [
             ('boost_includedir', ['BOOST_INCLUDEDIR'], False),
             ('boost_librarydir', ['BOOST_LIBRARYDIR'], False),
             ('boost_root', ['BOOST_ROOT', 'BOOSTROOT'], True),
+            ('java_home', ['JAVA_HOME'], False),
         ]
 
         for (name, evars, split), for_machine in itertools.product(opts, MachineChoice):
@@ -920,7 +945,7 @@ class Environment:
     def is_library(self, fname):
         return is_library(fname)
 
-    def lookup_binary_entry(self, for_machine: MachineChoice, name: str) -> T.List[str]:
+    def lookup_binary_entry(self, for_machine: MachineChoice, name: str) -> T.Optional[T.List[str]]:
         return self.binaries[for_machine].lookup_entry(name)
 
     @staticmethod

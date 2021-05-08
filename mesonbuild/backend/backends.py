@@ -49,6 +49,12 @@ if T.TYPE_CHECKING:
 # Assembly files cannot be unitified and neither can LLVM IR files
 LANGS_CANT_UNITY = ('d', 'fortran', 'vala')
 
+class RegenInfo:
+    def __init__(self, source_dir, build_dir, depfiles):
+        self.source_dir = source_dir
+        self.build_dir = build_dir
+        self.depfiles = depfiles
+
 class TestProtocol(enum.Enum):
 
     EXITCODE = 0
@@ -410,6 +416,12 @@ class Backend:
             else:
                 raise MesonException('Unknown data type in object list.')
         return obj_list
+
+    def is_swift_target(self, target):
+        for s in target.sources:
+            if s.endswith('swift'):
+                return True
+        return False
 
     def get_executable_serialisation(self, cmd, workdir=None,
                                      extra_bdeps=None, capture=None,
@@ -1007,6 +1019,16 @@ class Backend:
         self.check_clock_skew(deps)
         return deps
 
+    def generate_regen_info(self):
+        deps = self.get_regen_filelist()
+        regeninfo = RegenInfo(self.environment.get_source_dir(),
+                              self.environment.get_build_dir(),
+                              deps)
+        filename = os.path.join(self.environment.get_scratch_dir(),
+                                'regeninfo.dump')
+        with open(filename, 'wb') as f:
+            pickle.dump(regeninfo, f)
+
     def check_clock_skew(self, file_list):
         # If a file that leads to reconfiguration has a time
         # stamp in the future, it will trigger an eternal reconfigure
@@ -1111,7 +1133,7 @@ class Backend:
             elif isinstance(i, build.BuildTarget):
                 fname = [self.get_target_filename(i)]
             elif isinstance(i, (build.CustomTarget, build.CustomTargetIndex)):
-                fname = [os.path.join(self.get_target_dir(i), p) for p in i.get_outputs()]
+                fname = [os.path.join(self.get_custom_target_output_dir(i), p) for p in i.get_outputs()]
             elif isinstance(i, build.GeneratedList):
                 fname = [os.path.join(self.get_target_private_dir(target), p) for p in i.get_outputs()]
             elif isinstance(i, build.ExtractedObjects):
@@ -1149,6 +1171,34 @@ class Backend:
         # ${BUILDDIR}/${BUILDTYPE} instead, this becomes unnecessary.
         return self.get_target_dir(target)
 
+    @lru_cache(maxsize=None)
+    def get_normpath_target(self, source) -> str:
+        return os.path.normpath(source)
+
+    def get_custom_target_dirs(self, target, compiler, *, absolute_path=False):
+        custom_target_include_dirs = []
+        for i in target.get_generated_sources():
+            # Generator output goes into the target private dir which is
+            # already in the include paths list. Only custom targets have their
+            # own target build dir.
+            if not isinstance(i, (build.CustomTarget, build.CustomTargetIndex)):
+                continue
+            idir = self.get_normpath_target(self.get_custom_target_output_dir(i))
+            if not idir:
+                idir = '.'
+            if absolute_path:
+                idir = os.path.join(self.environment.get_build_dir(), idir)
+            if idir not in custom_target_include_dirs:
+                custom_target_include_dirs.append(idir)
+        return custom_target_include_dirs
+
+    def get_custom_target_dir_include_args(self, target, compiler, *, absolute_path=False):
+        incs = []
+        for i in self.get_custom_target_dirs(target, compiler, absolute_path=absolute_path):
+            incs += compiler.get_include_args(i, False)
+        return incs
+
+
     def eval_custom_target_command(self, target, absolute_outputs=False):
         # We want the outputs to be absolute only when using the VS backend
         # XXX: Maybe allow the vs backend to use relative paths too?
@@ -1173,10 +1223,10 @@ class Backend:
                 # GIR scanner will attempt to execute this binary but
                 # it assumes that it is in path, so always give it a full path.
                 tmp = i.get_outputs()[0]
-                i = os.path.join(self.get_target_dir(i), tmp)
+                i = os.path.join(self.get_custom_target_output_dir(i), tmp)
             elif isinstance(i, mesonlib.File):
                 i = i.rel_to_builddir(self.build_to_src)
-                if target.absolute_paths:
+                if target.absolute_paths or absolute_outputs:
                     i = os.path.join(self.environment.get_build_dir(), i)
             # FIXME: str types are blindly added ignoring 'target.absolute_paths'
             # because we can't know if they refer to a file or just a string
@@ -1473,6 +1523,8 @@ class Backend:
                     source_list += [j.absolute_path(self.source_dir, self.build_dir)]
                 elif isinstance(j, str):
                     source_list += [os.path.join(self.source_dir, j)]
+                elif isinstance(j, (build.CustomTarget, build.BuildTarget)):
+                    source_list += [os.path.join(self.build_dir, j.get_subdir(), o) for o in j.get_outputs()]
             source_list = list(map(lambda x: os.path.normpath(x), source_list))
 
             compiler = []

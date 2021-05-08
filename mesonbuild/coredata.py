@@ -41,7 +41,7 @@ if T.TYPE_CHECKING:
     KeyedOptionDictType = T.Union[T.Dict['OptionKey', 'UserOption[T.Any]'], OptionOverrideProxy]
     CompilerCheckCacheKey = T.Tuple[T.Tuple[str, ...], str, str, T.Tuple[str, ...], str]
 
-version = '0.57.999'
+version = '0.58.999'
 backendlist = ['ninja', 'vs', 'vs2010', 'vs2015', 'vs2017', 'vs2019', 'xcode']
 
 default_yielding = False
@@ -400,6 +400,11 @@ class CoreData:
         self.options: 'KeyedOptionDictType' = {}
         self.cross_files = self.__load_config_files(options, scratch_dir, 'cross')
         self.compilers = PerMachine(OrderedDict(), OrderedDict())  # type: PerMachine[T.Dict[str, Compiler]]
+
+        # Set of subprojects that have already been initialized once, this is
+        # required to be stored and reloaded with the coredata, as we don't
+        # want to overwrite options for such subprojects.
+        self.initialized_subprojects: T.Set[str] = set()
 
         build_cache = DependencyCache(self.options, MachineChoice.BUILD)
         host_cache = DependencyCache(self.options, MachineChoice.HOST)

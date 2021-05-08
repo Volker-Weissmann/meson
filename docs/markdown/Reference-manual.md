@@ -443,7 +443,8 @@ keyword arguments:
 - `link_whole` *(since 0.46.0)*: libraries to link fully, same as [`executable`](#executable).
 - `sources`: sources to add to targets (or generated header files
   that should be built before sources including them are built)
-- `version`: the version of this dependency, such as `1.2.3`
+- `version`: the version of this dependency, such as `1.2.3`. Defaults to the
+  project version.
 - `variables` *(since 0.54.0)*: a dictionary of arbitrary strings, this is meant to be used
   in subprojects where special variables would be provided via cmake or
   pkg-config. *since 0.56.0* it can also be a list of `'key=value'` strings.
@@ -2201,8 +2202,8 @@ are immutable, all operations return their results as a new string.
 - `join(list_of_strings)`: the opposite of split, for example
   `'.'.join(['a', 'b', 'c']` yields `'a.b.c'`.
 
-- `replace('old_substr', 'new_str')`: replaces instances of `old_substr` in the
-  string with `new_str` and returns a new string
+- `replace('old_substr', 'new_str')` *(since 0.58.0)*: replaces instances of
+  `old_substr` in the string with `new_str` and returns a new string
 
 - `split(split_character)`: splits the string at the specified
   character (or whitespace if not set) and returns the parts in an

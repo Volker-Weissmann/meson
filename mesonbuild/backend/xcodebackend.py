@@ -37,6 +37,7 @@ XCODETYPEMAP = {'c': 'sourcecode.c.c',
                 'hxx': 'sourcecode.cpp.h',
                 'hh': 'sourcecode.cpp.hh',
                 'inc': 'sourcecode.c.h',
+                'swift': 'sourcecode.swift',
                 'dylib': 'compiled.mach-o.dylib',
                 'o': 'compiled.mach-o.objfile',
                 's': 'sourcecode.asm',
@@ -55,6 +56,7 @@ OPT2XCODEOPT = {'0': '0',
                 's': 's',
                 }
 BOOL2XCODEBOOL = {True: 'YES', False: 'NO'}
+LINKABLE_EXTENSIONS = {'.o', '.a', '.obj', '.so', '.dylib'}
 
 class PbxItem:
     def __init__(self, value, comment = ''):
@@ -188,6 +190,10 @@ class XCodeBackend(backends.Backend):
         self.test_id = self.gen_id()
         self.test_command_id = self.gen_id()
         self.test_buildconf_id = self.gen_id()
+        self.regen_id = self.gen_id()
+        self.regen_command_id = self.gen_id()
+        self.regen_buildconf_id = self.gen_id()
+        self.regen_dependency_id = self.gen_id()
         self.top_level_dict = PbxDict()
         self.generator_outputs = {}
         # In Xcode files are not accessed via their file names, but rather every one of them
@@ -202,16 +208,18 @@ class XCodeBackend(backends.Backend):
         self.fileref_ids = {}
 
     def write_pbxfile(self, top_level_dict, ofilename):
-        with open(ofilename, 'w') as ofile:
+        tmpname = ofilename + '.tmp'
+        with open(tmpname, 'w', encoding='utf-8') as ofile:
             ofile.write('// !$*UTF8*$!\n')
             top_level_dict.write(ofile, 0)
+        os.replace(tmpname, ofilename)
 
     def gen_id(self):
         return str(uuid.uuid4()).upper().replace('-', '')[:24]
 
     def get_target_dir(self, target):
         dirname = os.path.join(target.get_subdir(), self.environment.coredata.get_option(OptionKey('buildtype')))
-        os.makedirs(os.path.join(self.environment.get_build_dir(), dirname), exist_ok=True)
+        #os.makedirs(os.path.join(self.environment.get_build_dir(), dirname), exist_ok=True)
         return dirname
 
     def get_custom_target_output_dir(self, target):
@@ -307,6 +315,7 @@ class XCodeBackend(backends.Backend):
         objects_dict.add_comment(PbxComment('End XCConfigurationList section'))
         self.generate_suffix(self.top_level_dict)
         self.write_pbxfile(self.top_level_dict, self.proj_file)
+        self.generate_regen_info()
 
     def get_xcodetype(self, fname):
         xcodetype = XCODETYPEMAP.get(fname.split('.')[-1].lower())
@@ -347,6 +356,9 @@ class XCodeBackend(backends.Backend):
         for t in self.build_targets:
             bconfs = {self.buildtype: self.gen_id()}
             self.buildconfmap[t] = bconfs
+        for t in self.custom_targets:
+            bconfs = {self.buildtype: self.gen_id()}
+            self.buildconfmap[t] = bconfs
 
     def generate_project_configurations_map(self):
         self.project_configurations = {self.buildtype: self.gen_id()}
@@ -360,6 +372,8 @@ class XCodeBackend(backends.Backend):
     def generate_build_configurationlist_map(self):
         self.buildconflistmap = {}
         for t in self.build_targets:
+            self.buildconflistmap[t] = self.gen_id()
+        for t in self.custom_targets:
             self.buildconflistmap[t] = self.gen_id()
 
     def generate_native_target_map(self):
@@ -383,13 +397,43 @@ class XCodeBackend(backends.Backend):
     def generate_generator_target_map(self):
         # Generator objects do not have natural unique ids
         # so use a counter.
+        self.generator_fileref_ids = {}
+        self.generator_buildfile_ids = {}
         for tname, t in self.build_targets.items():
             generator_id = 0
-            for s in t.generated:
-                if isinstance(s, build.GeneratedList):
-                    self.shell_targets[(tname, generator_id)] = self.gen_id()
-                    generator_id += 1
+            for genlist in t.generated:
+                if not isinstance(genlist, build.GeneratedList):
+                    continue
+                self.gen_single_target_map(genlist, tname, t, generator_id)
+                generator_id += 1
         # FIXME add outputs.
+        for tname, t in self.custom_targets.items():
+            generator_id = 0
+            for genlist in t.sources:
+                if not isinstance(genlist, build.GeneratedList):
+                    continue
+                self.gen_single_target_map(genlist, tname, t, generator_id)
+                generator_id += 1
+
+    def gen_single_target_map(self, genlist, tname, t, generator_id):
+        k = (tname, generator_id)
+        assert(k not in self.shell_targets)
+        self.shell_targets[k] = self.gen_id()
+        ofile_abs = []
+        for i in genlist.get_inputs():
+            for o_base in genlist.get_outputs_for(i):
+                o = os.path.join(self.get_target_private_dir(t), o_base)
+                ofile_abs.append(os.path.join(self.environment.get_build_dir(), o))
+        assert(k not in self.generator_outputs)
+        self.generator_outputs[k] = ofile_abs
+        buildfile_ids = []
+        fileref_ids = []
+        for i in range(len(ofile_abs)):
+            buildfile_ids.append(self.gen_id())
+            fileref_ids.append(self.gen_id())
+        self.generator_buildfile_ids[k] = buildfile_ids
+        self.generator_fileref_ids[k] = fileref_ids
+
 
     def generate_native_frameworks_map(self):
         self.native_frameworks = {}
@@ -405,12 +449,26 @@ class XCodeBackend(backends.Backend):
         self.target_dependency_map = {}
         for tname, t in self.build_targets.items():
             for target in t.link_targets:
-                self.target_dependency_map[(tname, target.get_basename())] = self.gen_id()
+                if isinstance(target, build.CustomTargetIndex):
+                    k = (tname, target.target.get_basename())
+                    if k in self.target_dependency_map:
+                        continue
+                else:
+                    k = (tname, target.get_basename())
+                    assert(k not in self.target_dependency_map)
+                self.target_dependency_map[k] = self.gen_id()
+        for tname, t in self.custom_targets.items():
+            k = tname
+            assert(k not in self.target_dependency_map)
+            self.target_dependency_map[k] = self.gen_id()
 
     def generate_pbxdep_map(self):
         self.pbx_dep_map = {}
+        self.pbx_custom_dep_map = {}
         for t in self.build_targets:
             self.pbx_dep_map[t] = self.gen_id()
+        for t in self.custom_targets:
+            self.pbx_custom_dep_map[t] = self.gen_id()
 
     def generate_containerproxy_map(self):
         self.containerproxy_map = {}
@@ -418,22 +476,38 @@ class XCodeBackend(backends.Backend):
             self.containerproxy_map[t] = self.gen_id()
 
     def generate_target_file_maps(self):
-        for tname, t in self.build_targets.items():
+        self.generate_target_file_maps_impl(self.build_targets)
+        self.generate_target_file_maps_impl(self.custom_targets)
+
+    def generate_target_file_maps_impl(self, targets):
+        for tname, t in targets.items():
             for s in t.sources:
                 if isinstance(s, mesonlib.File):
                     s = os.path.join(s.subdir, s.fname)
                 if not isinstance(s, str):
                     continue
-                self.buildfile_ids[(tname, s)] = self.gen_id()
-                self.fileref_ids[(tname, s)] = self.gen_id()
+                k = (tname, s)
+                assert(k not in self.buildfile_ids)
+                self.buildfile_ids[k] = self.gen_id()
+                assert(k not in self.fileref_ids)
+                self.fileref_ids[k] = self.gen_id()
+            if not hasattr(t, 'objects'):
+                continue
             for o in t.objects:
                 if isinstance(o, build.ExtractedObjects):
                     # Extracted objects do not live in "the Xcode world".
                     continue
-                else:
+                if isinstance(o, mesonlib.File):
+                    o = os.path.join(o.subdir, o.fname)
+                if isinstance(o, str):
                     o = os.path.join(t.subdir, o)
-                    self.buildfile_ids[(tname, o)] = self.gen_id()
-                    self.fileref_ids[(tname, o)] = self.gen_id()
+                    k = (tname, o)
+                    assert(k not in self.buildfile_ids)
+                    self.buildfile_ids[k] = self.gen_id()
+                    assert(k not in self.fileref_ids)
+                    self.fileref_ids[k] = self.gen_id()
+                else:
+                    raise RuntimeError('Unknown input type ' + str(o))
 
     def generate_source_phase_map(self):
         self.source_phase = {}
@@ -441,10 +515,42 @@ class XCodeBackend(backends.Backend):
             self.source_phase[t] = self.gen_id()
 
     def generate_pbx_aggregate_target(self, objects_dict):
+        self.custom_aggregate_targets = {}
+        self.build_all_tdep_id = self.gen_id()
+        # FIXME: filter out targets that are not built by default.
         target_dependencies = list(map(lambda t: self.pbx_dep_map[t], self.build_targets))
+        custom_target_dependencies = [self.pbx_custom_dep_map[t] for t in self.custom_targets]
         aggregated_targets = []
-        aggregated_targets.append((self.all_id, 'ALL_BUILD', self.all_buildconf_id, [], target_dependencies))
-        aggregated_targets.append((self.test_id, 'RUN_TESTS', self.test_buildconf_id, [self.test_command_id], []))
+        aggregated_targets.append((self.all_id, 'ALL_BUILD', 
+                                   self.all_buildconf_id,
+                                   [],
+                                   [self.regen_dependency_id] + target_dependencies + custom_target_dependencies))
+        aggregated_targets.append((self.test_id,
+                                   'RUN_TESTS',
+                                   self.test_buildconf_id,
+                                   [self.test_command_id],
+                                   [self.regen_dependency_id, self.build_all_tdep_id]))
+        aggregated_targets.append((self.regen_id,
+                                   'REGENERATE',
+                                   self.regen_buildconf_id,
+                                   [self.regen_command_id],
+                                   []))
+        for tname, t in self.build.get_custom_targets().items():
+            ct_id = self.gen_id()
+            self.custom_aggregate_targets[tname] = ct_id
+            build_phases = []
+            dependencies = [self.regen_dependency_id]
+            generator_id = 0
+            for s in t.sources: 
+                if not isinstance(s, build.GeneratedList):
+                    continue
+                build_phases.append(self.shell_targets[(tname, generator_id)])
+                for d in s.depends:
+                    dependencies.append(self.pbx_custom_dep_map[d.get_id()])
+                generator_id += 1
+            build_phases.append(self.shell_targets[tname])
+            aggregated_targets.append((ct_id, tname, self.buildconflistmap[tname], build_phases, dependencies))
+
         # Sort objects by ID before writing
         sorted_aggregated_targets = sorted(aggregated_targets, key=operator.itemgetter(0))
         for t in sorted_aggregated_targets:
@@ -463,8 +569,8 @@ class XCodeBackend(backends.Backend):
             agt_dict.add_item('dependencies', dep_arr)
             for td in dependencies:
                 dep_arr.add_item(td, 'PBXTargetDependency')
-            agt_dict.add_item('name', name)
-            agt_dict.add_item('productName', name)
+            agt_dict.add_item('name', f'"{name}"')
+            agt_dict.add_item('productName', f'"{name}"')
             objects_dict.add_item(t[0], agt_dict, name)
 
     def generate_pbx_build_file(self, objects_dict):
@@ -487,8 +593,9 @@ class XCodeBackend(backends.Backend):
                 if not isinstance(s, str):
                     continue
                 sdict = PbxDict()
-                idval = self.buildfile_ids[(tname, s)]
-                fileref = self.fileref_ids[(tname, s)]
+                k = (tname, s)
+                idval = self.buildfile_ids[k]
+                fileref = self.fileref_ids[k]
                 if in_build_dir:
                     fullpath = os.path.join(self.environment.get_build_dir(), s)    
                 else:
@@ -504,16 +611,28 @@ class XCodeBackend(backends.Backend):
                     # by hand in linker flags. It is also not particularly
                     # clear how to define build files in Xcode's file format.
                     continue
-                o = os.path.join(t.subdir, o)
+                if isinstance(o, mesonlib.File):
+                    o = os.path.join(o.subdir, o.fname)
+                elif isinstance(o, str):
+                    o = os.path.join(t.subdir, o)
                 idval = self.buildfile_ids[(tname, o)]
-                fileref = self.fileref_ids[(tname, s)]
-                self.targetfile_ids[(tname, s)] = idval
+                k = (tname, o)
+                fileref = self.fileref_ids[k]
+                assert(o not in self.filemap)
+                self.filemap[o] = idval
                 fullpath = os.path.join(self.environment.get_source_dir(), o)
                 fullpath2 = fullpath
                 o_dict = PbxDict()
                 objects_dict.add_item(idval, o_dict, fullpath)
                 o_dict.add_item('isa', 'PBXBuildFile')
                 o_dict.add_item('fileRef', fileref, fullpath2)
+
+            generator_id = 0
+            for g in t.generated:
+                if not isinstance(g, build.GeneratedList):
+                    continue
+                self.create_generator_shellphase(objects_dict, tname, generator_id) 
+                generator_id += 1
 
         # Custom targets are shell build phases in Xcode terminology.
         for tname, t in self.custom_targets.items():
@@ -525,6 +644,24 @@ class XCodeBackend(backends.Backend):
                 objects_dict.add_item(self.custom_target_output_buildfile[o], custom_dict, f'/* {o} */')
                 custom_dict.add_item('isa', 'PBXBuildFile')
                 custom_dict.add_item('fileRef', self.custom_target_output_fileref[o])
+            generator_id = 0
+            for g in t.sources:
+                if not isinstance(g, build.GeneratedList):
+                    continue
+                self.create_generator_shellphase(objects_dict, tname, generator_id) 
+                generator_id += 1
+
+    def create_generator_shellphase(self, objects_dict, tname, generator_id):
+        file_ids = self.generator_buildfile_ids[(tname, generator_id)]
+        ref_ids = self.generator_fileref_ids[(tname, generator_id)]
+        assert(len(ref_ids) == len(file_ids))
+        for i in range(len(file_ids)):
+            file_o = file_ids[i]
+            ref_id = ref_ids[i]
+            odict = PbxDict()
+            objects_dict.add_item(file_o, odict)
+            odict.add_item('isa', 'PBXBuildFile')
+            odict.add_item('fileRef', ref_id)
 
     def generate_pbx_build_style(self, objects_dict):
         # FIXME: Xcode 9 and later does not uses PBXBuildStyle and it gets removed. Maybe we can remove this part.
@@ -588,20 +725,51 @@ class XCodeBackend(backends.Backend):
                     src_dict.add_item('path', '"' + path + '"')
                     src_dict.add_item('sourceTree', 'SOURCE_ROOT')
 
+            generator_id = 0
+            for g in t.generated:
+                if not isinstance(g, build.GeneratedList):
+                    continue
+                outputs = self.generator_outputs[(tname, generator_id)]
+                ref_ids = self.generator_fileref_ids[tname, generator_id]
+                assert(len(ref_ids) == len(outputs))
+                for i in range(len(outputs)):
+                    o = outputs[i]
+                    ref_id = ref_ids[i]
+                    odict = PbxDict()
+                    name = os.path.basename(o)
+                    objects_dict.add_item(ref_id, odict, o)
+                    xcodetype = self.get_xcodetype(o)
+                    rel_name = mesonlib.relpath(o, self.environment.get_source_dir())   
+                    odict.add_item('isa', 'PBXFileReference')
+                    odict.add_item('explicitFileType', '"' + xcodetype + '"')
+                    odict.add_item('fileEncoding', '4')
+                    odict.add_item('name', f'"{name}"')
+                    odict.add_item('path', f'"{rel_name}"')
+                    odict.add_item('sourceTree', 'SOURCE_ROOT')
+
+                generator_id += 1
 
             for o in t.objects:
                 if isinstance(o, build.ExtractedObjects):
                     # Same as with pbxbuildfile.
                     continue
-                o = os.path.join(t.subdir, o)
+                if isinstance(o, mesonlib.File):
+                    fullpath = o.absolute_path(self.environment.get_source_dir(), self.environment.get_build_dir())
+                    o = os.path.join(o.subdir, o.fname)
+                else:
+                    o = os.path.join(t.subdir, o)
+                    fullpath = os.path.join(self.environment.get_source_dir(), o)
                 idval = self.fileref_ids[(tname, o)]
-                fileref = self.filemap[o]
-                fullpath = os.path.join(self.environment.get_source_dir(), o)
-                fullpath2 = fullpath
+                rel_name = mesonlib.relpath(fullpath, self.environment.get_source_dir())   
                 o_dict = PbxDict()
+                name = os.path.basename(o)
                 objects_dict.add_item(idval, o_dict, fullpath)
-                o_dict.add_item('isa', 'PBXBuildFile')
-                o_dict.add_item('fileRef', fileref, fullpath2)
+                o_dict.add_item('isa', 'PBXFileReference')
+                o_dict.add_item('explicitFileType', '"' + self.get_xcodetype(o) + '"')
+                o_dict.add_item('fileEncoding', '4')
+                o_dict.add_item('name', f'"{name}"')
+                o_dict.add_item('path', f'"{rel_name}"')
+                o_dict.add_item('sourceTree', 'SOURCE_ROOT')
         for tname, idval in self.target_filemap.items():
             target_dict = PbxDict()
             objects_dict.add_item(idval, target_dict, tname)
@@ -619,7 +787,10 @@ class XCodeBackend(backends.Backend):
                 path = '"%s"' % t.get_filename()
             target_dict.add_item('isa', 'PBXFileReference')
             target_dict.add_item('explicitFileType', '"' + typestr + '"')
-            target_dict.add_item('path', path)
+            if ' ' in path and path[0] != '"':
+                target_dict.add_item('path', f'"{path}"')
+            else:
+                target_dict.add_item('path', path)
             target_dict.add_item('refType', reftype)
             target_dict.add_item('sourceTree', 'BUILT_PRODUCTS_DIR')
 
@@ -627,6 +798,22 @@ class XCodeBackend(backends.Backend):
             if not isinstance(t, build.CustomTarget):
                 continue
             (srcs, ofilenames, cmd) = self.eval_custom_target_command(t)
+            for s in t.sources:
+                if isinstance(s, mesonlib.File):
+                    s = os.path.join(s.subdir, s.fname)
+                elif isinstance(s, str):
+                    s = os.path.joni(t.subdir, s)
+                else:
+                    continue
+                custom_dict = PbxDict()
+                typestr = self.get_xcodetype(s)
+                custom_dict.add_item('isa', 'PBXFileReference')
+                custom_dict.add_item('explicitFileType', '"' + typestr + '"')
+                custom_dict.add_item('name', f'"{s}"')
+                custom_dict.add_item('path', f'"{s}"')
+                custom_dict.add_item('refType', 0)
+                custom_dict.add_item('sourceTree', 'SOURCE_ROOT')
+                objects_dict.add_item(self.fileref_ids[(tname, s)], custom_dict)
             for o in ofilenames:
                 custom_dict = PbxDict()
                 typestr = self.get_xcodetype(o)
@@ -658,6 +845,9 @@ class XCodeBackend(backends.Backend):
         for t in self.build_targets:
             groupmap[t] = self.gen_id()
             target_src_map[t] = self.gen_id()
+        for t in self.custom_targets:
+            groupmap[t] = self.gen_id()
+            target_src_map[t] = self.gen_id()
         sources_id = self.gen_id()
         resources_id = self.gen_id()
         products_id = self.gen_id()
@@ -680,6 +870,8 @@ class XCodeBackend(backends.Backend):
         source_children = PbxArray()
         source_dict.add_item('children', source_children)
         for t in self.build_targets:
+            source_children.add_item(groupmap[t], t)
+        for t in self.custom_targets:
             source_children.add_item(groupmap[t], t)
         source_dict.add_item('name', 'Sources')
         source_dict.add_item('sourceTree', '"<group>"')
@@ -716,7 +908,10 @@ class XCodeBackend(backends.Backend):
             target_children = PbxArray()
             target_dict.add_item('children', target_children)
             target_children.add_item(target_src_map[tname], 'Source files')
-            target_dict.add_item('name', f'"{t}"')
+            if t.subproject:
+                target_dict.add_item('name', f'"{t.subproject} • {t}"')
+            else:
+                target_dict.add_item('name', f'"{t}"')
             target_dict.add_item('sourceTree', '"<group>"')
             source_files_dict = PbxDict()
             objects_dict.add_item(target_src_map[tname], source_files_dict, 'Source files')
@@ -725,16 +920,49 @@ class XCodeBackend(backends.Backend):
             source_files_dict.add_item('children', source_file_children)
             for s in t.sources:
                 if isinstance(s, mesonlib.File):
-                    s = os.path.join(t.subdir, s.fname)
-                if not isinstance(s, str):
-                    clontinue                
+                    s = os.path.join(s.subdir, s.fname)
+                elif isinstance(s, str):
+                    s = os.path.joni(t.subdir, s)
+                else:
+                    continue
                 source_file_children.add_item(self.fileref_ids[(tname, s)], s)
             for o in t.objects:
                 if isinstance(o, build.ExtractedObjects):
                     # Do not show built object files in the project tree.   
                     continue
-                o = os.path.join(t.subdir, o)
+                if isinstance(o, mesonlib.File):
+                    o = os.path.join(o.subdir, o.fname)
+                else:
+                    o = os.path.join(t.subdir, o)
                 source_file_children.add_item(self.fileref_ids[(tname, o)], o)
+            source_files_dict.add_item('name', '"Source files"')
+            source_files_dict.add_item('sourceTree', '"<group>"')
+
+        for tname, t in self.custom_targets.items():
+            target_dict = PbxDict()
+            objects_dict.add_item(groupmap[tname], target_dict, tname)
+            target_dict.add_item('isa', 'PBXGroup')
+            target_children = PbxArray()
+            target_dict.add_item('children', target_children)
+            target_children.add_item(target_src_map[tname], 'Source files')
+            if t.subproject:
+                target_dict.add_item('name', f'"{t.subproject} • {t.name}"')
+            else:
+                target_dict.add_item('name', f'"{t.name}"')
+            target_dict.add_item('sourceTree', '"<group>"')
+            source_files_dict = PbxDict()
+            objects_dict.add_item(target_src_map[tname], source_files_dict, 'Source files')
+            source_files_dict.add_item('isa', 'PBXGroup')
+            source_file_children = PbxArray()
+            source_files_dict.add_item('children', source_file_children)
+            for s in t.sources:
+                if isinstance(s, mesonlib.File):
+                    s = os.path.join(s.subdir, s.fname)
+                elif isinstance(s, str):
+                    s = os.path.joni(t.subdir, s)
+                else:
+                    continue
+                source_file_children.add_item(self.fileref_ids[(tname, s)], s)
             source_files_dict.add_item('name', '"Source files"')
             source_files_dict.add_item('sourceTree', '"<group>"')
 
@@ -749,6 +977,7 @@ class XCodeBackend(backends.Backend):
         product_dict.add_item('name', 'Products')
         product_dict.add_item('sourceTree', '"<group>"')
 
+
     def generate_pbx_native_target(self, objects_dict):
         for tname, idval in self.native_targets.items():
             ntarget_dict = PbxDict()
@@ -760,9 +989,9 @@ class XCodeBackend(backends.Backend):
             ntarget_dict.add_item('buildPhases', buildphases_array)
             generator_id = 0
             for g in t.generated:
-                if isinstance(g, build.CustomTarget):
-                    buildphases_array.add_item(self.shell_targets[g.get_id()], f'/* {g.name} */')
-                elif isinstance(g, build.GeneratedList):
+                # Custom target are handled via inter-target dependencies.
+                # Generators are built as a shellscriptbuildphase.
+                if isinstance(g, build.GeneratedList):
                     buildphases_array.add_item(self.shell_targets[(tname, generator_id)], 'Generator {}/{}'.format(generator_id, tname))
                     generator_id += 1
             for bpname, bpval in t.buildphasemap.items():
@@ -770,19 +999,33 @@ class XCodeBackend(backends.Backend):
             ntarget_dict.add_item('buildRules', PbxArray())
             dep_array = PbxArray()
             ntarget_dict.add_item('dependencies', dep_array)
+            dep_array.add_item(self.regen_dependency_id)
             # These dependencies only tell Xcode that the deps must be built
             # before this one. They don't set up linkage or anything
             # like that. Those are set up in the XCBuildConfiguration.
             for lt in self.build_targets[tname].link_targets:
                 # NOT DOCUMENTED, may need to make different links
                 # to same target have different targetdependency item.
-                idval = self.pbx_dep_map[lt.get_id()]
-                dep_array.add_item(idval, 'PBXTargetDependency')
+                if isinstance(lt, build.CustomTarget):
+                    dep_array.add_item(self.pbx_custom_dep_map[lt.get_id()], lt.name)
+                elif isinstance(lt, build.CustomTargetIndex):
+                    dep_array.add_item(self.pbx_custom_dep_map[lt.target.get_id()], lt.target.name)
+                else:
+                    idval = self.pbx_dep_map[lt.get_id()]
+                    dep_array.add_item(idval, 'PBXTargetDependency')
             for o in t.objects:
                 if isinstance(o, build.ExtractedObjects):
                     source_target_id = o.target.get_id()
                     idval = self.pbx_dep_map[source_target_id]
                     dep_array.add_item(idval, 'PBXTargetDependency')
+            generator_id = 0
+            for o in t.generated:
+                if isinstance(o, build.CustomTarget):
+                    dep_array.add_item(self.pbx_custom_dep_map[o.get_id()], o.name)
+                elif isinstance(o, build.CustomTargetIndex):
+                    dep_array.add_item(self.pbx_custom_dep_map[o.target.get_id()], o.target.name)
+                
+                generator_id += 1
 
             ntarget_dict.add_item('name', f'"{tname}"')
             ntarget_dict.add_item('productName', f'"{tname}"')
@@ -813,16 +1056,25 @@ class XCodeBackend(backends.Backend):
         project_dict.add_item('compatibilityVersion', '"Xcode 3.2"')
         project_dict.add_item('hasScannedForEncodings', 0)
         project_dict.add_item('mainGroup', self.maingroup_id)
-        project_dict.add_item('projectDirPath', f'"{self.build_to_src}"')
+        project_dict.add_item('projectDirPath', '"' + self.environment.get_source_dir() + '"')
         project_dict.add_item('projectRoot', '""')
         targets_arr = PbxArray()
         project_dict.add_item('targets', targets_arr)
         targets_arr.add_item(self.all_id, 'ALL_BUILD')
         targets_arr.add_item(self.test_id, 'RUN_TESTS')
+        targets_arr.add_item(self.regen_id, 'REGENERATE')
         for t in self.build_targets:
             targets_arr.add_item(self.native_targets[t], t)
+        for t in self.custom_targets:
+            targets_arr.add_item(self.custom_aggregate_targets[t], t)
 
     def generate_pbx_shell_build_phase(self, objects_dict):
+        self.generate_test_shell_build_phase(objects_dict)
+        self.generate_regen_shell_build_phase(objects_dict)
+        self.generate_custom_target_shell_build_phases(objects_dict)
+        self.generate_generator_target_shell_build_phases(objects_dict)
+
+    def generate_test_shell_build_phase(self, objects_dict):
         shell_dict = PbxDict()
         objects_dict.add_item(self.test_command_id, shell_dict, 'ShellScript')
         shell_dict.add_item('isa', 'PBXShellScriptBuildPhase')
@@ -836,15 +1088,33 @@ class XCodeBackend(backends.Backend):
         cmdstr = ' '.join(["'%s'" % i for i in cmd])
         shell_dict.add_item('shellScript', f'"{cmdstr}"')
         shell_dict.add_item('showEnvVarsInLog', 0)
-        self.generate_custom_target_shell_build_phases(objects_dict)
-        self.generate_generator_target_shell_build_phases(objects_dict)
+
+    def generate_regen_shell_build_phase(self, objects_dict):
+        shell_dict = PbxDict()
+        objects_dict.add_item(self.regen_command_id, shell_dict, 'ShellScript')
+        shell_dict.add_item('isa', 'PBXShellScriptBuildPhase')
+        shell_dict.add_item('buildActionMask', 2147483647)
+        shell_dict.add_item('files', PbxArray())
+        shell_dict.add_item('inputPaths', PbxArray())
+        shell_dict.add_item('outputPaths', PbxArray())
+        shell_dict.add_item('runOnlyForDeploymentPostprocessing', 0)
+        shell_dict.add_item('shellPath', '/bin/sh')
+        cmd = mesonlib.get_meson_command() + ['--internal', 'regencheck', os.path.join(self.environment.get_build_dir(), 'meson-private')]
+        cmdstr = ' '.join(["'%s'" % i for i in cmd])
+        shell_dict.add_item('shellScript', f'"{cmdstr}"')
+        shell_dict.add_item('showEnvVarsInLog', 0)
 
     def generate_custom_target_shell_build_phases(self, objects_dict):
         # Custom targets are shell build phases in Xcode terminology.
         for tname, t in self.custom_targets.items():
             if not isinstance(t, build.CustomTarget):
                 continue
-            (srcs, ofilenames, cmd) = self.eval_custom_target_command(t)
+            (srcs, ofilenames, cmd) = self.eval_custom_target_command(t, absolute_outputs=True)
+            fixed_cmd, _ = self.as_meson_exe_cmdline(t.name,
+                                                     cmd[0],
+                                                     cmd[1:],
+                                                     #workdir=None,
+                                                     env=t.env)
             custom_dict = PbxDict()
             objects_dict.add_item(self.shell_targets[tname], custom_dict, f'/* Custom target {tname} */')
             custom_dict.add_item('isa', 'PBXShellScriptBuildPhase')
@@ -859,7 +1129,10 @@ class XCodeBackend(backends.Backend):
             custom_dict.add_item('runOnlyForDeploymentPostprocessing', 0)
             custom_dict.add_item('shellPath', '/bin/sh')
             workdir = self.environment.get_build_dir()
-            cmdstr = ' '.join([f'\\"{x}\\"' for x in cmd])
+            quoted_cmd = []
+            for c in fixed_cmd:
+                quoted_cmd.append(c.replace('"', chr(92) + '"'))
+            cmdstr = ' '.join([f"\\'{x}\\'" for x in quoted_cmd])
             custom_dict.add_item('shellScript', f'"cd {workdir}; {cmdstr}"')
             custom_dict.add_item('showEnvVarsInLog', 0)
 
@@ -868,55 +1141,73 @@ class XCodeBackend(backends.Backend):
             generator_id = 0
             for genlist in t.generated:
                 if isinstance(genlist, build.GeneratedList):
-                    generator = genlist.get_generator()
-                    exe = generator.get_exe()
-                    exe_arr = self.build_target_to_cmd_array(exe)
-                    self.shell_targets[(tname, id)] = self.gen_id()
-                    workdir = self.environment.get_build_dir()
-                    gen_dict = PbxDict()
-                    objects_dict.add_item(self.shell_targets[(tname, generator_id)], gen_dict, '"Generator {}/{}"'.format(generator_id, tname))
-                    infilelist = genlist.get_inputs()
-                    outfilelist = genlist.get_outputs()
-                    gen_dict.add_item('isa', 'PBXShellScriptBuildPhase')
-                    gen_dict.add_item('buildActionMask', 2147483647)
-                    gen_dict.add_item('files', PbxArray())
-                    gen_dict.add_item('inputPaths', PbxArray())
-                    outarray = PbxArray()
-                    gen_dict.add_item('name', '"Generator {}/{}"'.format(generator_id, tname))    
-                    gen_dict.add_item('outputPaths', outarray)
-                    commands = [["cd", workdir]] # Array of arrays, each one a single command, will get concatenated below.
-                    ofile_abs = []
-                    for i in infilelist:
-                        # This might be needed to be added to inputPaths. It's not done yet as it is
-                        # unclear whether it is necessary, what actually happens when it is defined
-                        # and currently the build works without it.
-                        #infile_abs = i.absolute_path(self.environment.get_source_dir(), self.environment.get_build_dir())
-                        infilename = i.rel_to_builddir(self.build_to_src)
-                        base_args = generator.get_arglist(infilename)
-                        for o_base in genlist.get_outputs_for(i):
-                            o = os.path.join(self.get_target_private_dir(t), o_base)
-                            ofile_abs.append(os.path.join(self.environment.get_build_dir(), o))
-                            args = [x.replace("@INPUT@", infilename).replace('@OUTPUT@', o) for x in base_args]
-                            args = self.replace_outputs(args, self.get_target_private_dir(t), outfilelist)
-                            commands.append(exe_arr + args)
-                    for of in ofile_abs:
-                        outarray.add_item(of)
-                    self.generator_outputs[(tname, generator_id)] = ofile_abs
-                    gen_dict.add_item('runOnlyForDeploymentPostprocessing', 0)
-                    gen_dict.add_item('shellPath', '/bin/sh')
-                    quoted_cmds = []
-                    for cmnd in commands:
-                        q = []
-                        for c in cmnd:
-                            if ' ' in c:
-                                q.append(f'\\"{c}\\"')
-                            else:
-                                q.append(c)
-                        quoted_cmds.append(' '.join(q))
-                    cmdstr = '"'  + ' && '.join(quoted_cmds) + '"'
-                    gen_dict.add_item('shellScript', cmdstr)
-                    gen_dict.add_item('showEnvVarsInLog', 0)
+                    self.generate_single_generator_phase(tname, t, genlist, generator_id, objects_dict)
                     generator_id += 1
+        for tname, t in self.custom_targets.items():
+            generator_id = 0
+            for genlist in t.sources:
+                if isinstance(genlist, build.GeneratedList):
+                    self.generate_single_generator_phase(tname, t, genlist, generator_id, objects_dict)
+                    generator_id += 1
+
+    def generate_single_generator_phase(self, tname, t, genlist, generator_id, objects_dict):
+        generator = genlist.get_generator()
+        exe = generator.get_exe()
+        exe_arr = self.build_target_to_cmd_array(exe)
+        workdir = self.environment.get_build_dir()
+        gen_dict = PbxDict()
+        objects_dict.add_item(self.shell_targets[(tname, generator_id)], gen_dict, '"Generator {}/{}"'.format(generator_id, tname))
+        infilelist = genlist.get_inputs()
+        outfilelist = genlist.get_outputs()
+        gen_dict.add_item('isa', 'PBXShellScriptBuildPhase')
+        gen_dict.add_item('buildActionMask', 2147483647)
+        gen_dict.add_item('files', PbxArray())
+        gen_dict.add_item('inputPaths', PbxArray())
+        gen_dict.add_item('name', '"Generator {}/{}"'.format(generator_id, tname))    
+        commands = [["cd", workdir]] # Array of arrays, each one a single command, will get concatenated below.
+        k = (tname, generator_id)
+        ofile_abs = self.generator_outputs[k]
+        outarray = PbxArray()
+        gen_dict.add_item('outputPaths', outarray)
+        for of in ofile_abs:
+            outarray.add_item(of)
+        for i in infilelist:
+            # This might be needed to be added to inputPaths. It's not done yet as it is
+            # unclear whether it is necessary, what actually happens when it is defined
+            # and currently the build works without it.
+            #infile_abs = i.absolute_path(self.environment.get_source_dir(), self.environment.get_build_dir())
+            infilename = i.rel_to_builddir(self.build_to_src)
+            base_args = generator.get_arglist(infilename)
+            for o_base in genlist.get_outputs_for(i):
+                o = os.path.join(self.get_target_private_dir(t), o_base)
+                args = []
+                for arg in base_args:
+                    arg = arg.replace("@INPUT@", infilename)
+                    arg = arg.replace('@OUTPUT@', o).replace('@BUILD_DIR@', self.get_target_private_dir(t))
+                    arg = arg.replace("@CURRENT_SOURCE_DIR@", os.path.join(self.build_to_src, t.subdir))
+                    args.append(arg)
+                args = self.replace_outputs(args, self.get_target_private_dir(t), outfilelist)
+                args = self.replace_extra_args(args, genlist)
+                if generator.capture:
+                    # When capturing, stdout is the output. Forward it with the shell.
+                    full_command = ['('] + exe_arr + args + ['>', o, ')']
+                else:
+                    full_command = exe_arr + args
+                commands.append(full_command)
+        gen_dict.add_item('runOnlyForDeploymentPostprocessing', 0)
+        gen_dict.add_item('shellPath', '/bin/sh')
+        quoted_cmds = []
+        for cmnd in commands:
+            q = []
+            for c in cmnd:
+                if ' ' in c:
+                    q.append(f'\\"{c}\\"')
+                else:
+                    q.append(c)
+            quoted_cmds.append(' '.join(q))
+        cmdstr = '"'  + ' && '.join(quoted_cmds) + '"'
+        gen_dict.add_item('shellScript', cmdstr)
+        gen_dict.add_item('showEnvVarsInLog', 0)
 
 
     def generate_pbx_sources_build_phase(self, objects_dict):
@@ -932,18 +1223,40 @@ class XCodeBackend(backends.Backend):
                 s = os.path.join(s.subdir, s.fname)
                 if not self.environment.is_header(s):
                     file_arr.add_item(self.buildfile_ids[(name, s)], os.path.join(self.environment.get_source_dir(), s))
-            for tname, t in self.custom_targets.items():
-                (srcs, ofilenames, cmd) = self.eval_custom_target_command(t)
-                for o in ofilenames:
-                    file_arr.add_item(self.custom_target_output_buildfile[o],
-                                      os.path.join(self.environment.get_build_dir(), o))
+            generator_id = 0
+            for gt in t.generated:
+                if isinstance(gt, build.CustomTarget):
+                    (srcs, ofilenames, cmd) = self.eval_custom_target_command(gt)
+                    for o in ofilenames:
+                        file_arr.add_item(self.custom_target_output_buildfile[o],
+                                          os.path.join(self.environment.get_build_dir(), o))
+                elif isinstance(gt, build.CustomTargetIndex):
+                    for o in gt.get_outputs():
+                        file_arr.add_item(self.custom_target_output_buildfile[o],
+                                          os.path.join(self.environment.get_build_dir(), o))
+                elif isinstance(gt, build.GeneratedList):
+                    genfiles = self.generator_buildfile_ids[(name, generator_id)]
+                    generator_id += 1
+                    for o in genfiles:
+                        file_arr.add_item(o)
+                else:
+                    raise RuntimeError('Unknown input type: ' + str(gt))
             phase_dict.add_item('runOnlyForDeploymentPostprocessing', 0)
 
     def generate_pbx_target_dependency(self, objects_dict):
+        all_dict = PbxDict()
+        objects_dict.add_item(self.build_all_tdep_id, all_dict, 'ALL_BUILD')
+        all_dict.add_item('isa', 'PBXTargetDependency')
+        all_dict.add_item('target', self.all_id)
         targets = []
+        targets.append((self.regen_dependency_id, self.regen_id, 'REGEN', None))
         for t in self.build_targets:
             idval = self.pbx_dep_map[t] # VERIFY: is this correct?
             targets.append((idval, self.native_targets[t], t, self.containerproxy_map[t]))
+
+        for t in self.custom_targets:
+            idval = self.pbx_custom_dep_map[t]
+            targets.append((idval, self.custom_aggregate_targets[t], t, None))#self.containerproxy_map[t]))
 
         # Sort object by ID
         sorted_targets = sorted(targets, key=operator.itemgetter(0))
@@ -952,7 +1265,8 @@ class XCodeBackend(backends.Backend):
             objects_dict.add_item(t[0], t_dict, 'PBXTargetDependency')
             t_dict.add_item('isa', 'PBXTargetDependency')
             t_dict.add_item('target', t[1], t[2])
-            t_dict.add_item('targetProxy', t[3], 'PBXContainerItemProxy')
+            if t[3] is not None:
+                t_dict.add_item('targetProxy', t[3], 'PBXContainerItemProxy')
 
     def generate_xc_build_configuration(self, objects_dict):
         # First the setup for the toplevel project.
@@ -964,6 +1278,7 @@ class XCodeBackend(backends.Backend):
             bt_dict.add_item('buildSettings', settings_dict)
             settings_dict.add_item('ARCHS', '"$(NATIVE_ARCH_ACTUAL)"')
             settings_dict.add_item('ONLY_ACTIVE_ARCH', 'YES')
+            settings_dict.add_item('SWIFT_VERSION', '4.0')
             settings_dict.add_item('SDKROOT', '"macosx"')
             settings_dict.add_item('SYMROOT', '"%s/build"' % self.environment.get_build_dir())
             bt_dict.add_item('name', f'"{buildtype}"')
@@ -975,18 +1290,7 @@ class XCodeBackend(backends.Backend):
             bt_dict.add_item('isa', 'XCBuildConfiguration')
             settings_dict = PbxDict()
             bt_dict.add_item('buildSettings', settings_dict)
-            settings_dict.add_item('COMBINE_HIDPI_IMAGES', 'YES')
-            settings_dict.add_item('GCC_INLINES_ARE_PRIVATE_EXTERN', 'NO')
-            settings_dict.add_item('GCC_PREPROCESSOR_DEFINITIONS', '""')
-            settings_dict.add_item('GCC_SYMBOLS_PRIVATE_EXTERN', 'NO')
-            settings_dict.add_item('INSTALL_PATH', '""')
-            settings_dict.add_item('OTHER_CFLAGS', '""')
-            settings_dict.add_item('OTHER_LDFLAGS', '""')
-            settings_dict.add_item('OTHER_REZFLAGS', '""')
-            settings_dict.add_item('PRODUCT_NAME', 'ALL_BUILD')
-            settings_dict.add_item('SECTORDER_FLAGS', '""')
             settings_dict.add_item('SYMROOT', '"%s"' % self.environment.get_build_dir())
-            settings_dict.add_item('USE_HEADERMAP', 'NO')
             warn_array = PbxArray()
             warn_array.add_item('"$(inherited)"')
             settings_dict.add_item('WARNING_CFLAGS', warn_array)
@@ -1000,18 +1304,7 @@ class XCodeBackend(backends.Backend):
             bt_dict.add_item('isa', 'XCBuildConfiguration')
             settings_dict = PbxDict()
             bt_dict.add_item('buildSettings', settings_dict)
-            settings_dict.add_item('COMBINE_HIDPI_IMAGES', 'YES')
-            settings_dict.add_item('GCC_INLINES_ARE_PRIVATE_EXTERN', 'NO')
-            settings_dict.add_item('GCC_PREPROCESSOR_DEFINITIONS', '""')
-            settings_dict.add_item('GCC_SYMBOLS_PRIVATE_EXTERN', 'NO')
-            settings_dict.add_item('INSTALL_PATH', '""')
-            settings_dict.add_item('OTHER_CFLAGS', '""')
-            settings_dict.add_item('OTHER_LDFLAGS', '""')
-            settings_dict.add_item('OTHER_REZFLAGS', '""')
-            settings_dict.add_item('PRODUCT_NAME', 'RUN_TESTS')
-            settings_dict.add_item('SECTORDER_FLAGS', '""')
             settings_dict.add_item('SYMROOT', '"%s"' % self.environment.get_build_dir())
-            settings_dict.add_item('USE_HEADERMAP', 'NO')
             warn_array = PbxArray()
             settings_dict.add_item('WARNING_CFLAGS', warn_array)
             warn_array.add_item('"$(inherited)"')
@@ -1021,12 +1314,35 @@ class XCodeBackend(backends.Backend):
         for target_name, target in self.build_targets.items():
             self.generate_single_build_target(objects_dict, target_name, target)
 
+        for target_name, target in self.custom_targets.items():
+            bt_dict = PbxDict()
+            objects_dict.add_item(self.buildconfmap[target_name][buildtype], bt_dict, buildtype)
+            bt_dict.add_item('isa', 'XCBuildConfiguration')
+            settings_dict = PbxDict()
+            bt_dict.add_item('buildSettings', settings_dict)
+            settings_dict.add_item('ARCHS', '"$(NATIVE_ARCH_ACTUAL)"')
+            settings_dict.add_item('ONLY_ACTIVE_ARCH', 'YES')
+            settings_dict.add_item('SDKROOT', '"macosx"')
+            settings_dict.add_item('SYMROOT', '"%s/build"' % self.environment.get_build_dir())
+            bt_dict.add_item('name', f'"{buildtype}"')
+
+
     def determine_internal_dep_link_args(self, target, buildtype):
         links_dylib = False
         dep_libs = []
         for l in target.link_targets:
-            abs_path = os.path.join(self.environment.get_build_dir(),
-                                    l.subdir, buildtype, l.get_filename())
+            if isinstance(target, build.SharedModule) and isinstance(l, build.Executable):
+                continue
+            if isinstance(l, build.CustomTargetIndex):
+                rel_dir = self.get_custom_target_output_dir(l.target)
+                libname = l.get_filename()
+            elif isinstance(l, build.CustomTarget):
+                rel_dir = self.get_custom_target_output_dir(l)
+                libname = l.get_filename()
+            else:
+                rel_dir = self.get_target_dir(l)
+                libname = l.get_filename()
+            abs_path = os.path.join(self.environment.get_build_dir(), rel_dir, libname)
             dep_libs.append("'%s'" % abs_path)
             if isinstance(l, build.SharedLibrary):
                 links_dylib = True
@@ -1046,12 +1362,18 @@ class XCodeBackend(backends.Backend):
                     cd = os.path.join(d.curdir, sd)
                     headerdirs.append(os.path.join(self.environment.get_source_dir(), cd))
                     headerdirs.append(os.path.join(self.environment.get_build_dir(), cd))
+                for extra in d.extra_build_dirs:
+                    headerdirs.append(os.path.join(self.environment.get_build_dir(), extra))
             (dep_libs, links_dylib) = self.determine_internal_dep_link_args(target, buildtype)
             if links_dylib:
                 dep_libs = ['-Wl,-search_paths_first', '-Wl,-headerpad_max_install_names'] + dep_libs
             dylib_version = None
             if isinstance(target, build.SharedLibrary):
-                ldargs = ['-dynamiclib', '-Wl,-headerpad_max_install_names'] + dep_libs
+                if isinstance(target, build.SharedModule):
+                    ldargs = []
+                else:
+                    ldargs = ['-dynamiclib']
+                ldargs += ['-Wl,-headerpad_max_install_names'] + dep_libs
                 install_path = os.path.join(self.environment.get_build_dir(), target.subdir, buildtype)
                 dylib_version = target.soversion
             else:
@@ -1062,9 +1384,14 @@ class XCodeBackend(backends.Backend):
             else:
                 product_name = target.get_basename()
             ldargs += target.link_args
-            linker, stdlib_args = self.determine_linker_and_stdlib_args(target)
-            ldargs += self.build.get_project_link_args(linker, target.subproject, target.for_machine)
+            # Swift is special. Again. You can't mix Swift with other languages
+            # in the same target. Thus for Swift we only use 
+            if self.is_swift_target(target):
+                linker, stdlib_args = target.compilers['swift'], []
+            else:
+                linker, stdlib_args = self.determine_linker_and_stdlib_args(target)
             if not isinstance(target, build.StaticLibrary):
+                ldargs += self.build.get_project_link_args(linker, target.subproject, target.for_machine)
                 ldargs += self.build.get_global_link_args(linker, target.for_machine)
             cargs = []
             for dep in target.get_external_deps():
@@ -1075,7 +1402,7 @@ class XCodeBackend(backends.Backend):
                 if isinstance(o, build.ExtractedObjects):
                     added_objs = set()
                     for objname_rel in o.get_outputs(self):
-                        objname_abs = os.path.join(self.environment.get_build_dir(), objname_rel)
+                        objname_abs = os.path.join(self.environment.get_build_dir(), o.target.subdir, objname_rel)
                         if objname_abs not in added_objs:
                             added_objs.add(objname_abs)
                             ldargs += [r'\"' + objname_abs + r'\"']
@@ -1087,6 +1414,23 @@ class XCodeBackend(backends.Backend):
                     for o_abs in outputs:
                         if o_abs.endswith('.o') or o_abs.endswith('.obj'):
                             ldargs += [r'\"' + o_abs + r'\"']
+                else:
+                    if isinstance(o, build.CustomTarget):
+                        (srcs, ofilenames, cmd) = self.eval_custom_target_command(o)
+                        for ofname in ofilenames:
+                            if os.path.splitext(ofname)[-1] in LINKABLE_EXTENSIONS:
+                                ldargs += [r'\"' + os.path.join(self.environment.get_build_dir(), ofname) + r'\"']
+                    elif isinstance(o, build.CustomTargetIndex):
+                        for ofname in o.get_outputs():
+                            if os.path.splitext(ofname)[-1] in LINKABLE_EXTENSIONS:
+                                ldargs += [r'\"' + os.path.join(self.environment.get_build_dir(), ofname) + r'\"']
+                    else:
+                        raise RuntimeError(o)
+            if isinstance(target, build.SharedModule):
+                options = self.environment.coredata.options
+                ldargs += linker.get_std_shared_module_link_args(options)
+            elif isinstance(target, build.SharedLibrary):
+                ldargs += linker.get_std_shared_lib_link_args()
             ldstr = ' '.join(ldargs)
             valid = self.buildconfmap[target_name][buildtype]
             langargs = {}
@@ -1108,15 +1452,23 @@ class XCodeBackend(backends.Backend):
                 targs = target.get_extra_args(lang)
                 args = warn_args + std_args + pargs + gargs + targs
                 if args:
-                    langname = LANGNAMEMAP[lang]
                     lang_cargs = cargs
                     if compiler and target.implicit_include_directories:
                         # It is unclear what is the cwd when xcode runs. -I. does not seem to
                         # add the root build dir to the search path. So add an absolute path instead.
                         # This may break reproducible builds, in which case patches are welcome.
-                        lang_cargs += self.get_build_dir_include_args(target, compiler, absolute_path=True)
-                        lang_cargs += self.get_source_dir_include_args(target, compiler, absolute_path=True)
-                    langargs[langname] = args
+                        lang_cargs += self.get_custom_target_dir_include_args(target, compiler, absolute_path=True)
+                    # Xcode can not handle separate compilation flags for C and ObjectiveC. They are both
+                    # put in OTHER_CFLAGS. Same with C++ and ObjectiveC++.
+                    if lang == 'objc':
+                        lang = 'c'
+                    elif lang == 'objcpp':
+                        lang = 'cpp'
+                    langname = LANGNAMEMAP[lang]
+                    if langname in langargs:
+                        langargs[langname] += args
+                    else:
+                        langargs[langname] = args
                     langargs[langname] += lang_cargs
             symroot = os.path.join(self.environment.get_build_dir(), target.subdir)
             bt_dict = PbxDict()
@@ -1125,8 +1477,12 @@ class XCodeBackend(backends.Backend):
             settings_dict = PbxDict()
             bt_dict.add_item('buildSettings', settings_dict)
             settings_dict.add_item('COMBINE_HIDPI_IMAGES', 'YES')
-            if dylib_version is not None:
-                settings_dict.add_item('DYLIB_CURRENT_VERSION', f'"{dylib_version}')
+            if isinstance(target, build.SharedModule):
+                settings_dict.add_item('DYLIB_CURRENT_VERSION', '""')
+                settings_dict.add_item('DYLIB_COMPATIBILITY_VERSION', '""')
+            else:
+                if dylib_version is not None:
+                    settings_dict.add_item('DYLIB_CURRENT_VERSION', f'"{dylib_version}"')
             if target.prefix:
                 settings_dict.add_item('EXECUTABLE_PREFIX', target.prefix)
             if target.suffix:
@@ -1150,20 +1506,33 @@ class XCodeBackend(backends.Backend):
                     settings_dict.add_item('GCC_PREFIX_HEADER', f'"$(PROJECT_DIR)/{relative_pch_path}"')
             settings_dict.add_item('GCC_PREPROCESSOR_DEFINITIONS', '""')
             settings_dict.add_item('GCC_SYMBOLS_PRIVATE_EXTERN', 'NO')
+            header_arr = PbxArray()
+            unquoted_headers = []
+            unquoted_headers.append(self.get_target_private_dir_abs(target))
+            if target.implicit_include_directories:
+                unquoted_headers.append(os.path.join(self.environment.get_build_dir(), target.get_subdir()))
+                unquoted_headers.append(os.path.join(self.environment.get_source_dir(), target.get_subdir()))
             if headerdirs:
-                header_arr = PbxArray()
                 for i in headerdirs:
                     i = os.path.normpath(i)
-                    header_arr.add_item(f'"\\"{i}\\""')
-                settings_dict.add_item('HEADER_SEARCH_PATHS', header_arr)
+                    unquoted_headers.append(i)
+            for i in unquoted_headers:
+                header_arr.add_item(f'"\\"{i}\\""')
+            settings_dict.add_item('HEADER_SEARCH_PATHS', header_arr)
             settings_dict.add_item('INSTALL_PATH', f'"{install_path}"')
             settings_dict.add_item('LIBRARY_SEARCH_PATHS', '""')
-            if isinstance(target, build.SharedLibrary):
+            if isinstance(target, build.SharedModule):
+                settings_dict.add_item('LIBRARY_STYLE', 'BUNDLE')
+                settings_dict.add_item('MACH_O_TYPE', 'mh_bundle')
+            elif isinstance(target, build.SharedLibrary):
                 settings_dict.add_item('LIBRARY_STYLE', 'DYNAMIC')
             self.add_otherargs(settings_dict, langargs)
             settings_dict.add_item('OTHER_LDFLAGS', f'"{ldstr}"')
             settings_dict.add_item('OTHER_REZFLAGS', '""')
-            settings_dict.add_item('PRODUCT_NAME', product_name)
+            if ' ' in product_name:
+                settings_dict.add_item('PRODUCT_NAME', f'"{product_name}"')
+            else:
+                settings_dict.add_item('PRODUCT_NAME', product_name)
             settings_dict.add_item('SECTORDER_FLAGS', '""')
             settings_dict.add_item('SYMROOT', f'"{symroot}"')
             sysheader_arr = PbxArray()
@@ -1182,7 +1551,12 @@ class XCodeBackend(backends.Backend):
             if args:
                 quoted_args = []
                 for a in args:
-                    if ' ' in a:
+                    # This works but
+                    # a) it's ugly as sin
+                    # b) I don't know why it works or why every backslash must be escaped into eight backslashes
+                    a = a.replace(chr(92), 8*chr(92)) # chr(92) is backslash, this how we smuggle it in without Python's quoting grabbing it.
+                    a = a.replace(r'"', r'\\\"')
+                    if ' ' in a or "'" in a:
                         a = r'\"' + a + r'\"'
                     quoted_args.append(a)
                 settings_dict.add_item(f'OTHER_{langname}FLAGS', '"' + ' '.join(quoted_args) + '"')
@@ -1221,6 +1595,17 @@ class XCodeBackend(backends.Backend):
         test_dict.add_item('defaultConfigurationIsVisible', 0)
         test_dict.add_item('defaultConfigurationName', self.buildtype)
 
+        # Regen target
+        regen_dict = PbxDict()
+        objects_dict.add_item(self.regen_buildconf_id, test_dict, 'Build configuration list for PBXAggregateTarget "REGENERATE"')
+        regen_dict.add_item('isa', 'XCConfigurationList')
+        conf_arr = PbxArray()
+        regen_dict.add_item('buildConfigurations', conf_arr)
+        for buildtype in self.buildtypes:
+            conf_arr.add_item(self.test_configurations[buildtype], buildtype)
+        regen_dict.add_item('defaultConfigurationIsVisible', 0)
+        regen_dict.add_item('defaultConfigurationName', self.buildtype)
+
         for target_name in self.build_targets:
             t_dict = PbxDict()
             listid = self.buildconflistmap[target_name]
@@ -1233,6 +1618,17 @@ class XCodeBackend(backends.Backend):
             t_dict.add_item('defaultConfigurationIsVisible', 0)
             t_dict.add_item('defaultConfigurationName', self.buildtype)
 
+        for target_name in self.custom_targets:
+            t_dict = PbxDict()
+            listid = self.buildconflistmap[target_name]
+            objects_dict.add_item(listid, t_dict, f'Build configuration list for PBXAggregateTarget "{target_name}"')
+            t_dict.add_item('isa', 'XCConfigurationList')
+            conf_arr = PbxArray()
+            t_dict.add_item('buildConfigurations', conf_arr)
+            idval = self.buildconfmap[target_name][self.buildtype]
+            conf_arr.add_item(idval, self.buildtype)
+            t_dict.add_item('defaultConfigurationIsVisible', 0)
+            t_dict.add_item('defaultConfigurationName', self.buildtype)
 
     def generate_prefix(self, pbxdict):
         pbxdict.add_item('archiveVersion', '1')

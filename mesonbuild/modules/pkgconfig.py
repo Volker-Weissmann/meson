@@ -153,6 +153,11 @@ class DependenciesHelper:
                                            obj.link_whole_targets,
                                            obj.external_deps,
                                            isinstance(obj, build.StaticLibrary) and public)
+            elif isinstance(obj, (build.CustomTarget, build.CustomTargetIndex)):
+                if not obj.is_linkable_target():
+                    raise mesonlib.MesonException('library argument contains a not linkable custom_target.')
+                FeatureNew.single_use('custom_target in pkgconfig.generate libraries', '0.58.0', self.state.subproject)
+                processed_libs.append(obj)
             elif isinstance(obj, str):
                 processed_libs.append(obj)
             else:
@@ -276,7 +281,13 @@ class DependenciesHelper:
 
 class PkgConfigModule(ExtensionModule):
 
-    def _get_lname(self, l, msg, pcfile):
+    def _get_lname(self, l, msg, pcfile, is_custom_target):
+        if is_custom_target:
+            basename = os.path.basename(l.get_filename())
+            name = os.path.splitext(basename)[0]
+            if name.startswith('lib'):
+                name = name[3:]
+            return name
         # Nothing special
         if not l.name_prefix_set:
             return l.name
@@ -307,17 +318,12 @@ class PkgConfigModule(ExtensionModule):
         return value.replace(' ', r'\ ')
 
     def _make_relative(self, prefix, subdir):
-        if isinstance(prefix, PurePath):
-            prefix = prefix.as_posix()
-        if isinstance(subdir, PurePath):
-            subdir = subdir.as_posix()
+        prefix = PurePath(prefix)
+        subdir = PurePath(subdir)
         try:
-            if os.path.commonpath([prefix, subdir]) == prefix:
-                skip = len(prefix) + 1
-                subdir = subdir[skip:]
+            return subdir.relative_to(prefix).as_posix()
         except ValueError:
-            pass
-        return subdir
+            return subdir.as_posix()
 
     def generate_pkgconfig_file(self, state, deps, subdirs, name, description,
                                 url, version, pcfile, conflicts, variables,
@@ -378,7 +384,8 @@ class PkgConfigModule(ExtensionModule):
                             install_dir = l.get_custom_install_dir()[0]
                         if install_dir is False:
                             continue
-                        if 'cs' in l.compilers:
+                        is_custom_target = isinstance(l, (build.CustomTarget, build.CustomTargetIndex))
+                        if not is_custom_target and 'cs' in l.compilers:
                             if isinstance(install_dir, str):
                                 Lflag = '-r${{prefix}}/{}/{}'.format(self._escape(self._make_relative(prefix, install_dir)), l.filename)
                             else:  # install_dir is True
@@ -391,18 +398,18 @@ class PkgConfigModule(ExtensionModule):
                         if Lflag not in Lflags:
                             Lflags.append(Lflag)
                             yield Lflag
-                        lname = self._get_lname(l, msg, pcfile)
+                        lname = self._get_lname(l, msg, pcfile, is_custom_target)
                         # If using a custom suffix, the compiler may not be able to
                         # find the library
-                        if l.name_suffix_set:
+                        if not is_custom_target and l.name_suffix_set:
                             mlog.warning(msg.format(l.name, 'name_suffix', lname, pcfile))
-                        if 'cs' not in l.compilers:
+                        if is_custom_target or 'cs' not in l.compilers:
                             yield '-l%s' % lname
 
             def get_uninstalled_include_dirs(libs):
                 result = []
                 for l in libs:
-                    if isinstance(l, str):
+                    if isinstance(l, (str, build.CustomTarget, build.CustomTargetIndex)):
                         continue
                     if l.get_subdir() not in result:
                         result.append(l.get_subdir())
@@ -417,8 +424,8 @@ class PkgConfigModule(ExtensionModule):
             def generate_uninstalled_cflags(libs):
                 for d in get_uninstalled_include_dirs(libs):
                     for basedir in ['${prefix}', '${srcdir}']:
-                        path = os.path.join(basedir, d)
-                        yield '-I%s' % self._escape(path)
+                        path = PurePath(basedir, d)
+                        yield '-I%s' % self._escape(path.as_posix())
 
             if len(deps.pub_libs) > 0:
                 ofile.write('Libs: {}\n'.format(' '.join(generate_libs_flags(deps.pub_libs))))

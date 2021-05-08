@@ -170,6 +170,7 @@ permitted_test_kwargs = {
 }
 
 permitted_dependency_kwargs = {
+    'allow_fallback',
     'cmake_args',
     'cmake_module_path',
     'cmake_package_version',
@@ -691,6 +692,7 @@ external dependencies (including libraries) must go to "dependencies".''')
         sub = SubprojectHolder(None, os.path.join(self.subproject_dir, subp_name),
                                disabled_feature=disabled_feature, exception=exception)
         self.subprojects[subp_name] = sub
+        self.coredata.initialized_subprojects.add(subp_name)
         return sub
 
     def get_subproject(self, subp_name):
@@ -806,6 +808,7 @@ external dependencies (including libraries) must go to "dependencies".''')
         self.build_def_files = list(set(self.build_def_files + subi.build_def_files))
         self.build.merge(subi.build)
         self.build.subprojects[subp_name] = subi.project_version
+        self.coredata.initialized_subprojects.add(subp_name)
         self.summary.update(subi.summary)
         return self.subprojects[subp_name]
 
@@ -974,7 +977,7 @@ external dependencies (including libraries) must go to "dependencies".''')
         # If this is the first invocation we alway sneed to initialize
         # builtins, if this is a subproject that is new in a re-invocation we
         # need to initialize builtins for that
-        if self.environment.first_invocation or (self.subproject != '' and self.subproject not in self.subprojects):
+        if self.environment.first_invocation or (self.subproject != '' and self.subproject not in self.coredata.initialized_subprojects):
             default_options = self.project_default_options.copy()
             default_options.update(self.default_project_options)
             self.coredata.init_builtins(self.subproject)
@@ -1597,6 +1600,11 @@ external dependencies (including libraries) must go to "dependencies".''')
             if not isinstance(allow_fallback, bool):
                 raise InvalidArguments('"allow_fallback" argument must be boolean')
 
+        wrap_mode = self.coredata.get_option(OptionKey('wrap_mode'))
+        force_fallback_for = self.coredata.get_option(OptionKey('force_fallback_for'))
+        force_fallback |= (wrap_mode == WrapMode.forcefallback or
+                           name in force_fallback_for)
+
         # If "fallback" is absent, look for an implicit fallback.
         if name and fallback is None and allow_fallback is not False:
             # Add an implicit fallback if we have a wrap file or a directory with the same name,
@@ -1608,7 +1616,8 @@ external dependencies (including libraries) must go to "dependencies".''')
             if not provider and allow_fallback is True:
                 raise InvalidArguments('Fallback wrap or subproject not found for dependency \'%s\'' % name)
             subp_name = mesonlib.listify(provider)[0]
-            if provider and (allow_fallback is True or required or self.get_subproject(subp_name)):
+            force_fallback |= subp_name in force_fallback_for
+            if provider and (allow_fallback is True or required or self.get_subproject(subp_name) or force_fallback):
                 fallback = provider
 
         if 'default_options' in kwargs and not fallback:
@@ -1639,13 +1648,7 @@ external dependencies (including libraries) must go to "dependencies".''')
             subp_name, varname = self.get_subproject_infos(fallback)
             if self.get_subproject(subp_name):
                 return self.get_subproject_dep(name, display_name, subp_name, varname, kwargs)
-
-            wrap_mode = self.coredata.get_option(OptionKey('wrap_mode'))
-            force_fallback_for = self.coredata.get_option(OptionKey('force_fallback_for'))
-            force_fallback = (force_fallback or
-                              wrap_mode == WrapMode.forcefallback or
-                              name in force_fallback_for or
-                              subp_name in force_fallback_for)
+            force_fallback |= subp_name in force_fallback_for
 
         if name != '' and (not fallback or not force_fallback):
             self._handle_featurenew_dependencies(name)
@@ -2451,7 +2454,7 @@ subproject. This is a problem as it hardcodes the relative paths of these two pr
 This makes it impossible to compile the project in any other directory layout and also
 prevents the subproject from changing its own directory layout.
 
-Instead of poking directly at the internals the subproject should be executed and 
+Instead of poking directly at the internals the subproject should be executed and
 it should set a variable that the caller can then use. Something like:
 
 # In subproject
@@ -2461,7 +2464,7 @@ some_dep = declare_depencency(include_directories: include_directories('include'
 some_dep = depencency('some')
 executable(..., dependencies: [some_dep])
 
-This warning will become a hard error in a future Meson release. 
+This warning will become a hard error in a future Meson release.
 ''')
             absdir_src = os.path.join(absbase_src, a)
             absdir_build = os.path.join(absbase_build, a)
@@ -2731,7 +2734,18 @@ Try setting b_lundef to false instead.'''.format(self.coredata.options[OptionKey
         elif key in self.environment.coredata.options:
             pic = self.environment.coredata.options[key].value
 
-        if pic:
+        if self.backend.name == 'xcode':
+            # Xcode is a bit special in that you can't (at least for the moment)
+            # form a library only from object file inputs. The simple but inefficient
+            # solution is to use the sources directly. This will lead to them being
+            # built twice. This is unfortunate and slow, but at least it works.
+            # Feel free to submit patches to get this fixed if it is an
+            # issue for you.
+            reuse_object_files = False
+        else:
+            reuse_object_files = pic
+
+        if reuse_object_files:
             # Exclude sources from args and kwargs to avoid building them twice
             static_args = [args[0]]
             static_kwargs = kwargs.copy()

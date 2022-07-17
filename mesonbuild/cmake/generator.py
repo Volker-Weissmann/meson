@@ -93,7 +93,8 @@ def parse_generator_expressions(
             return ';'.join([x for x in tgt.properties[f'IMPORTED_LOCATION_{cfg}'] if x])
         elif 'IMPORTED_LOCATION' in tgt.properties:
             return ';'.join([x for x in tgt.properties['IMPORTED_LOCATION'] if x])
-        return ''
+        else:
+            return str(tgt.build_path)
 
     supported = {
         # Boolean functions

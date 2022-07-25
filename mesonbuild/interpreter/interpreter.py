@@ -37,6 +37,7 @@ from ..interpreterbase import ObjectHolder
 from ..modules import ExtensionModule, ModuleObject, MutableModuleObject, NewExtensionModule, NotFoundExtensionModule
 from ..cmake import CMakeInterpreter
 from ..backend.backends import ExecutableSerialisation
+from ..mparser import ast_print
 
 from . import interpreterobjects as OBJ
 from . import compiler as compilerOBJ
@@ -102,6 +103,22 @@ import typing as T
 import textwrap
 import importlib
 import copy
+import inspect
+import pprint
+import sys
+
+
+def tracepoint():
+    print()
+    cf = inspect.currentframe()
+    head = cf.f_back
+    while head is not None:
+        print(head.f_code.co_name.ljust(50), head.f_code.co_filename.split("/")[-1] + ':'  + str(head.f_lineno) )
+        #pprint.pprint({key: head.f_locals.get(key) for key in head.f_code.co_varnames}, indent=4)
+        head = head.f_back
+    print(sys.argv)
+    print()
+
 
 if T.TYPE_CHECKING:
     import argparse
@@ -1005,7 +1022,7 @@ class Interpreter(InterpreterBase, HoldableObject):
                 # Debug print the generated meson file
                 from ..ast import AstIndentationGenerator, AstPrinter
                 printer = AstPrinter(update_ast_line_nos=True)
-                ast.accept(AstIndentationGenerator())
+                ast.accept(AstIndentationGenerator()) # todo: there is an escaping bug
                 ast.accept(printer)
                 printer.post_process()
                 meson_filename = os.path.join(self.build.environment.get_build_dir(), subdir, 'meson.build')
@@ -1015,6 +1032,7 @@ class Interpreter(InterpreterBase, HoldableObject):
                 mlog.log('Build file:', meson_filename)
                 mlog.cmd_ci_include(meson_filename)
                 mlog.log()
+                import pdb
 
             result = self._do_subproject_meson(subp_name, subdir, default_options, kwargs, ast, [str(f) for f in cm_int.bs_files], is_translated=True)
             result.cm_interpreter = cm_int
@@ -1704,6 +1722,7 @@ class Interpreter(InterpreterBase, HoldableObject):
     @FeatureDeprecatedKwargs('executable', '0.56.0', ['gui_app'], extra_message="Use 'win_subsystem' instead.")
     @permittedKwargs(build.known_exe_kwargs)
     def func_executable(self, node, args, kwargs):
+        print("Volker func_executable", self, node, args, kwargs)
         return self.build_target(node, args, kwargs, build.Executable)
 
     @permittedKwargs(build.known_stlib_kwargs)
@@ -1866,6 +1885,8 @@ class Interpreter(InterpreterBase, HoldableObject):
     )
     def func_custom_target(self, node: mparser.FunctionNode, args: T.Tuple[str],
                            kwargs: 'kwargs.CustomTarget') -> build.CustomTarget:
+        tracepoint()
+        print("volker func_custom_target", kwargs)
         if kwargs['depfile'] and ('@BASENAME@' in kwargs['depfile'] or '@PLAINNAME@' in kwargs['depfile']):
             FeatureNew.single_use('substitutions in custom_target depfile', '0.47.0', self.subproject, location=node)
 

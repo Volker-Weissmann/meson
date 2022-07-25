@@ -19,6 +19,22 @@ import types
 import typing as T
 from .mesonlib import MesonException
 from . import mlog
+import inspect
+import pprint
+import sys
+
+
+def tracepoint():
+    print()
+    cf = inspect.currentframe()
+    head = cf.f_back
+    while head is not None:
+        print(head.f_code.co_name.ljust(50), head.f_code.co_filename.split("/")[-1] + ':'  + str(head.f_lineno) )
+        #pprint.pprint({key: head.f_locals.get(key) for key in head.f_code.co_varnames}, indent=4)
+        head = head.f_back
+    print(sys.argv)
+    print()
+
 
 if T.TYPE_CHECKING:
     from .ast import AstVisitor
@@ -269,6 +285,80 @@ class BaseNode:
             if callable(func):
                 func(self)
 
+# def ast_helper(el, indent):
+#     match el:
+#         case list() | tuple():
+#             for s in el:
+#                 ast_helper(s, indent)
+#         case BaseNode():
+#             astprint(el, indent+4)
+#         case int() | Token():
+#             print(el)
+#         case str():
+#             print(el.replace("\n", ""))
+#         case _:
+#             print(type(el))
+#             raise ValueError()
+# def astprint(ast, indent=0):
+#     print(" "*indent, type(ast))
+#     assert(isinstance(ast, BaseNode))
+#     rec_mems = ["args", "arguments"]
+#     #['ast_id', 'colno', 'condition_level', 'end_colno', 'end_lineno', 'filename', 'level', 'lineno', 'func_name']
+#     for mem in vars(ast):
+#         el = vars(ast)[mem]
+#         print(" "*(indent+2), mem+":", end="")
+#         ast_helper(el, indent)
+#     #     if mem in vars(ast):
+#     #         print(" "*(indent+2), mem+":")
+#     #         astprint(vars(ast)[mem], indent+4)
+#     # if "lines" in vars(ast):
+#     #     print(" "*(indent+2), "lines:")
+#     #     for el in ast.lines:
+#     #         astprint(el, indent+4)
+
+def dict_print(typename, dat) -> str:
+    ret = typename + ":"
+    for key, value in dat.items():
+        key = str(key)
+        assert("\n" not in key)
+        assert(not key[0].isspace())
+        ret += "\n\t" + key + ": " + ast_print(value).replace("\n", "\n\t")
+    return ret
+def ast_print(dat) -> str:
+    match dat:
+        case None:
+            return "None"
+        case int():
+            return str(dat)
+        case str():
+            assert("\n" not in dat)
+            return dat
+        case list() | tuple():
+            ret = "list/tuple:"
+            for key, value in enumerate(dat):
+                ret += "\n\t" + str(key) + ": " + ast_print(value).replace("\n", "\n\t")
+            return ret
+        case dict():
+            return dict_print("dict", dat)
+        case _:
+            return dict_print(str(type(dat)), vars(dat))
+
+mycount = 0
+import pprint
+def debugast(ast):
+    global mycount
+    #
+    # print("##################################################")
+    #print(ast_print([1,2,(3,8),4]))
+    #print(ast_print({"a": 1, "inner": {"k": 8, "g": 9}, "b": 2, "c": 3}))
+    #print(ast_print(ast))
+
+    mycount += 1
+    if mycount == 2:
+        pass
+        #exit(1)
+
+
 class ElementaryNode(T.Generic[TV_TokenTypes], BaseNode):
     def __init__(self, token: Token[TV_TokenTypes]):
         super().__init__(token.lineno, token.colno, token.filename)
@@ -297,6 +387,9 @@ class StringNode(ElementaryNode[str]):
     def __init__(self, token: Token[str]):
         super().__init__(token)
         assert isinstance(self.value, str)
+        if "full_path" in self.value:
+            tracepoint()
+            import pdb
 
     def __str__(self) -> str:
         return "String node: '%s' (%d, %d)." % (self.value, self.lineno, self.colno)

@@ -1,0 +1,325 @@
+*DRYRUN* [cygwin/gccx64ninja                                 ] 🚧  Skipping unsupported platform -- Try running with `-P windows-latest=...`
+*DRYRUN* [File format check/format                           ] 🚀  Start image=ghcr.io/catthehacker/ubuntu:act-latest
+*DRYRUN* [Lint/pylint                                        ] 🚀  Start image=ghcr.io/catthehacker/ubuntu:act-latest
+*DRYRUN* [CI image builder/Arch Linux-1                      ] 🚀  Start image=ghcr.io/catthehacker/ubuntu:act-latest
+*DRYRUN* [File format check/format                           ]   🐳  docker pull image=ghcr.io/catthehacker/ubuntu:act-latest platform= username= forcePull=false
+*DRYRUN* [Lint/pylint                                        ]   🐳  docker pull image=ghcr.io/catthehacker/ubuntu:act-latest platform= username= forcePull=false
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ] 🚀  Start image=ghcr.io/catthehacker/ubuntu:act-latest
+*DRYRUN* [CI image builder/Arch Linux-1                      ]   🐳  docker pull image=ghcr.io/catthehacker/ubuntu:act-latest platform= username= forcePull=false
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ]   🐳  docker pull image=ghcr.io/catthehacker/ubuntu:act-latest platform= username= forcePull=false
+*DRYRUN* [Lint/mypy                                          ] 🚀  Start image=ghcr.io/catthehacker/ubuntu:act-latest
+*DRYRUN* [CI image builder/Fedora-3                          ] 🚀  Start image=ghcr.io/catthehacker/ubuntu:act-latest
+*DRYRUN* [CI image builder/Fedora-3                          ]   🐳  docker pull image=ghcr.io/catthehacker/ubuntu:act-latest platform= username= forcePull=false
+*DRYRUN* [CI image builder/OpenSUSE-4                        ] 🚀  Start image=ghcr.io/catthehacker/ubuntu:act-latest
+*DRYRUN* [Lint/mypy                                          ]   🐳  docker pull image=ghcr.io/catthehacker/ubuntu:act-latest platform= username= forcePull=false
+*DRYRUN* [CI image builder/OpenSUSE-4                        ]   🐳  docker pull image=ghcr.io/catthehacker/ubuntu:act-latest platform= username= forcePull=false
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ]   🐳  docker create image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ]   🐳  docker run image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [Lint/pylint                                        ]   🐳  docker create image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [Lint/pylint                                        ]   🐳  docker run image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [File format check/format                           ]   🐳  docker create image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [File format check/format                           ]   🐳  docker run image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [CI image builder/Arch Linux-1                      ]   🐳  docker create image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [CI image builder/Arch Linux-1                      ]   🐳  docker run image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [Lint/mypy                                          ]   🐳  docker create image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [Lint/mypy                                          ]   🐳  docker run image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [CI image builder/OpenSUSE-4                        ]   🐳  docker create image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [CI image builder/OpenSUSE-4                        ]   🐳  docker run image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [Lint/pylint                                        ]   ☁  git clone 'https://github.com/actions/setup-python' # ref=v2
+*DRYRUN* [File format check/format                           ]   ☁  git clone 'https://github.com/actions/setup-python' # ref=v2
+*DRYRUN* [Lint/mypy                                          ]   ☁  git clone 'https://github.com/actions/setup-python' # ref=v2
+*DRYRUN* [CI image builder/OpenSUSE-4                        ]   ☁  git clone 'https://github.com/azure/docker-login' # ref=v1
+*DRYRUN* [CI image builder/Fedora-3                          ]   🐳  docker create image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [CI image builder/Fedora-3                          ]   🐳  docker run image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [CI image builder/Arch Linux-1                      ]   ☁  git clone 'https://github.com/azure/docker-login' # ref=v1
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ]   ☁  git clone 'https://github.com/azure/docker-login' # ref=v1
+*DRYRUN* [CI image builder/Fedora-3                          ]   ☁  git clone 'https://github.com/azure/docker-login' # ref=v1
+*DRYRUN* [Lint/pylint                                        ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [Lint/pylint                                        ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [Lint/pylint                                        ] ⭐ Run Main actions/setup-python@v2
+*DRYRUN* [Lint/pylint                                        ]   ✅  Success - Main actions/setup-python@v2
+*DRYRUN* [Lint/pylint                                        ] ⭐ Run Main python -m pip install pylint
+*DRYRUN* [Lint/pylint                                        ]   ✅  Success - Main python -m pip install pylint
+*DRYRUN* [Lint/pylint                                        ] ⭐ Run Main pylint mesonbuild
+*DRYRUN* [Lint/pylint                                        ]   ✅  Success - Main pylint mesonbuild
+*DRYRUN* [Lint/pylint                                        ] ⭐ Run Post actions/setup-python@v2
+*DRYRUN* [Lint/pylint                                        ]   ✅  Success - Post actions/setup-python@v2
+*DRYRUN* [Lint/pylint                                        ] 🏁  Job succeeded
+*DRYRUN* [macos/unittests-appleclang                         ] 🚧  Skipping unsupported platform -- Try running with `-P macos-latest=...`
+*DRYRUN* [macos/macos-clang-1                                ] 🚧  Skipping unsupported platform -- Try running with `-P macos-latest=...`
+*DRYRUN* [macos/macos-clang-unity-2                          ] 🚧  Skipping unsupported platform -- Try running with `-P macos-latest=...`
+*DRYRUN* [macos/Qt4macos                                     ] 🚧  Skipping unsupported platform -- Try running with `-P macos-latest=...`
+*DRYRUN* [msys2/gccx86ninja-1                                ] 🚧  Skipping unsupported platform -- Try running with `-P windows-2019=...`
+*DRYRUN* [msys2/clangx64ninja-3                              ] 🚧  Skipping unsupported platform -- Try running with `-P windows-2019=...`
+*DRYRUN* [msys2/gccx64ninja-2                                ] 🚧  Skipping unsupported platform -- Try running with `-P windows-2019=...`
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf] 🚀  Start image=mesonbuild/eoan:latest
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf]   🐳  docker pull image=mesonbuild/eoan:latest platform= username= forcePull=false
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf]   🐳  docker create image=mesonbuild/eoan:latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf]   🐳  docker run image=mesonbuild/eoan:latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf] ⭐ Run Main apt-get -y purge clang gcc gdc
+apt-get -y autoremove
+python3 -m pip install coverage codecov
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf]   ✅  Success - Main apt-get -y purge clang gcc gdc
+apt-get -y autoremove
+python3 -m pip install coverage codecov
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf] ⭐ Run Main Run tests
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf]   ✅  Success - Main Run tests
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf] ⭐ Run Main Upload coverage report
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf]   ✅  Success - Main Upload coverage report
+*DRYRUN* [Cross-only compilation environment/cross-only-armhf] 🏁  Job succeeded
+*DRYRUN* [linux/Arch Linux-1                                 ] 🚀  Start image=mesonbuild/arch:latest
+*DRYRUN* [linux/Arch Linux-1                                 ]   🐳  docker pull image=mesonbuild/arch:latest platform= username= forcePull=false
+*DRYRUN* [linux/CUDA (on Arch)-2                             ] 🚀  Start image=mesonbuild/cuda:latest
+*DRYRUN* [linux/OpenSUSE-4                                   ] 🚀  Start image=mesonbuild/opensuse:latest
+*DRYRUN* [linux/CUDA (on Arch)-2                             ]   🐳  docker pull image=mesonbuild/cuda:latest platform= username= forcePull=false
+*DRYRUN* [linux/Fedora-3                                     ] 🚀  Start image=mesonbuild/fedora:latest
+*DRYRUN* [linux/OpenSUSE-4                                   ]   🐳  docker pull image=mesonbuild/opensuse:latest platform= username= forcePull=false
+*DRYRUN* [linux/Fedora-3                                     ]   🐳  docker pull image=mesonbuild/fedora:latest platform= username= forcePull=false
+*DRYRUN* [linux/Arch Linux-1                                 ]   🐳  docker create image=mesonbuild/arch:latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Arch Linux-1                                 ]   🐳  docker run image=mesonbuild/arch:latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/CUDA (on Arch)-2                             ]   🐳  docker create image=mesonbuild/cuda:latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/CUDA (on Arch)-2                             ]   🐳  docker run image=mesonbuild/cuda:latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/OpenSUSE-4                                   ]   🐳  docker create image=mesonbuild/opensuse:latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/OpenSUSE-4                                   ]   🐳  docker run image=mesonbuild/opensuse:latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/CUDA (on Arch)-2                             ] 🧪  Matrix: map[cfg:map[id:cuda name:CUDA (on Arch)]]
+*DRYRUN* [linux/Fedora-3                                     ]   🐳  docker create image=mesonbuild/fedora:latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Fedora-3                                     ]   🐳  docker run image=mesonbuild/fedora:latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/OpenSUSE-4                                   ] 🧪  Matrix: map[cfg:map[id:opensuse name:OpenSUSE]]
+*DRYRUN* [linux/Fedora-3                                     ] 🧪  Matrix: map[cfg:map[id:fedora name:Fedora]]
+*DRYRUN* [linux/Arch Linux-1                                 ] 🧪  Matrix: map[cfg:map[id:arch name:Arch Linux]]
+*DRYRUN* [linux/CUDA (on Arch)-2                             ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [linux/OpenSUSE-4                                   ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [linux/Arch Linux-1                                 ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [linux/CUDA (on Arch)-2                             ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [linux/OpenSUSE-4                                   ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [linux/Fedora-3                                     ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [linux/Arch Linux-1                                 ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [linux/CUDA (on Arch)-2                             ] ⭐ Run Main Run tests
+*DRYRUN* [linux/Fedora-3                                     ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [linux/OpenSUSE-4                                   ] ⭐ Run Main Run tests
+*DRYRUN* [linux/Arch Linux-1                                 ] ⭐ Run Main Run tests
+*DRYRUN* [linux/CUDA (on Arch)-2                             ]   ✅  Success - Main Run tests
+*DRYRUN* [linux/Fedora-3                                     ] ⭐ Run Main Run tests
+*DRYRUN* [linux/OpenSUSE-4                                   ]   ✅  Success - Main Run tests
+*DRYRUN* [linux/Arch Linux-1                                 ]   ✅  Success - Main Run tests
+*DRYRUN* [linux/CUDA (on Arch)-2                             ] ⭐ Run Main Upload coverage report
+*DRYRUN* [linux/Fedora-3                                     ]   ✅  Success - Main Run tests
+*DRYRUN* [linux/OpenSUSE-4                                   ] ⭐ Run Main Upload coverage report
+*DRYRUN* [linux/Arch Linux-1                                 ] ⭐ Run Main Upload coverage report
+*DRYRUN* [linux/CUDA (on Arch)-2                             ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [linux/Fedora-3                                     ] ⭐ Run Main Upload coverage report
+*DRYRUN* [linux/OpenSUSE-4                                   ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [linux/Arch Linux-1                                 ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [linux/OpenSUSE-4                                   ] 🏁  Job succeeded
+*DRYRUN* [linux/Ubuntu Bionic-5                              ] 🚀  Start image=mesonbuild/bionic:latest
+*DRYRUN* [linux/Ubuntu Bionic-5                              ]   🐳  docker pull image=mesonbuild/bionic:latest platform= username= forcePull=false
+*DRYRUN* [linux/Fedora-3                                     ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [linux/Arch Linux-1                                 ] 🏁  Job succeeded
+*DRYRUN* [linux/CUDA (on Arch)-2                             ] 🏁  Job succeeded
+*DRYRUN* [linux/Ubuntu Bionic-5                              ]   🐳  docker create image=mesonbuild/bionic:latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Bionic-5                              ]   🐳  docker run image=mesonbuild/bionic:latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Fedora-3                                     ] 🏁  Job succeeded
+*DRYRUN* [linux/Ubuntu Bionic-5                              ] 🧪  Matrix: map[cfg:map[id:bionic name:Ubuntu Bionic]]
+*DRYRUN* [linux/Ubuntu Bionic-5                              ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [linux/Ubuntu Bionic-5                              ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [linux/Ubuntu Bionic-5                              ] ⭐ Run Main Run tests
+*DRYRUN* [linux/Ubuntu Bionic-5                              ]   ✅  Success - Main Run tests
+*DRYRUN* [linux/Ubuntu Bionic-5                              ] ⭐ Run Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Bionic-5                              ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Bionic-5                              ] 🏁  Job succeeded
+*DRYRUN* [linux/Ubuntu Rolling-1                             ] 🚀  Start image=mesonbuild/ubuntu-rolling
+*DRYRUN* [linux/Ubuntu Rolling-2                             ] 🚀  Start image=mesonbuild/ubuntu-rolling
+*DRYRUN* [linux/Ubuntu Rolling-1                             ]   🐳  docker pull image=mesonbuild/ubuntu-rolling platform= username= forcePull=false
+*DRYRUN* [linux/Ubuntu Rolling-3                             ] 🚀  Start image=mesonbuild/ubuntu-rolling
+*DRYRUN* [linux/Ubuntu Rolling-3                             ]   🐳  docker pull image=mesonbuild/ubuntu-rolling platform= username= forcePull=false
+*DRYRUN* [linux/Ubuntu Rolling-2                             ]   🐳  docker pull image=mesonbuild/ubuntu-rolling platform= username= forcePull=false
+*DRYRUN* [linux/Ubuntu Rolling-4                             ] 🚀  Start image=mesonbuild/ubuntu-rolling
+*DRYRUN* [linux/Ubuntu Rolling-4                             ]   🐳  docker pull image=mesonbuild/ubuntu-rolling platform= username= forcePull=false
+*DRYRUN* [linux/Ubuntu Rolling-1                             ]   🐳  docker create image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-1                             ]   🐳  docker run image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-4                             ]   🐳  docker create image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-4                             ]   🐳  docker run image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-3                             ]   🐳  docker create image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-3                             ]   🐳  docker run image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-2                             ]   🐳  docker create image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-2                             ]   🐳  docker run image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-4                             ] 🧪  Matrix: map[cfg:map[CC:clang CXX:clang++]]
+*DRYRUN* [linux/Ubuntu Rolling-1                             ] 🧪  Matrix: map[cfg:map[CC:gcc CXX:g++]]
+*DRYRUN* [linux/Ubuntu Rolling-2                             ] 🧪  Matrix: map[cfg:map[CC:gcc CXX:g++ MESON_ARGS:--unity=on -Ddefault_library=static RUN_TESTS_ARGS:--no-unittests]]
+*DRYRUN* [linux/Ubuntu Rolling-3                             ] 🧪  Matrix: map[cfg:map[CC:gcc CXX:g++ MESON_ARGS:-Ddefault_library=both RUN_TESTS_ARGS:--no-unittests]]
+*DRYRUN* [linux/Ubuntu Rolling-1                             ] ⭐ Run Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-2                             ] ⭐ Run Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-1                             ]   ✅  Success - Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-2                             ]   ✅  Success - Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-3                             ] ⭐ Run Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-4                             ] ⭐ Run Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-3                             ]   ✅  Success - Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-2                             ] ⭐ Run Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-4                             ]   ✅  Success - Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-1                             ] ⭐ Run Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-3                             ] ⭐ Run Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-2                             ]   ✅  Success - Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-4                             ] ⭐ Run Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-1                             ]   ✅  Success - Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-3                             ]   ✅  Success - Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-2                             ] ⭐ Run Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-4                             ]   ✅  Success - Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-1                             ] ⭐ Run Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-3                             ] ⭐ Run Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-2                             ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-4                             ] ⭐ Run Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-2                             ] 🏁  Job succeeded
+*DRYRUN* [linux/Ubuntu Rolling-1                             ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-3                             ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-4                             ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-5                             ] 🚀  Start image=mesonbuild/ubuntu-rolling
+*DRYRUN* [linux/Ubuntu Rolling-5                             ]   🐳  docker pull image=mesonbuild/ubuntu-rolling platform= username= forcePull=false
+*DRYRUN* [linux/Ubuntu Rolling-4                             ] 🏁  Job succeeded
+*DRYRUN* [linux/Ubuntu Rolling-3                             ] 🏁  Job succeeded
+*DRYRUN* [linux/Ubuntu Rolling-1                             ] 🏁  Job succeeded
+*DRYRUN* [linux/Ubuntu Rolling-6                             ] 🚀  Start image=mesonbuild/ubuntu-rolling
+*DRYRUN* [linux/Ubuntu Rolling-7                             ] 🚀  Start image=mesonbuild/ubuntu-rolling
+*DRYRUN* [linux/Ubuntu Rolling-6                             ]   🐳  docker pull image=mesonbuild/ubuntu-rolling platform= username= forcePull=false
+*DRYRUN* [linux/Ubuntu Rolling-7                             ]   🐳  docker pull image=mesonbuild/ubuntu-rolling platform= username= forcePull=false
+*DRYRUN* [linux/Ubuntu Rolling-5                             ]   🐳  docker create image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-5                             ]   🐳  docker run image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-7                             ]   🐳  docker create image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-7                             ]   🐳  docker run image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-6                             ]   🐳  docker create image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-6                             ]   🐳  docker run image=mesonbuild/ubuntu-rolling platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [linux/Ubuntu Rolling-5                             ] 🧪  Matrix: map[cfg:map[CC:clang CXX:clang++ MESON_ARGS:--unity=on RUN_TESTS_ARGS:--no-unittests]]
+*DRYRUN* [linux/Ubuntu Rolling-7                             ] 🧪  Matrix: map[cfg:map[CC:gcc CXX:g++ MESON_ARGS:--unity=on RUN_TESTS_ARGS:--cross ubuntu-armhf.json --cross linux-mingw-w64-64bit.json]]
+*DRYRUN* [linux/Ubuntu Rolling-6                             ] 🧪  Matrix: map[cfg:map[CC:gcc CXX:g++ MESON_RSP_THRESHOLD:0 RUN_TESTS_ARGS:--cross ubuntu-armhf.json --cross linux-mingw-w64-64bit.json]]
+*DRYRUN* [linux/Ubuntu Rolling-5                             ] ⭐ Run Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-7                             ] ⭐ Run Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-6                             ] ⭐ Run Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-5                             ]   ✅  Success - Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-6                             ]   ✅  Success - Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-7                             ]   ✅  Success - Main Checkout code
+*DRYRUN* [linux/Ubuntu Rolling-5                             ] ⭐ Run Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-6                             ] ⭐ Run Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-7                             ] ⭐ Run Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-5                             ]   ✅  Success - Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-6                             ]   ✅  Success - Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-7                             ]   ✅  Success - Main Run tests
+*DRYRUN* [linux/Ubuntu Rolling-5                             ] ⭐ Run Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-6                             ] ⭐ Run Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-7                             ] ⭐ Run Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-5                             ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-6                             ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-7                             ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [linux/Ubuntu Rolling-5                             ] 🏁  Job succeeded
+*DRYRUN* [linux/Ubuntu Rolling-6                             ] 🏁  Job succeeded
+*DRYRUN* [linux/Ubuntu Rolling-7                             ] 🏁  Job succeeded
+*DRYRUN* [UnusedMissingReturn/windows                        ] 🚧  Skipping unsupported platform -- Try running with `-P windows-latest=...`
+*DRYRUN* [UnusedMissingReturn/linux                          ] 🚀  Start image=ghcr.io/catthehacker/ubuntu:act-20.04
+*DRYRUN* [UnusedMissingReturn/linux                          ]   🐳  docker pull image=ghcr.io/catthehacker/ubuntu:act-20.04 platform= username= forcePull=false
+*DRYRUN* [UnusedMissingReturn/linux                          ]   🐳  docker create image=ghcr.io/catthehacker/ubuntu:act-20.04 platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [UnusedMissingReturn/linux                          ]   🐳  docker run image=ghcr.io/catthehacker/ubuntu:act-20.04 platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [UnusedMissingReturn/linux                          ]   ☁  git clone 'https://github.com/actions/setup-python' # ref=v2
+*DRYRUN* [File format check/format                           ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [File format check/format                           ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [File format check/format                           ] ⭐ Run Main actions/setup-python@v2
+*DRYRUN* [File format check/format                           ]   ✅  Success - Main actions/setup-python@v2
+*DRYRUN* [File format check/format                           ] ⭐ Run Main python3 ./run_format_tests.py
+*DRYRUN* [File format check/format                           ]   ✅  Success - Main python3 ./run_format_tests.py
+*DRYRUN* [File format check/format                           ] ⭐ Run Post actions/setup-python@v2
+*DRYRUN* [File format check/format                           ]   ✅  Success - Post actions/setup-python@v2
+*DRYRUN* [File format check/format                           ] 🏁  Job succeeded
+*DRYRUN* [Update website/update_website                      ] 🚀  Start image=ghcr.io/catthehacker/ubuntu:act-latest
+*DRYRUN* [Update website/update_website                      ]   🐳  docker pull image=ghcr.io/catthehacker/ubuntu:act-latest platform= username= forcePull=false
+*DRYRUN* [Update website/update_website                      ]   🐳  docker create image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [Update website/update_website                      ]   🐳  docker run image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [Update website/update_website                      ]   ☁  git clone 'https://github.com/svenstaro/upload-release-action' # ref=v2
+*DRYRUN* [Lint/mypy                                          ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [Lint/mypy                                          ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [Lint/mypy                                          ] ⭐ Run Main actions/setup-python@v2
+*DRYRUN* [Lint/mypy                                          ]   ✅  Success - Main actions/setup-python@v2
+*DRYRUN* [Lint/mypy                                          ] ⭐ Run Main python -m pip install mypy types-PyYAML
+*DRYRUN* [Lint/mypy                                          ]   ✅  Success - Main python -m pip install mypy types-PyYAML
+*DRYRUN* [Lint/mypy                                          ] ⭐ Run Main python run_mypy.py
+*DRYRUN* [Lint/mypy                                          ]   ✅  Success - Main python run_mypy.py
+*DRYRUN* [Lint/mypy                                          ] ⭐ Run Post actions/setup-python@v2
+*DRYRUN* [Lint/mypy                                          ]   ✅  Success - Post actions/setup-python@v2
+*DRYRUN* [Lint/mypy                                          ] 🏁  Job succeeded
+*DRYRUN* [CI image builder/OpenSUSE-4                        ] 🧪  Matrix: map[cfg:map[id:opensuse name:OpenSUSE]]
+*DRYRUN* [CI image builder/OpenSUSE-4                        ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [CI image builder/OpenSUSE-4                        ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [CI image builder/OpenSUSE-4                        ] ⭐ Run Main Building the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/OpenSUSE-4                        ]   ✅  Success - Main Building the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/OpenSUSE-4                        ] ⭐ Run Main Testing the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/OpenSUSE-4                        ]   ✅  Success - Main Testing the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/OpenSUSE-4                        ] 🏁  Job succeeded
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ] 🚀  Start image=ghcr.io/catthehacker/ubuntu:act-latest
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ]   🐳  docker pull image=ghcr.io/catthehacker/ubuntu:act-latest platform= username= forcePull=false
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ]   🐳  docker create image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ]   🐳  docker run image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ]   ☁  git clone 'https://github.com/azure/docker-login' # ref=v1
+*DRYRUN* [CI image builder/Arch Linux-1                      ] 🧪  Matrix: map[cfg:map[id:arch name:Arch Linux]]
+*DRYRUN* [CI image builder/Arch Linux-1                      ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [CI image builder/Arch Linux-1                      ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [CI image builder/Arch Linux-1                      ] ⭐ Run Main Building the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Arch Linux-1                      ]   ✅  Success - Main Building the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Arch Linux-1                      ] ⭐ Run Main Testing the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Arch Linux-1                      ]   ✅  Success - Main Testing the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Arch Linux-1                      ] 🏁  Job succeeded
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ] 🚀  Start image=ghcr.io/catthehacker/ubuntu:act-latest
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ]   🐳  docker pull image=ghcr.io/catthehacker/ubuntu:act-latest platform= username= forcePull=false
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ]   🐳  docker create image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ]   🐳  docker run image=ghcr.io/catthehacker/ubuntu:act-latest platform= entrypoint=["/usr/bin/tail" "-f" "/dev/null"] cmd=[]
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ]   ☁  git clone 'https://github.com/azure/docker-login' # ref=v1
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ] 🧪  Matrix: map[cfg:map[id:cuda name:CUDA (on Arch)]]
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ] ⭐ Run Main Building the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ]   ✅  Success - Main Building the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ] ⭐ Run Main Testing the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ]   ✅  Success - Main Testing the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/CUDA (on Arch)-2                  ] 🏁  Job succeeded
+*DRYRUN* [CI image builder/Fedora-3                          ] 🧪  Matrix: map[cfg:map[id:fedora name:Fedora]]
+*DRYRUN* [CI image builder/Fedora-3                          ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [CI image builder/Fedora-3                          ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [CI image builder/Fedora-3                          ] ⭐ Run Main Building the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Fedora-3                          ]   ✅  Success - Main Building the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Fedora-3                          ] ⭐ Run Main Testing the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Fedora-3                          ]   ✅  Success - Main Testing the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Fedora-3                          ] 🏁  Job succeeded
+*DRYRUN* [UnusedMissingReturn/linux                          ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [UnusedMissingReturn/linux                          ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [UnusedMissingReturn/linux                          ] ⭐ Run Main actions/setup-python@v2
+*DRYRUN* [UnusedMissingReturn/linux                          ]   ✅  Success - Main actions/setup-python@v2
+*DRYRUN* [UnusedMissingReturn/linux                          ] ⭐ Run Main Install Compilers
+*DRYRUN* [UnusedMissingReturn/linux                          ]   ✅  Success - Main Install Compilers
+*DRYRUN* [UnusedMissingReturn/linux                          ] ⭐ Run Main ./tools/run_with_cov.py run_project_tests.py --only cmake common fortran platform-linux "objective c" "objective c++"
+*DRYRUN* [UnusedMissingReturn/linux                          ]   ✅  Success - Main ./tools/run_with_cov.py run_project_tests.py --only cmake common fortran platform-linux "objective c" "objective c++"
+*DRYRUN* [UnusedMissingReturn/linux                          ] ⭐ Run Main Upload coverage report
+*DRYRUN* [UnusedMissingReturn/linux                          ]   ✅  Success - Main Upload coverage report
+*DRYRUN* [UnusedMissingReturn/linux                          ] ⭐ Run Post actions/setup-python@v2
+*DRYRUN* [UnusedMissingReturn/linux                          ]   ✅  Success - Post actions/setup-python@v2
+*DRYRUN* [UnusedMissingReturn/linux                          ] 🏁  Job succeeded
+*DRYRUN* [Update website/update_website                      ]   ☁  git clone 'https://github.com/svenstaro/upload-release-action' # ref=v2
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ] 🧪  Matrix: map[cfg:map[id:bionic name:Ubuntu Bionic]]
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ] ⭐ Run Main Building the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ]   ✅  Success - Main Building the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ] ⭐ Run Main Testing the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ]   ✅  Success - Main Testing the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Ubuntu Bionic-5                   ] 🏁  Job succeeded
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ] 🧪  Matrix: map[cfg:map[id:ubuntu-rolling name:Ubuntu Rolling]]
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ] ⭐ Run Main Building the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ]   ✅  Success - Main Building the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ] ⭐ Run Main Testing the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ]   ✅  Success - Main Testing the ${{ matrix.cfg.id }} image
+*DRYRUN* [CI image builder/Ubuntu Rolling-6                  ] 🏁  Job succeeded
+*DRYRUN* [Update website/update_website                      ] ⭐ Run Main actions/checkout@v2
+*DRYRUN* [Update website/update_website                      ]   ✅  Success - Main actions/checkout@v2
+*DRYRUN* [Update website/update_website                      ] ⭐ Run Main Install package
+*DRYRUN* [Update website/update_website                      ]   ✅  Success - Main Install package
+*DRYRUN* [Update website/update_website                      ] ⭐ Run Main Build website
+*DRYRUN* [Update website/update_website                      ]   ✅  Success - Main Build website
+*DRYRUN* [Update website/update_website                      ] 🏁  Job succeeded

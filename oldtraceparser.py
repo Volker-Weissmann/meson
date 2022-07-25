@@ -16,10 +16,9 @@
 # or an interpreter-based tool.
 
 from .common import CMakeException
-from .generator import parse_generator_expressions, parse_generator_expressions_old
+from .generator import parse_generator_expressions
 from .. import mlog
 from ..mesonlib import version_compare
-from ..mparser import StringNode
 
 import typing as T
 from pathlib import Path
@@ -27,22 +26,6 @@ from functools import lru_cache
 import re
 import json
 import textwrap
-
-import inspect
-import pprint
-import sys
-
-
-def tracepoint():
-    print()
-    cf = inspect.currentframe()
-    head = cf.f_back
-    while head is not None:
-        print(head.f_code.co_name.ljust(50), head.f_code.co_filename.split("/")[-1] + ':'  + str(head.f_lineno) )
-        #pprint.pprint({key: head.f_locals.get(key) for key in head.f_code.co_varnames}, indent=4)
-        head = head.f_back
-    print(sys.argv)
-    print()
 
 if T.TYPE_CHECKING:
     from ..environment import Environment
@@ -71,7 +54,6 @@ class CMakeTarget:
     def __init__(
                 self,
                 name:        str,
-                build_path:  T.Optional[Path],
                 target_type: str,
                 properties:  T.Optional[T.Dict[str, T.List[str]]] = None,
                 imported:    bool                                 = False,
@@ -80,7 +62,6 @@ class CMakeTarget:
         if properties is None:
             properties = {}
         self.name            = name
-        self.build_path      = build_path
         self.type            = target_type
         self.properties      = properties
         self.imported        = imported
@@ -106,19 +87,11 @@ class CMakeTarget:
 
 class CMakeGeneratorTarget(CMakeTarget):
     def __init__(self, name: str) -> None:
-        super().__init__(name, None, 'CUSTOM', {})
+        super().__init__(name, 'CUSTOM', {})
         self.outputs = []        # type: T.List[Path]
         self._outputs_str = []   # type: T.List[str]
         self.command = []        # type: T.List[T.List[str]]
         self.working_dir = None  # type: T.Optional[Path]
-
-def unpack_helper(val):
-    if isinstance(val, StringNode):
-        return val.value
-    else:
-        import pdb
-        pdb.set_trace()
-        raise ValueError("not implemented")
 
 class CMakeTraceParser:
     def __init__(self, cmake_version: str, build_dir: Path, env: 'Environment', permissive: bool = True) -> None:
@@ -135,7 +108,6 @@ class CMakeTraceParser:
         self.env = env
         self.permissive = permissive  # type: bool
         self.cmake_version = cmake_version  # type: str
-        self.build_dir = build_dir
         self.trace_file = 'cmake_trace.txt'
         self.trace_file_path = build_dir / self.trace_file
         self.trace_format = 'json-v1' if version_compare(cmake_version, '>=3.17') else 'human'
@@ -230,19 +202,16 @@ class CMakeTraceParser:
             if fn:
                 fn(l)
 
-        strlist_gen:  T.Callable[[T.List[str]], T.List[str]]  = lambda strlist: parse_generator_expressions_old(';'.join(strlist), self).split(';') if strlist else []
-        pathlist_gen: T.Callable[[T.List[str]], T.List[Path]] = lambda strlist: [Path(x) for x in parse_generator_expressions_old(';'.join(strlist), self).split(';')] if strlist else []
-
         # Evaluate generator expressions
-        # strlist_gen:  T.Callable[[T.List[str]], T.List[str]]  = lambda strlist: [unpack_helper(parse_generator_expressions(el, self)) for el in strlist]
-        # pathlist_gen:  T.Callable[[T.List[str]], T.List[str]]  = lambda strlist: [Path(unpack_helper(parse_generator_expressions(el, self))) for el in strlist]
+        strlist_gen:  T.Callable[[T.List[str]], T.List[str]]  = lambda strlist: parse_generator_expressions(';'.join(strlist), self).split(';') if strlist else []
+        pathlist_gen: T.Callable[[T.List[str]], T.List[Path]] = lambda strlist: [Path(x) for x in parse_generator_expressions(';'.join(strlist), self).split(';')] if strlist else []
 
         self.vars = {k: strlist_gen(v) for k, v in self.vars.items()}
         self.vars_by_file = {
             p: {k: strlist_gen(v) for k, v in d.items()}
             for p, d in self.vars_by_file.items()
         }
-        self.explicit_headers = set(Path(unpack_helper(parse_generator_expressions(str(x), self))) for x in self.explicit_headers)
+        self.explicit_headers = set(Path(parse_generator_expressions(str(x), self)) for x in self.explicit_headers)
         self.cache = {
             k: CMakeCacheEntry(
                 strlist_gen(v.value),
@@ -252,15 +221,9 @@ class CMakeTraceParser:
         }
 
         for tgt in self.targets.values():
-            # tgtlist_gen: T.Callable[[T.List[str], CMakeTarget], T.List[str]] = lambda strlist, t: [unpack_helper(parse_generator_expressions(el, self, context_tgt=t)) for el in strlist]
-            # tgt.name = unpack_helper(parse_generator_expressions(tgt.name, self, context_tgt=tgt))
-            # tgt.type = unpack_helper(parse_generator_expressions(tgt.type, self, context_tgt=tgt))
-
-            tgtlist_gen: T.Callable[[T.List[str], CMakeTarget], T.List[str]] = lambda strlist, t: parse_generator_expressions_old(';'.join(strlist), self, context_tgt=t).split(';') if strlist else []
-            tgt.name = parse_generator_expressions_old(tgt.name, self, context_tgt=tgt)
-            tgt.type = parse_generator_expressions_old(tgt.type, self, context_tgt=tgt)
-
-
+            tgtlist_gen: T.Callable[[T.List[str], CMakeTarget], T.List[str]] = lambda strlist, t: parse_generator_expressions(';'.join(strlist), self, context_tgt=t).split(';') if strlist else []
+            tgt.name = parse_generator_expressions(tgt.name, self, context_tgt=tgt)
+            tgt.type = parse_generator_expressions(tgt.type, self, context_tgt=tgt)
             tgt.properties = {
                 k: tgtlist_gen(v, tgt) for k, v in tgt.properties.items()
             } if tgt.properties is not None else None
@@ -269,9 +232,7 @@ class CMakeTraceParser:
         for ctgt in self.custom_targets:
             ctgt.outputs = pathlist_gen(ctgt._outputs_str)
             ctgt.command = [strlist_gen(x) for x in ctgt.command]
-            ctgt.working_dir = Path(parse_generator_expressions_old(str(ctgt.working_dir), self)) if ctgt.working_dir is not None else None
-
-            #ctgt.working_dir = Path(unpack_helper(parse_generator_expressions(str(ctgt.working_dir), self))) if ctgt.working_dir is not None else None
+            ctgt.working_dir = Path(parse_generator_expressions(str(ctgt.working_dir), self)) if ctgt.working_dir is not None else None
 
         # Postprocess
         for tgt in self.targets.values():
@@ -393,17 +354,16 @@ class CMakeTraceParser:
         args = list(tline.args) # Make a working copy
 
         # Make sure the exe is imported
-        if 'IMPORTED' in args:
-            args.remove('IMPORTED')
-            if len(args) < 1:
-                return self._gen_exception('add_executable', 'requires at least 1 argument', tline)
-            self.targets[args[0]] = CMakeTarget(args[0], None, 'EXECUTABLE', {}, tline=tline, imported=True)
-        else:
-            if len(args) < 1:
-                return self._gen_exception('add_executable', 'requires at least 1 argument', tline)
-            build_path = self.build_dir.parent / args[0]
-            tracepoint()
-            self.targets[args[0]] = CMakeTarget(args[0], build_path, 'EXECUTABLE', {}, tline=tline, imported=False)
+        is_imported = True
+        if 'IMPORTED' not in args:
+            return self._gen_exception('add_executable', 'non imported executables are not supported', tline)
+
+        args.remove('IMPORTED')
+
+        if len(args) < 1:
+            return self._gen_exception('add_executable', 'requires at least 1 argument', tline)
+
+        self.targets[args[0]] = CMakeTarget(args[0], 'EXECUTABLE', {}, tline=tline, imported=is_imported)
 
     def _cmake_add_library(self, tline: CMakeTraceLine) -> None:
         # DOC: https://cmake.org/cmake/help/latest/command/add_library.html
@@ -416,7 +376,7 @@ class CMakeTraceParser:
             if len(args) < 1:
                 return self._gen_exception('add_library', 'interface library name not specified', tline)
 
-            self.targets[args[0]] = CMakeTarget(args[0], None, 'INTERFACE', {}, tline=tline, imported='IMPORTED' in args)
+            self.targets[args[0]] = CMakeTarget(args[0], 'INTERFACE', {}, tline=tline, imported='IMPORTED' in args)
         elif 'IMPORTED' in args:
             args.remove('IMPORTED')
 
@@ -424,7 +384,7 @@ class CMakeTraceParser:
             if len(args) < 2:
                 return self._gen_exception('add_library', 'requires at least 2 arguments', tline)
 
-            self.targets[args[0]] = CMakeTarget(args[0], None, args[1], {}, tline=tline, imported=True)
+            self.targets[args[0]] = CMakeTarget(args[0], args[1], {}, tline=tline, imported=True)
         elif 'ALIAS' in args:
             args.remove('ALIAS')
 
@@ -433,11 +393,11 @@ class CMakeTraceParser:
                 return self._gen_exception('add_library', 'requires at least 2 arguments', tline)
 
             # Simulate the ALIAS with INTERFACE_LINK_LIBRARIES
-            self.targets[args[0]] = CMakeTarget(args[0], None, 'ALIAS', {'INTERFACE_LINK_LIBRARIES': [args[1]]}, tline=tline)
+            self.targets[args[0]] = CMakeTarget(args[0], 'ALIAS', {'INTERFACE_LINK_LIBRARIES': [args[1]]}, tline=tline)
         elif 'OBJECT' in args:
             return self._gen_exception('add_library', 'OBJECT libraries are not supported', tline)
         else:
-            self.targets[args[0]] = CMakeTarget(args[0], None, 'NORMAL', {}, tline=tline)
+            self.targets[args[0]] = CMakeTarget(args[0], 'NORMAL', {}, tline=tline)
 
     def _cmake_add_custom_command(self, tline: CMakeTraceLine, name: T.Optional[str] = None) -> None:
         # DOC: https://cmake.org/cmake/help/latest/command/add_custom_command.html

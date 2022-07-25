@@ -25,6 +25,21 @@ import re
 import textwrap
 import typing as T
 
+import inspect
+import pprint
+import sys
+
+
+def tracepoint():
+    print()
+    cf = inspect.currentframe()
+    head = cf.f_back
+    while head is not None:
+        print(head.f_code.co_name.ljust(50), head.f_code.co_filename.split("/")[-1] + ':'  + str(head.f_lineno) )
+        #pprint.pprint({key: head.f_locals.get(key) for key in head.f_code.co_varnames}, indent=4)
+        head = head.f_back
+    print(sys.argv)
+    print()
 
 from . import environment
 from . import dependencies
@@ -747,6 +762,8 @@ class BuildTarget(Target):
     def __init__(self, name: str, subdir: str, subproject: SubProject, for_machine: MachineChoice,
                  sources: T.List['SourceOutputs'], structured_sources: T.Optional[StructuredSources],
                  objects, environment: environment.Environment, compilers: T.Dict[str, 'Compiler'], kwargs):
+        tracepoint()
+        print("->", name)
         super().__init__(name, subdir, subproject, True, for_machine, environment)
         self.all_compilers = compilers
         self.compilers = OrderedDict() # type: OrderedDict[str, Compiler]
@@ -1868,11 +1885,12 @@ class Executable(BuildTarget):
                   'cpp' in self.compilers and self.compilers['cpp'].get_id() in ('ti', 'c2000')):
                 self.suffix = 'out'
             else:
-                self.suffix = machine.get_exe_suffix()
+                self.suffix = machine.get_exe_suffix()# + "volker"
         self.filename = self.name
         if self.suffix:
             self.filename += '.' + self.suffix
         self.outputs = [self.filename]
+        tracepoint()
 
         # The import library this target will generate
         self.import_filename = None

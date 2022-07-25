@@ -26,6 +26,22 @@ import re
 import shlex
 import subprocess
 import typing as T
+import inspect
+import pprint
+import sys
+
+
+def tracepoint():
+    print()
+    cf = inspect.currentframe()
+    head = cf.f_back
+    while head is not None:
+        print(head.f_code.co_name.ljust(50), head.f_code.co_filename.split("/")[-1] + ':'  + str(head.f_lineno) )
+        #pprint.pprint({key: head.f_locals.get(key) for key in head.f_code.co_varnames}, indent=4)
+        head = head.f_back
+    print(sys.argv)
+    print()
+
 
 from . import backends
 from .. import modules

@@ -1,0 +1,2 @@
+/home/volker/Sync/git/meson/tools/cmake2meson/test cases/set cache/CMakeFiles/edit_cache.dir
+/home/volker/Sync/git/meson/tools/cmake2meson/test cases/set cache/CMakeFiles/rebuild_cache.dir

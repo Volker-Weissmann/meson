@@ -1,0 +1,490 @@
+The Meson build system
+Version: 0.63.99
+Source dir: /home/volker/Sync/git/meson/test cases/cmake/26 target file
+Build dir: /home/volker/Sync/git/meson/test cases/cmake/26 target file/build
+Build type: native build
+Project name: cmake_code_gen
+Project version: undefined
+C compiler for the host machine: cc (gcc 12.1.0 "cc (GCC) 12.1.0")
+C linker for the host machine: cc ld.bfd 2.34.50.20200328
+C++ compiler for the host machine: c++ (gcc 12.1.0 "c++ (GCC) 12.1.0")
+C++ linker for the host machine: c++ ld.bfd 2.34.50.20200328
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+
+Executing subproject cmMod method cmake 
+
+cmMod| Found CMake: /usr/bin/cmake (3.23.2)
+
+| Configuring the build directory with CMake version 3.23.2
+| Running CMake with: -G Ninja -DCMAKE_INSTALL_PREFIX=/usr/local
+| - build directory:          /home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build
+| - source directory:         /home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod
+| - toolchain file:           /home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/CMakeMesonToolchainFile.cmake
+| - preload file:             /home/volker/Sync/git/meson/mesonbuild/cmake/data/preload.cmake
+| - trace args:               --trace-expand --trace-format=json-v1 --no-warn-unused-cli --trace-redirect=cmake_trace.txt
+| - disabled policy warnings: [CMP0025, CMP0047, CMP0056, CMP0060, CMP0065, CMP0066, CMP0067, CMP0082, CMP0089, CMP0102]
+
+| Running with expanded trace output on.
+| Not searching for unused variables given on the command line.
+| Trace will be written to cmake_trace.txt
+| -- The C compiler identification is GNU 12.1.0
+| -- The CXX compiler identification is GNU 12.1.0
+| -- Detecting C compiler ABI info
+| -- Detecting C compiler ABI info - done
+| -- Check for working C compiler: /usr/bin/cc - skipped
+| -- Detecting C compile features
+| -- Detecting C compile features - done
+| -- Detecting CXX compiler ABI info
+| -- Detecting CXX compiler ABI info - done
+| -- Check for working CXX compiler: /usr/bin/c++ - skipped
+| -- Detecting CXX compile features
+| -- Detecting CXX compile features - done
+| -- Configuring done
+| -- Generating done
+| -- Build files have been written to: /home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build
+
+cmMod| CMake configuration: SUCCEEDED
+
+_cmake_add_executable                              traceparser.py:385
+parse                                              traceparser.py:222
+analyse                                            interpreter.py:889
+_do_subproject_cmake                               interpreter.py:1013
+do_subproject                                      interpreter.py:936
+subproject                                         cmake.py:440
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+wrapped                                            decorators.py:672
+method_call                                        interpreterobjects.py:747
+method_call                                        interpreterbase.py:495
+evaluate_statement                                 interpreterbase.py:189
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+evaluate_if                                        interpreterbase.py:286
+evaluate_statement                                 interpreterbase.py:195
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_generate                                          msetup.py:230
+generate                                           msetup.py:186
+run                                                msetup.py:303
+run                                                mesonmain.py:152
+run                                                mesonmain.py:244
+main                                               mesonmain.py:253
+<module>                                           meson.py:39
+['/home/volker/Sync/git/meson/meson.py', 'build']
+
+cmMod| CMake project cmMod has 6 build targets.
+volker process_custom_target
+['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-O', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build', "' + cm_exe_local.full_path_nonext() + '", '/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input1.txt', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp', ';;;']
+
+__init__                                           mparser.py:391
+string                                             interpreter.py:962
+nodeify                                            interpreter.py:972
+<listcomp>                                         interpreter.py:992
+array                                              interpreter.py:992
+nodeify                                            interpreter.py:980
+<dictcomp>                                         interpreter.py:1003
+function                                           interpreter.py:1003
+process_custom_target                              interpreter.py:1237
+pretend_to_be_meson                                interpreter.py:1244
+_do_subproject_cmake                               interpreter.py:1016
+do_subproject                                      interpreter.py:936
+subproject                                         cmake.py:440
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+wrapped                                            decorators.py:672
+method_call                                        interpreterobjects.py:747
+method_call                                        interpreterbase.py:495
+evaluate_statement                                 interpreterbase.py:189
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+evaluate_if                                        interpreterbase.py:286
+evaluate_statement                                 interpreterbase.py:195
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_generate                                          msetup.py:230
+generate                                           msetup.py:186
+run                                                msetup.py:303
+run                                                mesonmain.py:152
+run                                                mesonmain.py:244
+main                                               mesonmain.py:253
+<module>                                           meson.py:39
+['/home/volker/Sync/git/meson/meson.py', 'build']
+
+volker process_custom_target
+['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-O', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build', '/usr/bin/cp', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input2.txt', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp', ';;;']
+volker process_custom_target
+['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build']
+volker process_custom_target
+['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build']
+
+cmake-ast| Processing generated meson AST
+cmake-ast| Build file: /home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/meson.build
+
+cmMod| Project name: cmMod
+cmMod| Project version: undefined
+cmMod| C compiler for the host machine: cc (gcc 12.1.0 "cc (GCC) 12.1.0")
+cmMod| C linker for the host machine: cc ld.bfd 2.34.50.20200328
+cmMod| C++ compiler for the host machine: c++ (gcc 12.1.0 "c++ (GCC) 12.1.0")
+cmMod| C++ linker for the host machine: c++ ld.bfd 2.34.50.20200328
+Volker func_executable <mesonbuild.interpreter.interpreter.Interpreter object at 0x7f8ddd5d86a0> FunctionNode(lineno=6, colno=0, filename='subprojects/cmMod', end_lineno=0, end_colno=0) ['cm_exe_local', <File: subprojects/cmMod/local.cpp (not built)>] {'build_by_default': False, 'link_args': [], 'link_with': [], 'include_directories': [<IncludeDirs subprojects/cmMod/['__CMake_build', '.']>, <IncludeDirs subprojects/cmMod/[]>], 'install': False, 'override_options': ['cpp_std=gnu++14'], 'objects': [], 'cpp_args': [], 'pie': False}
+
+__init__                                           build.py:765
+__init__                                           build.py:1845
+build_target                                       interpreter.py:3125
+func_executable                                    interpreter.py:1726
+wrapped                                            decorators.py:127
+wrapped                                            decorators.py:774
+wrapped                                            decorators.py:774
+wrapped                                            decorators.py:774
+function_call                                      interpreterbase.py:467
+evaluate_statement                                 interpreterbase.py:185
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_do_subproject_meson                               interpreter.py:976
+_do_subproject_cmake                               interpreter.py:1037
+do_subproject                                      interpreter.py:936
+subproject                                         cmake.py:440
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+wrapped                                            decorators.py:672
+method_call                                        interpreterobjects.py:747
+method_call                                        interpreterbase.py:495
+evaluate_statement                                 interpreterbase.py:189
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+evaluate_if                                        interpreterbase.py:286
+evaluate_statement                                 interpreterbase.py:195
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_generate                                          msetup.py:230
+generate                                           msetup.py:186
+run                                                msetup.py:303
+run                                                mesonmain.py:152
+run                                                mesonmain.py:244
+main                                               mesonmain.py:253
+<module>                                           meson.py:39
+['/home/volker/Sync/git/meson/meson.py', 'build']
+
+-> cm_exe_local
+
+post_init                                          build.py:1893
+process_compilers_late                             build.py:925
+add_target                                         interpreter.py:3005
+build_target                                       interpreter.py:3129
+func_executable                                    interpreter.py:1726
+wrapped                                            decorators.py:127
+wrapped                                            decorators.py:774
+wrapped                                            decorators.py:774
+wrapped                                            decorators.py:774
+function_call                                      interpreterbase.py:467
+evaluate_statement                                 interpreterbase.py:185
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_do_subproject_meson                               interpreter.py:976
+_do_subproject_cmake                               interpreter.py:1037
+do_subproject                                      interpreter.py:936
+subproject                                         cmake.py:440
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+wrapped                                            decorators.py:672
+method_call                                        interpreterobjects.py:747
+method_call                                        interpreterbase.py:495
+evaluate_statement                                 interpreterbase.py:189
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+evaluate_if                                        interpreterbase.py:286
+evaluate_statement                                 interpreterbase.py:195
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_generate                                          msetup.py:230
+generate                                           msetup.py:186
+run                                                msetup.py:303
+run                                                mesonmain.py:152
+run                                                mesonmain.py:244
+main                                               mesonmain.py:253
+<module>                                           meson.py:39
+['/home/volker/Sync/git/meson/meson.py', 'build']
+
+
+func_custom_target                                 interpreter.py:1888
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+function_call                                      interpreterbase.py:467
+evaluate_statement                                 interpreterbase.py:185
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_do_subproject_meson                               interpreter.py:976
+_do_subproject_cmake                               interpreter.py:1037
+do_subproject                                      interpreter.py:936
+subproject                                         cmake.py:440
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+wrapped                                            decorators.py:672
+method_call                                        interpreterobjects.py:747
+method_call                                        interpreterbase.py:495
+evaluate_statement                                 interpreterbase.py:189
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+evaluate_if                                        interpreterbase.py:286
+evaluate_statement                                 interpreterbase.py:195
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_generate                                          msetup.py:230
+generate                                           msetup.py:186
+run                                                msetup.py:303
+run                                                mesonmain.py:152
+run                                                mesonmain.py:244
+main                                               mesonmain.py:253
+<module>                                           meson.py:39
+['/home/volker/Sync/git/meson/meson.py', 'build']
+
+volker func_custom_target {'input': ['input1.txt'], 'output': ['output1.cpp'], 'command': ['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-O', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build', "' + cm_exe_local.full_path_nonext() + '", '/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input1.txt', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp', ';;;'], 'depends': [<Executable 198a311@@cm_exe_local@exe: cm_exe_local>], 'build_always': None, 'build_always_stale': None, 'build_by_default': None, 'install_dir': [], 'install_tag': [], 'depend_files': [], 'depfile': None, 'env': <EnvironmentVariables: []>, 'install': False, 'install_mode': <FileMode: None owner=None group=None, 'feed': False, 'capture': False, 'console': False}
+
+func_custom_target                                 interpreter.py:1888
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+function_call                                      interpreterbase.py:467
+evaluate_statement                                 interpreterbase.py:185
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_do_subproject_meson                               interpreter.py:976
+_do_subproject_cmake                               interpreter.py:1037
+do_subproject                                      interpreter.py:936
+subproject                                         cmake.py:440
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+wrapped                                            decorators.py:672
+method_call                                        interpreterobjects.py:747
+method_call                                        interpreterbase.py:495
+evaluate_statement                                 interpreterbase.py:189
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+evaluate_if                                        interpreterbase.py:286
+evaluate_statement                                 interpreterbase.py:195
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_generate                                          msetup.py:230
+generate                                           msetup.py:186
+run                                                msetup.py:303
+run                                                mesonmain.py:152
+run                                                mesonmain.py:244
+main                                               mesonmain.py:253
+<module>                                           meson.py:39
+['/home/volker/Sync/git/meson/meson.py', 'build']
+
+volker func_custom_target {'input': ['input2.txt'], 'output': ['output2.cpp'], 'command': ['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-O', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build', '/usr/bin/cp', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input2.txt', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp', ';;;'], 'depends': [], 'build_always': None, 'build_always_stale': None, 'build_by_default': None, 'install_dir': [], 'install_tag': [], 'depend_files': [], 'depfile': None, 'env': <EnvironmentVariables: []>, 'install': False, 'install_mode': <FileMode: None owner=None group=None, 'feed': False, 'capture': False, 'console': False}
+
+func_custom_target                                 interpreter.py:1888
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+function_call                                      interpreterbase.py:467
+evaluate_statement                                 interpreterbase.py:185
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_do_subproject_meson                               interpreter.py:976
+_do_subproject_cmake                               interpreter.py:1037
+do_subproject                                      interpreter.py:936
+subproject                                         cmake.py:440
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+wrapped                                            decorators.py:672
+method_call                                        interpreterobjects.py:747
+method_call                                        interpreterbase.py:495
+evaluate_statement                                 interpreterbase.py:189
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+evaluate_if                                        interpreterbase.py:286
+evaluate_statement                                 interpreterbase.py:195
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_generate                                          msetup.py:230
+generate                                           msetup.py:186
+run                                                msetup.py:303
+run                                                mesonmain.py:152
+run                                                mesonmain.py:244
+main                                               mesonmain.py:253
+<module>                                           meson.py:39
+['/home/volker/Sync/git/meson/meson.py', 'build']
+
+volker func_custom_target {'input': [<CustomTarget 198a311@@custom_tgt_0@cus: ['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-O', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build', "' + cm_exe_local.full_path_nonext() + '", '/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input1.txt', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp', ';;;']>], 'output': ['output1_cpp.h'], 'command': ['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build'], 'depends': [], 'build_always': None, 'build_always_stale': None, 'build_by_default': None, 'install_dir': [], 'install_tag': [], 'depend_files': [], 'depfile': None, 'env': <EnvironmentVariables: []>, 'install': False, 'install_mode': <FileMode: None owner=None group=None, 'feed': False, 'capture': False, 'console': False}
+
+func_custom_target                                 interpreter.py:1888
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+function_call                                      interpreterbase.py:467
+evaluate_statement                                 interpreterbase.py:185
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_do_subproject_meson                               interpreter.py:976
+_do_subproject_cmake                               interpreter.py:1037
+do_subproject                                      interpreter.py:936
+subproject                                         cmake.py:440
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+wrapped                                            decorators.py:672
+method_call                                        interpreterobjects.py:747
+method_call                                        interpreterbase.py:495
+evaluate_statement                                 interpreterbase.py:189
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+evaluate_if                                        interpreterbase.py:286
+evaluate_statement                                 interpreterbase.py:195
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_generate                                          msetup.py:230
+generate                                           msetup.py:186
+run                                                msetup.py:303
+run                                                mesonmain.py:152
+run                                                mesonmain.py:244
+main                                               mesonmain.py:253
+<module>                                           meson.py:39
+['/home/volker/Sync/git/meson/meson.py', 'build']
+
+volker func_custom_target {'input': [<CustomTarget 198a311@@custom_tgt_1@cus: ['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-O', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build', '/usr/bin/cp', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input2.txt', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp', ';;;']>], 'output': ['output2_cpp.h'], 'command': ['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build'], 'depends': [], 'build_always': None, 'build_always_stale': None, 'build_by_default': None, 'install_dir': [], 'install_tag': [], 'depend_files': [], 'depfile': None, 'env': <EnvironmentVariables: []>, 'install': False, 'install_mode': <FileMode: None owner=None group=None, 'feed': False, 'capture': False, 'console': False}
+
+__init__                                           build.py:765
+__init__                                           build.py:2059
+build_target                                       interpreter.py:3125
+func_shared_lib                                    interpreter.py:1734
+wrapped                                            decorators.py:127
+function_call                                      interpreterbase.py:467
+evaluate_statement                                 interpreterbase.py:185
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_do_subproject_meson                               interpreter.py:976
+_do_subproject_cmake                               interpreter.py:1037
+do_subproject                                      interpreter.py:936
+subproject                                         cmake.py:440
+wrapper                                            decorators.py:580
+wrapper                                            decorators.py:277
+wrapped                                            decorators.py:672
+method_call                                        interpreterobjects.py:747
+method_call                                        interpreterbase.py:495
+evaluate_statement                                 interpreterbase.py:189
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+evaluate_if                                        interpreterbase.py:286
+evaluate_statement                                 interpreterbase.py:195
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_generate                                          msetup.py:230
+generate                                           msetup.py:186
+run                                                msetup.py:303
+run                                                mesonmain.py:152
+run                                                mesonmain.py:244
+main                                               mesonmain.py:253
+<module>                                           meson.py:39
+['/home/volker/Sync/git/meson/meson.py', 'build']
+
+-> final
+cmMod| Build targets in project: 6
+cmMod| Subproject cmMod finished.
+
+
+Volker func_executable <mesonbuild.interpreter.interpreter.Interpreter object at 0x7f8dddded060> FunctionNode(lineno=21, colno=10, filename='/home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build', end_lineno=21, end_colno=69) ['main', 'main.cpp'] {'dependencies': [<InternalDependency null: True>]}
+
+__init__                                           build.py:765
+__init__                                           build.py:1845
+build_target                                       interpreter.py:3125
+func_executable                                    interpreter.py:1726
+wrapped                                            decorators.py:127
+wrapped                                            decorators.py:774
+wrapped                                            decorators.py:774
+wrapped                                            decorators.py:774
+function_call                                      interpreterbase.py:467
+evaluate_statement                                 interpreterbase.py:185
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+evaluate_if                                        interpreterbase.py:286
+evaluate_statement                                 interpreterbase.py:195
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_generate                                          msetup.py:230
+generate                                           msetup.py:186
+run                                                msetup.py:303
+run                                                mesonmain.py:152
+run                                                mesonmain.py:244
+main                                               mesonmain.py:253
+<module>                                           meson.py:39
+['/home/volker/Sync/git/meson/meson.py', 'build']
+
+-> main
+
+post_init                                          build.py:1893
+process_compilers_late                             build.py:925
+add_target                                         interpreter.py:3005
+build_target                                       interpreter.py:3129
+func_executable                                    interpreter.py:1726
+wrapped                                            decorators.py:127
+wrapped                                            decorators.py:774
+wrapped                                            decorators.py:774
+wrapped                                            decorators.py:774
+function_call                                      interpreterbase.py:467
+evaluate_statement                                 interpreterbase.py:185
+assignment                                         interpreterbase.py:579
+evaluate_statement                                 interpreterbase.py:187
+evaluate_codeblock                                 interpreterbase.py:172
+evaluate_if                                        interpreterbase.py:286
+evaluate_statement                                 interpreterbase.py:195
+evaluate_codeblock                                 interpreterbase.py:172
+run                                                interpreterbase.py:154
+run                                                interpreter.py:2847
+_generate                                          msetup.py:230
+generate                                           msetup.py:186
+run                                                msetup.py:303
+run                                                mesonmain.py:152
+run                                                mesonmain.py:244
+main                                               mesonmain.py:253
+<module>                                           meson.py:39
+['/home/volker/Sync/git/meson/meson.py', 'build']
+
+Build targets in project: 7
+
+cmake_code_gen undefined
+
+  Subprojects
+    cmMod: YES
+
+Found ninja-1.11.0 at /usr/bin/ninja

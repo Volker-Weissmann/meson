@@ -46,6 +46,8 @@ from mesonbuild.mesonlib import (
 from mesonbuild.interpreter.type_checking import in_set_validator, NoneType
 from mesonbuild.dependencies import PkgConfigDependency
 from mesonbuild.programs import ExternalProgram
+from mesonbuild.cmake.generator import parse_generator_expressions_new
+from mesonbuild.mparser import ast_print
 import mesonbuild.modules.pkgconfig
 
 
@@ -1606,3 +1608,10 @@ class InternalTests(unittest.TestCase):
         for raw, expected in cases:
             with self.subTest(raw):
                 self.assertEqual(OptionKey.from_string(raw), expected)
+
+    def test_cmake_generator_expressions(self) -> None:
+        print(ast_print(parse_generator_expressions_new("abc", None)))
+        self.assertEqual(3,7)
+#target_compile_definitions(tgt PRIVATE
+#  $<$<VERSION_LESS:$<CXX_COMPILER_VERSION>,4.2.0>:OLD_COMPILER>
+#)

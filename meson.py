@@ -35,4 +35,5 @@ if (meson_exe.parent / 'mesonbuild').is_dir():
 from mesonbuild import mesonmain
 
 if __name__ == '__main__':
+    #print("volker:", sys.argv)
     sys.exit(mesonmain.main())

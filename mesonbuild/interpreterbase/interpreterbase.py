@@ -19,6 +19,8 @@ from __future__ import annotations
 from .. import mparser, mesonlib
 from .. import environment
 
+from ..mparser import debugast
+
 from .baseobjects import (
     InterpreterObject,
     MesonInterpreterObject,
@@ -143,6 +145,9 @@ class InterpreterBase:
                 raise InvalidCode(f'Invalid source tree: {error}')
 
     def run(self) -> None:
+        import pdb
+        #pdb.set_trace()
+        debugast(self.ast)
         # Evaluate everything after the first line, which is project() because
         # we already parsed that in self.parse_project()
         try:

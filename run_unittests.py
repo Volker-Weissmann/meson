@@ -115,7 +115,7 @@ def main():
     setup_backend()
     cases = ['InternalTests', 'DataTests', 'AllPlatformTests', 'FailureTests',
              'PythonTests', 'NativeFileTests', 'RewriterTests', 'CrossFileTests',
-             'TAPParserTests', 'SubprojectsCommandTests', 'PlatformAgnosticTests',
+             'TAPParserTests', 'SubprojectsCommandTests', 'PlatformAgnosticTests'
 
              'LinuxlikeTests', 'LinuxCrossArmTests', 'LinuxCrossMingwTests',
              'WindowsTests', 'DarwinTests']

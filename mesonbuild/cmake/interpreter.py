@@ -1224,6 +1224,8 @@ class CMakeInterpreter:
             # Generate the commands. Subcommands are separated by ';;;'
             for cmd in tgt.command:
                 command += [resolve_source(x) for x in cmd] + [';;;']
+            print("volker process_custom_target")
+            print(command)
 
             tgt_kwargs = {
                 'input': [resolve_source(x) for x in tgt.inputs],

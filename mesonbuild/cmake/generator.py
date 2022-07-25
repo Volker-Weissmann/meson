@@ -15,16 +15,89 @@
 from .. import mesonlib
 from .common import cmake_is_debug
 import typing as T
+from ..mparser import ( # todo: which of those are actually needed?
+    Token,
+    BaseNode,
+    CodeBlockNode,
+    FunctionNode,
+    ArrayNode,
+    ArgumentNode,
+    AssignmentNode,
+    BooleanNode,
+    StringNode,
+    IdNode,
+    IndexNode,
+    MethodNode,
+    NumberNode,
+)
+
+import inspect
+import pprint
+import sys
+
+
+def tracepoint():
+    print()
+    cf = inspect.currentframe()
+    head = cf.f_back
+    while head is not None:
+        print(head.f_code.co_name.ljust(50), head.f_code.co_filename.split("/")[-1] + ':'  + str(head.f_lineno) )
+        #pprint.pprint({key: head.f_locals.get(key) for key in head.f_code.co_varnames}, indent=4)
+        head = head.f_back
+    print(sys.argv)
+    print()
+
 
 if T.TYPE_CHECKING:
     from .traceparser import CMakeTraceParser, CMakeTarget
+
+def parse_generator_expressions_other(
+            raw: str,
+            trace: 'CMakeTraceParser',
+            *,
+            context_tgt: T.Optional['CMakeTarget'] = None,
+        ) -> StringNode:
+    value = parse_generator_expressions_inner(raw, trace, context_tgt=context_tgt)
+    if raw != value:
+        with open("/home/volker/writeout.txt", "a") as ofile:
+            ofile.write("--------------------------------\n" + raw + "---------\n" + value + "\n\n")
+    #print(value)
+    #assert(";" not in value)
+    return value
+    return StringNode(Token('string', "todo_self.subdir.as_posix()", 0, 0, 0, None, value))
+
+def string_to_node(str: str) -> StringNode:
+    return StringNode(Token('string', "todo_self.subdir.as_posix()", 0, 0, 0, None, str))
+
+class CmakeGenExpr:
+    def i_want_it_now(self) -> str:
+        pass
 
 def parse_generator_expressions(
             raw: str,
             trace: 'CMakeTraceParser',
             *,
             context_tgt: T.Optional['CMakeTarget'] = None,
-        ) -> str:
+        ) -> CmakeGenExpr:
+    #todo correct doc
+    # https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html
+
+    if "$<" not in raw:
+        return string_to_node(raw) # early exit for performance
+
+    if ";" in raw:
+        import pdb
+        pdb.set_trace()
+
+    return string_to_node(raw)
+
+
+def parse_generator_expressions_old(
+            raw: str,
+            trace: 'CMakeTraceParser',
+            *,
+            context_tgt: T.Optional['CMakeTarget'] = None,
+        ) -> StringNode:
     '''Parse CMake generator expressions
 
     Most generator expressions are simply ignored for
@@ -94,6 +167,8 @@ def parse_generator_expressions(
         elif 'IMPORTED_LOCATION' in tgt.properties:
             return ';'.join([x for x in tgt.properties['IMPORTED_LOCATION'] if x])
         else:
+            return "' + {}.full_path_nonext() + '".format(arg)
+            #return "VOLKER TRACE########################'####"
             return str(tgt.build_path)
 
     supported = {

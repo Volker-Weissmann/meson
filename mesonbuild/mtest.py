@@ -16,6 +16,7 @@
 
 from pathlib import Path
 from collections import deque
+from contextlib import suppress
 from copy import deepcopy
 import argparse
 import asyncio
@@ -774,6 +775,10 @@ class JunitBuilder(TestLogger):
                     del case.attrib['result']
                 for case in suite.findall('.//testcase[@timestamp]'):
                     del case.attrib['timestamp']
+                for case in suite.findall('.//testcase[@file]'):
+                    del case.attrib['file']
+                for case in suite.findall('.//testcase[@line]'):
+                    del case.attrib['line']
                 self.root.append(suite)
             return
 
@@ -1107,7 +1112,9 @@ def decode(stream: T.Union[None, bytes]) -> str:
     except UnicodeDecodeError:
         return stream.decode('iso-8859-1', errors='ignore')
 
-async def read_decode(reader: asyncio.StreamReader, console_mode: ConsoleUser) -> str:
+async def read_decode(reader: asyncio.StreamReader,
+                      queue: T.Optional['asyncio.Queue[T.Optional[str]]'],
+                      console_mode: ConsoleUser) -> str:
     stdo_lines = []
     try:
         while not reader.at_eof():
@@ -1123,26 +1130,14 @@ async def read_decode(reader: asyncio.StreamReader, console_mode: ConsoleUser) -
                 stdo_lines.append(line)
                 if console_mode is ConsoleUser.STDOUT:
                     print(line, end='', flush=True)
-        return ''.join(stdo_lines)
-    except asyncio.CancelledError:
-        return ''.join(stdo_lines)
-
-# Extract lines out of the StreamReader.  Print them
-# along the way if requested, and at the end collect
-# them all into a future.
-async def read_decode_lines(reader: asyncio.StreamReader,
-                            q: 'asyncio.Queue[T.Optional[str]]') -> str:
-    stdo_lines = []
-    try:
-        while not reader.at_eof():
-            line = decode(await reader.readline())
-            stdo_lines.append(line)
-            await q.put(line)
+                if queue:
+                    await queue.put(line)
         return ''.join(stdo_lines)
     except asyncio.CancelledError:
         return ''.join(stdo_lines)
     finally:
-        await q.put(None)
+        if queue:
+            await queue.put(None)
 
 def run_with_mono(fname: str) -> bool:
     return fname.endswith('.exe') and not (is_windows() or is_cygwin())
@@ -1160,11 +1155,6 @@ def check_testdata(objs: T.List[TestSerialisation]) -> T.List[TestSerialisation]
     return objs
 
 # Custom waiting primitives for asyncio
-
-async def try_wait_one(*awaitables: T.Any, timeout: T.Optional[T.Union[int, float]]) -> None:
-    """Wait for completion of one of the given futures, ignoring timeouts."""
-    await asyncio.wait(awaitables,
-                       timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
 
 async def queue_iter(q: 'asyncio.Queue[T.Optional[str]]') -> T.AsyncIterator[str]:
     while True:
@@ -1224,12 +1214,11 @@ class TestSubprocess:
         self.stde_task = None            # type: T.Optional[asyncio.Future[str]]
         self.postwait_fn = postwait_fn   # type: T.Callable[[], None]
         self.all_futures = []            # type: T.List[asyncio.Future]
+        self.queue = None                # type: T.Optional[asyncio.Queue[T.Optional[str]]]
 
     def stdout_lines(self) -> T.AsyncIterator[str]:
-        q = asyncio.Queue()              # type: asyncio.Queue[T.Optional[str]]
-        decode_coro = read_decode_lines(self._process.stdout, q)
-        self.stdo_task = asyncio.ensure_future(decode_coro)
-        return queue_iter(q)
+        self.queue = asyncio.Queue()
+        return queue_iter(self.queue)
 
     def communicate(self,
                     test: 'TestRun',
@@ -1238,12 +1227,12 @@ class TestSubprocess:
         async def collect_stdo(test: 'TestRun',
                                reader: asyncio.StreamReader,
                                console_mode: ConsoleUser) -> None:
-            test.stdo = await read_decode(reader, console_mode)
+            test.stdo = await read_decode(reader, self.queue, console_mode)
 
         async def collect_stde(test: 'TestRun',
                                reader: asyncio.StreamReader,
                                console_mode: ConsoleUser) -> None:
-            test.stde = await read_decode(reader, console_mode)
+            test.stde = await read_decode(reader, None, console_mode)
 
         # asyncio.ensure_future ensures that printing can
         # run in the background, even before it is awaited
@@ -1273,13 +1262,15 @@ class TestSubprocess:
 
                 # Make sure the termination signal actually kills the process
                 # group, otherwise retry with a SIGKILL.
-                await try_wait_one(p.wait(), timeout=0.5)
+                with suppress(TimeoutError):
+                    await asyncio.wait_for(p.wait(), timeout=0.5)
                 if p.returncode is not None:
                     return None
 
                 os.killpg(p.pid, signal.SIGKILL)
 
-            await try_wait_one(p.wait(), timeout=1)
+            with suppress(TimeoutError):
+                await asyncio.wait_for(p.wait(), timeout=1)
             if p.returncode is not None:
                 return None
 
@@ -1287,7 +1278,8 @@ class TestSubprocess:
             # Try to kill it one last time with a direct call.
             # If the process has spawned children, they will remain around.
             p.kill()
-            await try_wait_one(p.wait(), timeout=1)
+            with suppress(TimeoutError):
+                await asyncio.wait_for(p.wait(), timeout=1)
             if p.returncode is not None:
                 return None
             return 'Test process could not be killed.'
@@ -1484,11 +1476,10 @@ class SingleTestRunner:
         if self.runobj.needs_parsing:
             parse_coro = self.runobj.parse(harness, p.stdout_lines())
             parse_task = asyncio.ensure_future(parse_coro)
-            stdo_task = stde_task = None
         else:
-            stdo_task, stde_task = p.communicate(self.runobj, self.console_mode)
             parse_task = None
 
+        stdo_task, stde_task = p.communicate(self.runobj, self.console_mode)
         await p.wait(self.runobj)
 
         if parse_task:

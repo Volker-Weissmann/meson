@@ -54,7 +54,7 @@ from .mesonlib import (
     MesonBugException
 )
 from .compilers import (
-    is_object, clink_langs, sort_clink, lang_suffixes, all_languages,
+    is_object, clink_langs, sort_clink, all_languages,
     is_known_suffix, detect_static_linker
 )
 from .interpreterbase import FeatureNew, FeatureDeprecated
@@ -72,6 +72,7 @@ if T.TYPE_CHECKING:
     from .mparser import BaseNode
 
     GeneratedTypes = T.Union['CustomTarget', 'CustomTargetIndex', 'GeneratedList']
+    LibTypes = T.Union['SharedLibrary', 'StaticLibrary', 'CustomTarget', 'CustomTargetIndex']
 
 pch_kwargs = {'c_pch', 'cpp_pch'}
 
@@ -770,7 +771,7 @@ class BuildTarget(Target):
         self.external_deps: T.List[dependencies.Dependency] = []
         self.include_dirs: T.List['IncludeDirs'] = []
         self.link_language = kwargs.get('link_language')
-        self.link_targets: T.List[T.Union[SharedLibrary, StaticLibrary, 'CustomTarget', 'CustomTargetIndex']] = []
+        self.link_targets: T.List[LibTypes] = []
         self.link_whole_targets: T.List[T.Union[StaticLibrary, CustomTarget, CustomTargetIndex]] = []
         self.link_depends = []
         self.added_deps = set()
@@ -964,12 +965,15 @@ class BuildTarget(Target):
         for o in self.objects:
             if not isinstance(o, ExtractedObjects):
                 continue
-            for s in o.srclist:
+            compsrcs = o.classify_all_sources(o.srclist, [])
+            for comp in compsrcs:
                 # Don't add Vala sources since that will pull in the Vala
                 # compiler even though we will never use it since we are
                 # dealing with compiled C code.
-                if not s.endswith(lang_suffixes['vala']):
-                    sources.append(s)
+                if comp.language == 'vala':
+                    continue
+                if comp.language not in self.compilers:
+                    self.compilers[comp.language] = comp
         if sources:
             # For each source, try to add one compiler that can compile it.
             #

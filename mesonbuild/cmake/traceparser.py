@@ -71,7 +71,6 @@ class CMakeTarget:
     def __init__(
                 self,
                 name:        str,
-                build_path:  T.Optional[Path],
                 target_type: str,
                 properties:  T.Optional[T.Dict[str, T.List[str]]] = None,
                 imported:    bool                                 = False,
@@ -80,7 +79,6 @@ class CMakeTarget:
         if properties is None:
             properties = {}
         self.name            = name
-        self.build_path      = build_path
         self.type            = target_type
         self.properties      = properties
         self.imported        = imported
@@ -106,7 +104,7 @@ class CMakeTarget:
 
 class CMakeGeneratorTarget(CMakeTarget):
     def __init__(self, name: str) -> None:
-        super().__init__(name, None, 'CUSTOM', {})
+        super().__init__(name, 'CUSTOM', {})
         self.outputs = []        # type: T.List[Path]
         self._outputs_str = []   # type: T.List[str]
         self.command = []        # type: T.List[T.List[str]]
@@ -135,7 +133,6 @@ class CMakeTraceParser:
         self.env = env
         self.permissive = permissive  # type: bool
         self.cmake_version = cmake_version  # type: str
-        self.build_dir = build_dir
         self.trace_file = 'cmake_trace.txt'
         self.trace_file_path = build_dir / self.trace_file
         self.trace_format = 'json-v1' if version_compare(cmake_version, '>=3.17') else 'human'
@@ -273,6 +270,7 @@ class CMakeTraceParser:
                 for b in a:
                     assert ";" not in b # todo can we trigger this?
             ctgt.command = [[parse_cmge(b) for b in a] for a in ctgt.command]
+            # todo: assert command is not an empty string
 
             ctgt.working_dir = Path(parse_generator_expressions(str(ctgt.working_dir), self).eval_to_string_now()) if ctgt.working_dir is not None else None
 
@@ -420,7 +418,7 @@ class CMakeTraceParser:
             if len(args) < 1:
                 return self._gen_exception('add_library', 'interface library name not specified', tline)
 
-            self.targets[args[0]] = CMakeTarget(args[0], None, 'INTERFACE', {}, tline=tline, imported='IMPORTED' in args)
+            self.targets[args[0]] = CMakeTarget(args[0], 'INTERFACE', {}, tline=tline, imported='IMPORTED' in args)
         elif 'IMPORTED' in args:
             args.remove('IMPORTED')
 
@@ -428,7 +426,7 @@ class CMakeTraceParser:
             if len(args) < 2:
                 return self._gen_exception('add_library', 'requires at least 2 arguments', tline)
 
-            self.targets[args[0]] = CMakeTarget(args[0], None, args[1], {}, tline=tline, imported=True)
+            self.targets[args[0]] = CMakeTarget(args[0], args[1], {}, tline=tline, imported=True)
         elif 'ALIAS' in args:
             args.remove('ALIAS')
 
@@ -437,11 +435,11 @@ class CMakeTraceParser:
                 return self._gen_exception('add_library', 'requires at least 2 arguments', tline)
 
             # Simulate the ALIAS with INTERFACE_LINK_LIBRARIES
-            self.targets[args[0]] = CMakeTarget(args[0], None, 'ALIAS', {'INTERFACE_LINK_LIBRARIES': [args[1]]}, tline=tline)
+            self.targets[args[0]] = CMakeTarget(args[0], 'ALIAS', {'INTERFACE_LINK_LIBRARIES': [args[1]]}, tline=tline)
         elif 'OBJECT' in args:
             return self._gen_exception('add_library', 'OBJECT libraries are not supported', tline)
         else:
-            self.targets[args[0]] = CMakeTarget(args[0], None, 'NORMAL', {}, tline=tline)
+            self.targets[args[0]] = CMakeTarget(args[0], 'NORMAL', {}, tline=tline)
 
     def _cmake_add_custom_command(self, tline: CMakeTraceLine, name: T.Optional[str] = None) -> None:
         # DOC: https://cmake.org/cmake/help/latest/command/add_custom_command.html

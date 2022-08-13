@@ -16,6 +16,7 @@
 # Doc: https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html
 
 from .. import mesonlib
+from .. import mlog
 from .common import cmake_is_debug
 import typing as T
 from ..mparser import ( # todo: which of those are actually needed?
@@ -234,6 +235,7 @@ def parse_generator_expressions_old(
 
     def target_file(arg: str) -> str:
         if arg not in trace.targets:
+            mlog.warning(f"Unable to evaluate the cmake variable '$<TARGET_FILE:{arg}>'.")
             return ''
         tgt = trace.targets[arg]
 

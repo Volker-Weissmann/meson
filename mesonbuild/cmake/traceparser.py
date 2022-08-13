@@ -16,7 +16,7 @@
 # or an interpreter-based tool.
 
 from .common import CMakeException
-from .generator import parse_generator_expressions, parse_generator_expressions_old
+from .generator import parse_generator_expressions, parse_cmge
 from .. import mlog
 from ..mesonlib import version_compare
 from ..mparser import StringNode
@@ -230,8 +230,8 @@ class CMakeTraceParser:
             if fn:
                 fn(l)
 
-        strlist_gen:  T.Callable[[T.List[str]], T.List[str]]  = lambda strlist: parse_generator_expressions_old(';'.join(strlist), self).split(';') if strlist else []
-        pathlist_gen: T.Callable[[T.List[str]], T.List[Path]] = lambda strlist: [Path(x) for x in parse_generator_expressions_old(';'.join(strlist), self).split(';')] if strlist else []
+        strlist_gen:  T.Callable[[T.List[str]], T.List[str]]  = lambda strlist: parse_generator_expressions(';'.join(strlist), self).eval_to_string_now().split(';') if strlist else []
+        pathlist_gen: T.Callable[[T.List[str]], T.List[Path]] = lambda strlist: [Path(x) for x in parse_generator_expressions(';'.join(strlist), self).eval_to_string_now().split(';')] if strlist else []
 
         # Evaluate generator expressions
         # strlist_gen:  T.Callable[[T.List[str]], T.List[str]]  = lambda strlist: [unpack_helper(parse_generator_expressions(el, self)) for el in strlist]
@@ -256,9 +256,9 @@ class CMakeTraceParser:
             # tgt.name = unpack_helper(parse_generator_expressions(tgt.name, self, context_tgt=tgt))
             # tgt.type = unpack_helper(parse_generator_expressions(tgt.type, self, context_tgt=tgt))
 
-            tgtlist_gen: T.Callable[[T.List[str], CMakeTarget], T.List[str]] = lambda strlist, t: parse_generator_expressions_old(';'.join(strlist), self, context_tgt=t).split(';') if strlist else []
-            tgt.name = parse_generator_expressions_old(tgt.name, self, context_tgt=tgt)
-            tgt.type = parse_generator_expressions_old(tgt.type, self, context_tgt=tgt)
+            tgtlist_gen: T.Callable[[T.List[str], CMakeTarget], T.List[str]] = lambda strlist, t: parse_generator_expressions(';'.join(strlist), self, context_tgt=t).eval_to_string_now().split(';') if strlist else []
+            tgt.name = parse_generator_expressions(tgt.name, self, context_tgt=tgt).eval_to_string_now()
+            tgt.type = parse_generator_expressions(tgt.type, self, context_tgt=tgt).eval_to_string_now()
 
 
             tgt.properties = {
@@ -268,8 +268,13 @@ class CMakeTraceParser:
 
         for ctgt in self.custom_targets:
             ctgt.outputs = pathlist_gen(ctgt._outputs_str)
-            ctgt.command = [strlist_gen(x) for x in ctgt.command]
-            ctgt.working_dir = Path(parse_generator_expressions_old(str(ctgt.working_dir), self)) if ctgt.working_dir is not None else None
+            #
+            for a in ctgt.command:
+                for b in a:
+                    assert ";" not in b # todo can we trigger this?
+            ctgt.command = [[parse_cmge(b) for b in a] for a in ctgt.command]
+
+            ctgt.working_dir = Path(parse_generator_expressions(str(ctgt.working_dir), self).eval_to_string_now()) if ctgt.working_dir is not None else None
 
             #ctgt.working_dir = Path(unpack_helper(parse_generator_expressions(str(ctgt.working_dir), self))) if ctgt.working_dir is not None else None
 
@@ -402,7 +407,6 @@ class CMakeTraceParser:
             if len(args) < 1:
                 return self._gen_exception('add_executable', 'requires at least 1 argument', tline)
             build_path = self.build_dir.parent / args[0]
-            tracepoint()
             self.targets[args[0]] = CMakeTarget(args[0], build_path, 'EXECUTABLE', {}, tline=tline, imported=False)
 
     def _cmake_add_library(self, tline: CMakeTraceLine) -> None:

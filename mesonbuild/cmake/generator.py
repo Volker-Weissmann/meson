@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This module concerns CMake Generator Expressions, abbreviated Cmge
+# Doc: https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html
+
 from .. import mesonlib
 from .common import cmake_is_debug
 import typing as T
@@ -29,7 +32,9 @@ from ..mparser import ( # todo: which of those are actually needed?
     IndexNode,
     MethodNode,
     NumberNode,
+    ast_print
 )
+from dataclasses import dataclass
 
 import inspect
 import pprint
@@ -69,35 +74,125 @@ def parse_generator_expressions_other(
 def string_to_node(str: str) -> StringNode:
     return StringNode(Token('string', "todo_self.subdir.as_posix()", 0, 0, 0, None, str))
 
-class CmakeGenExpr:
-    def i_want_it_now(self) -> str:
-        pass
+CmgeAstNode = T.List[T.Union[str, 'CmgeSpecial']]
+
+# A CmgeSpecial is something like $<cmd:arg[0],arg[1]...>
+@dataclass
+class CmgeSpecial:
+    cmd: CmgeAstNode
+    args: T.List[CmgeAstNode]
+
+# This class converts a string to a CmgeAst.
+# The grammar is (https://pest.rs/ has a live editor for this grammar):
+# expr = { ( normal_chars | special )* }
+# special = { "$<" ~ expr ~ ":" ~ expr ~ ("," ~ expr)* ~ ">" }
+# normal_chars = { ( !("$" | "<" | ">" | ":" | ",") ~ ANY )+ }
+class CmgeParser:
+    @staticmethod
+    def parse(src: str) -> CmgeAstNode:
+        ret = CmgeParser.eat_expr(src, 0)
+        assert ret[0] == len(src), "parsing failed" # todo: better error handling
+        return ret[1]
+
+    @staticmethod
+    # todo: maybe this function should just accept a single char?
+    def try_eat_normal_chars(src: str, pos: int) -> T.Optional[T.Tuple[int, str]]:
+        startpos = pos
+        while(pos < len(src) and not src[pos] in ["$", "<", ">", ":", ","]):
+            pos += 1
+        if pos != startpos:
+            return pos, src[startpos:pos]
+        else:
+            return None
+
+    @staticmethod
+    def try_eat_special(src: str, pos: int) -> T.Optional[T.Tuple[int, CmgeSpecial]]:
+        if pos+1 >= len(src) or src[pos:pos+2] != "$<":
+            return None
+        pos += 2
+        cmd = CmgeParser.eat_expr(src, pos)
+        pos = cmd[0]
+        if pos >= len(src) or src[pos] != ":":
+            return None
+        pos += 1
+        args = []
+        a = CmgeParser.eat_expr(src, pos)
+        pos = a[0]
+        args.append(a[1])
+        while True:
+            if pos >= len(src) or src[pos] != ",":
+                break
+            pos += 1
+            a = CmgeParser.eat_expr(src, pos)
+            pos = a[0]
+            args.append(a[1])
+        if pos >= len(src) or src[pos] != ">":
+            return None
+        pos += 1
+        return pos, CmgeSpecial(cmd=cmd[1], args=args)
+
+    @staticmethod
+    def eat_expr(src: str, pos: int) -> T.Tuple[int, CmgeAstNode]:
+        ret = []
+        while True:
+            x = CmgeParser.try_eat_normal_chars(src, pos) or CmgeParser.try_eat_special(src, pos)
+            if x is None:
+                return pos, ret
+            pos = x[0]
+            ret.append(x[1])
+
+@dataclass
+class CmgeAst:
+    root: CmgeAstNode
+    def eval_to_string_now(self) -> str:
+        #print(ast_print(self.root))
+        assert(len(self.root) == 1, "todo")
+        assert(isinstance(self.root[0], str))
+        return self.root[0]
+
+def parse_cmge(src: str) -> CmgeAst:
+    assert(isinstance(src, str)) # todo: remove
+    return CmgeAst(root=CmgeParser.parse(src))
 
 def parse_generator_expressions(
             raw: str,
             trace: 'CMakeTraceParser',
             *,
             context_tgt: T.Optional['CMakeTarget'] = None,
-        ) -> CmakeGenExpr:
-    #todo correct doc
+        ) -> CmgeAst:
+    # todo correct doc
     # https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html
 
-    if "$<" not in raw:
-        return string_to_node(raw) # early exit for performance
+    # I'm not sure, but I think there is a bug that some code calls this
+    # function with something that is not a generator expression and should not
+    # be parsed as one.
+    if '$<' not in raw or True:
+        return CmgeAst(root=[raw])
 
-    if ";" in raw:
-        import pdb
-        pdb.set_trace()
+    return parse_cmge(raw)
 
-    return string_to_node(raw)
+    # ret = CmakeGenExpr()
+    # ret.str = parse_generator_expressions_old(raw, trace, context_tgt=context_tgt)
+    # return ret
 
+def parse_generator_expressions_old_wrap(
+            raw: str,
+            trace: 'CMakeTraceParser',
+            *,
+            context_tgt: T.Optional['CMakeTarget'] = None,
+        ) -> str:
+    value = parse_generator_expressions_old_inner(raw, trace, context_tgt=context_tgt)
+    if raw != value:
+        with open("/home/volker/writeout.txt", "a") as ofile:
+            ofile.write("--------------------------------\n" + raw + "\n---------\n" + value + "\n\n")
+    return value
 
 def parse_generator_expressions_old(
             raw: str,
             trace: 'CMakeTraceParser',
             *,
             context_tgt: T.Optional['CMakeTarget'] = None,
-        ) -> StringNode:
+        ) -> str:
     '''Parse CMake generator expressions
 
     Most generator expressions are simply ignored for
@@ -167,7 +262,7 @@ def parse_generator_expressions_old(
         elif 'IMPORTED_LOCATION' in tgt.properties:
             return ';'.join([x for x in tgt.properties['IMPORTED_LOCATION'] if x])
         else:
-            return "' + {}.full_path_nonext() + '".format(arg)
+            #return "' + {}.full_path_nonext() + '".format(arg)
             #return "VOLKER TRACE########################'####"
             return str(tgt.build_path)
 

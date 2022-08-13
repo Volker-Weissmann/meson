@@ -1722,7 +1722,6 @@ class Interpreter(InterpreterBase, HoldableObject):
     @FeatureDeprecatedKwargs('executable', '0.56.0', ['gui_app'], extra_message="Use 'win_subsystem' instead.")
     @permittedKwargs(build.known_exe_kwargs)
     def func_executable(self, node, args, kwargs):
-        print("Volker func_executable", self, node, args, kwargs)
         return self.build_target(node, args, kwargs, build.Executable)
 
     @permittedKwargs(build.known_stlib_kwargs)
@@ -1885,8 +1884,6 @@ class Interpreter(InterpreterBase, HoldableObject):
     )
     def func_custom_target(self, node: mparser.FunctionNode, args: T.Tuple[str],
                            kwargs: 'kwargs.CustomTarget') -> build.CustomTarget:
-        tracepoint()
-        print("volker func_custom_target", kwargs)
         if kwargs['depfile'] and ('@BASENAME@' in kwargs['depfile'] or '@PLAINNAME@' in kwargs['depfile']):
             FeatureNew.single_use('substitutions in custom_target depfile', '0.47.0', self.subproject, location=node)
 

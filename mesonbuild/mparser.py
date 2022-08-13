@@ -320,7 +320,8 @@ def dict_print(typename, dat) -> str:
     ret = typename + ":"
     for key, value in dat.items():
         key = str(key)
-        assert("\n" not in key)
+        key = key.replace("\n", "⏎")
+        #assert("\n" not in key)
         assert(not key[0].isspace())
         ret += "\n\t" + key + ": " + ast_print(value).replace("\n", "\n\t")
     return ret
@@ -331,7 +332,8 @@ def ast_print(dat) -> str:
         case int():
             return str(dat)
         case str():
-            assert("\n" not in dat)
+            dat = dat.replace("\n", "⏎")
+            #assert("\n" not in dat)
             return dat
         case list() | tuple():
             ret = "list/tuple:"

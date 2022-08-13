@@ -762,8 +762,6 @@ class BuildTarget(Target):
     def __init__(self, name: str, subdir: str, subproject: SubProject, for_machine: MachineChoice,
                  sources: T.List['SourceOutputs'], structured_sources: T.Optional[StructuredSources],
                  objects, environment: environment.Environment, compilers: T.Dict[str, 'Compiler'], kwargs):
-        tracepoint()
-        print("->", name)
         super().__init__(name, subdir, subproject, True, for_machine, environment)
         self.all_compilers = compilers
         self.compilers = OrderedDict() # type: OrderedDict[str, Compiler]
@@ -1890,7 +1888,6 @@ class Executable(BuildTarget):
         if self.suffix:
             self.filename += '.' + self.suffix
         self.outputs = [self.filename]
-        tracepoint()
 
         # The import library this target will generate
         self.import_filename = None

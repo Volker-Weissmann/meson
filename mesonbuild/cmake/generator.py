@@ -27,6 +27,7 @@ from ..mparser import ( # todo: which of those are actually needed?
     ArrayNode,
     ArgumentNode,
     AssignmentNode,
+    ArithmeticNode,
     BooleanNode,
     StringNode,
     IdNode,
@@ -42,7 +43,7 @@ import pprint
 import sys
 
 
-def tracepoint():
+def tracepoint() -> None:
     print()
     cf = inspect.currentframe()
     head = cf.f_back
@@ -134,7 +135,7 @@ class CmgeParser:
 
     @staticmethod
     def eat_expr(src: str, pos: int) -> T.Tuple[int, CmgeAstNode]:
-        ret = []
+        ret: T.List[T.Union[str, 'CmgeSpecial']] = []
         while True:
             x = CmgeParser.try_eat_normal_chars(src, pos) or CmgeParser.try_eat_special(src, pos)
             if x is None:
@@ -142,14 +143,47 @@ class CmgeParser:
             pos = x[0]
             ret.append(x[1])
 
+def cmge_single_to_meson_ast(this: T.Union[str, CmgeSpecial]):
+    print(ast_print(this))
+    if isinstance(this, CmgeSpecial):
+        if len(this.cmd) == 1 and this.cmd[0] == "TARGET_FILE":
+            print(this.args)
+            exit(1)
+            pass
+        else:
+            raise ValueError("todo")
+
+    elif isinstance(this, str):
+        return StringNode(Token("str", "todo self.subdir.as_posix()", 0, 0, 0, None, this))
+    else:
+        raise ValueError("todo")
+
+    exit(1)
+
+# todo codestyle: "" or ''
+def cmge_list_to_meson_ast(this: CmgeAstNode):
+    if len(this) == 0:
+        return ''
+    elif len(this) == 1:
+        return cmge_single_to_meson_ast(this[-1])
+    else:
+        return ArithmeticNode("add", cmge_list_to_meson_ast(this[:-1]), cmge_single_to_meson_ast(this[-1]))
+
 @dataclass
 class CmgeAst:
     root: CmgeAstNode
     def eval_to_string_now(self) -> str:
         #print(ast_print(self.root))
-        assert(len(self.root) == 1, "todo")
+        assert len(self.root) == 1, "todo"
         assert(isinstance(self.root[0], str))
         return self.root[0]
+    def token(self, val, tid: str = 'string') -> Token:
+        return Token(tid, "todo self.subdir.as_posix()", 0, 0, 0, None, val)
+
+    def to_meson_ast(self) -> BaseNode:
+        cmge_list_to_meson_ast(self.root)
+        exit(1)
+        #return  IdNode(self.token('cm_exe_local'))
 
 def parse_cmge(src: str) -> CmgeAst:
     assert(isinstance(src, str)) # todo: remove
@@ -266,7 +300,8 @@ def parse_generator_expressions_old(
         else:
             #return "' + {}.full_path_nonext() + '".format(arg)
             #return "VOLKER TRACE########################'####"
-            return str(tgt.build_path)
+            return "TODO"
+            #return str(tgt.build_path)
 
     supported = {
         # Boolean functions

@@ -16,7 +16,7 @@
 # or an interpreter-based tool.
 
 from .common import CMakeException
-from .generator import parse_generator_expressions, parse_cmge
+from .generator import parse_generator_expressions, parse_cmge, CmgeAst
 from .. import mlog
 from ..mesonlib import version_compare
 from ..mparser import StringNode
@@ -33,7 +33,7 @@ import pprint
 import sys
 
 
-def tracepoint():
+def tracepoint() -> None:
     print()
     cf = inspect.currentframe()
     head = cf.f_back
@@ -107,7 +107,8 @@ class CMakeGeneratorTarget(CMakeTarget):
         super().__init__(name, 'CUSTOM', {})
         self.outputs = []        # type: T.List[Path]
         self._outputs_str = []   # type: T.List[str]
-        self.command = []        # type: T.List[T.List[str]]
+        self.command = []        # type: T.List[T.List[CmgeAst]]
+        self._command_str = []   # type: T.List[T.List[str]]
         self.working_dir = None  # type: T.Optional[Path]
 
 def unpack_helper(val):
@@ -216,7 +217,13 @@ class CMakeTraceParser:
             raise CMakeException(f'CMake: Internal error: Invalid trace format {self.trace_format}. Expected [human, json-v1]')
 
         # Primary pass -- parse everything
+        count = 0
+        import pdb
         for l in lexer1:
+            count += 1
+            # if(count == 8204 - 26+4):
+            #     print(l)
+            #     pdb.set_trace()
             # store the function if its execution should be delayed
             if l.func in self.delayed_commands:
                 self.stored_commands += [l]
@@ -226,6 +233,8 @@ class CMakeTraceParser:
             fn = self.functions.get(l.func, None)
             if fn:
                 fn(l)
+        import pdb
+        #pdb.set_trace()
 
         strlist_gen:  T.Callable[[T.List[str]], T.List[str]]  = lambda strlist: parse_generator_expressions(';'.join(strlist), self).eval_to_string_now().split(';') if strlist else []
         pathlist_gen: T.Callable[[T.List[str]], T.List[Path]] = lambda strlist: [Path(x) for x in parse_generator_expressions(';'.join(strlist), self).eval_to_string_now().split(';')] if strlist else []
@@ -266,10 +275,10 @@ class CMakeTraceParser:
         for ctgt in self.custom_targets:
             ctgt.outputs = pathlist_gen(ctgt._outputs_str)
             #
-            for a in ctgt.command:
+            for a in ctgt._command_str:
                 for b in a:
                     assert ";" not in b # todo can we trigger this?
-            ctgt.command = [[parse_cmge(b) for b in a] for a in ctgt.command]
+            ctgt.command = [[parse_cmge(b) for b in a] for a in ctgt._command_str]
             # todo: assert command is not an empty string
 
             ctgt.working_dir = Path(parse_generator_expressions(str(ctgt.working_dir), self).eval_to_string_now()) if ctgt.working_dir is not None else None
@@ -400,12 +409,12 @@ class CMakeTraceParser:
             args.remove('IMPORTED')
             if len(args) < 1:
                 return self._gen_exception('add_executable', 'requires at least 1 argument', tline)
-            self.targets[args[0]] = CMakeTarget(args[0], None, 'EXECUTABLE', {}, tline=tline, imported=True)
+            self.targets[args[0]] = CMakeTarget(args[0], 'EXECUTABLE', {}, tline=tline, imported=True)
         else:
             if len(args) < 1:
                 return self._gen_exception('add_executable', 'requires at least 1 argument', tline)
-            build_path = self.build_dir.parent / args[0]
-            self.targets[args[0]] = CMakeTarget(args[0], build_path, 'EXECUTABLE', {}, tline=tline, imported=False)
+            #build_path = self.build_dir.parent / args[0]
+            self.targets[args[0]] = CMakeTarget(args[0], 'EXECUTABLE', {}, tline=tline, imported=False)
 
     def _cmake_add_library(self, tline: CMakeTraceLine) -> None:
         # DOC: https://cmake.org/cmake/help/latest/command/add_library.html
@@ -464,7 +473,7 @@ class CMakeTraceParser:
         def handle_command(key: str, target: CMakeGeneratorTarget) -> None:
             if key == 'ARGS':
                 return
-            target.command[-1] += [key]
+            target._command_str[-1] += [key]
 
         def handle_depends(key: str, target: CMakeGeneratorTarget) -> None:
             target.depends += [key]
@@ -491,7 +500,7 @@ class CMakeTraceParser:
                     fn = handle_working_dir
                 elif i == 'COMMAND':
                     fn = handle_command
-                    target.command += [[]]
+                    target._command_str += [[]]
                 else:
                     fn = None
                 continue
@@ -507,7 +516,7 @@ class CMakeTraceParser:
         target.current_src_dir = Path(csource_dir) if csource_dir else None
         target._outputs_str = self._guess_files(target._outputs_str)
         target.depends = self._guess_files(target.depends)
-        target.command = [self._guess_files(x) for x in target.command]
+        target._command_str = [self._guess_files(x) for x in target._command_str]
 
         self.custom_targets += [target]
         if name:

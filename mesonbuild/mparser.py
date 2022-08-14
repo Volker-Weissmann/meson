@@ -24,7 +24,7 @@ import pprint
 import sys
 
 
-def tracepoint():
+def tracepoint() -> None:
     print()
     cf = inspect.currentframe()
     head = cf.f_back
@@ -316,7 +316,7 @@ class BaseNode:
 #     #     for el in ast.lines:
 #     #         astprint(el, indent+4)
 
-def dict_print(typename, dat) -> str:
+def dict_print(typename: str, dat: dict[str, any]) -> str:
     ret = typename + ":"
     for key, value in dat.items():
         key = str(key)
@@ -353,7 +353,7 @@ def debugast(ast):
     # print("##################################################")
     #print(ast_print([1,2,(3,8),4]))
     #print(ast_print({"a": 1, "inner": {"k": 8, "g": 9}, "b": 2, "c": 3}))
-    #print(ast_print(ast))
+    print(ast_print(ast))
 
     mycount += 1
     if mycount == 2:

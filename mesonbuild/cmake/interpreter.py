@@ -25,6 +25,7 @@ import typing as T
 from .common import CMakeException, CMakeTarget, language_map, cmake_get_generator_args, check_cmake_args
 from .fileapi import CMakeFileAPI
 from .executor import CMakeExecutor
+from .generator import CmgeAst
 from .toolchain import CMakeToolchain, CMakeExecScope
 from .traceparser import CMakeTraceParser
 from .tracetargets import resolve_cmake_trace_targets
@@ -59,7 +60,7 @@ if T.TYPE_CHECKING:
     from ..backend.backends import Backend
     from ..environment import Environment
 
-TYPE_mixed        = T.Union[str, int, bool, Path, BaseNode]
+TYPE_mixed        = T.Union[str, int, bool, Path, BaseNode, CmgeAst]
 TYPE_mixed_list   = T.Union[TYPE_mixed, T.Sequence[TYPE_mixed]]
 TYPE_mixed_kwargs = T.Dict[str, TYPE_mixed_list]
 
@@ -613,7 +614,7 @@ class ConverterCustomTarget:
         self.original_outputs = list(target.outputs)
         self.outputs          = [x.name for x in self.original_outputs]
         self.conflict_map     = {}                      # type: T.Dict[str, str]
-        self.command          = []                      # type: T.List[T.List[T.Union[str, ConverterTarget]]]
+        self.command          = []                      # type: T.List[T.List[CmgeAst]]
         self.working_dir      = target.working_dir
         self.depends_raw      = target.depends
         self.inputs           = []                      # type: T.List[T.Union[str, CustomTargetReference]]
@@ -664,30 +665,31 @@ class ConverterCustomTarget:
         self.outputs = temp_outputs
 
         # Check if the command is a build target
-        commands = []  # type: T.List[T.List[T.Union[str, ConverterTarget]]]
+        commands = []  # type: T.List[T.List[CmgeAst]]
         for curr_cmd in self._raw_target.command:
             print("curr_cmd:", curr_cmd)
             assert isinstance(curr_cmd, list)
-            assert curr_cmd[0] != '', "An empty string is not a valid executable"
-            cmd = []  # type: T.List[T.Union[str, ConverterTarget]]
+            #assert curr_cmd[0] != '', "An empty string is not a valid executable"
+            cmd = []  # type: T.List[CmgeAst]
 
             for j in curr_cmd:
-                if not j:
-                    continue
-                target = output_target_map.executable(j)
-                if target:
-                    # When cross compiling, binaries have to be executed with an exe_wrapper (for instance wine for mingw-w64)
-                    if self.env.exe_wrapper is not None and self.env.properties[self.for_machine].get_cmake_use_exe_wrapper():
-                        assert isinstance(self.env.exe_wrapper, ExternalProgram)
-                        cmd += self.env.exe_wrapper.get_command()
-                    cmd += [target]
-                    continue
-                elif j in trace.targets:
-                    trace_tgt = trace.targets[j]
-                    if trace_tgt.type == 'EXECUTABLE' and 'IMPORTED_LOCATION' in trace_tgt.properties:
-                        cmd += trace_tgt.properties['IMPORTED_LOCATION']
-                        continue
-                    mlog.debug(f'CMake: Found invalid CMake target "{j}" --> ignoring \n{trace_tgt}')
+                # todo
+                # if not j:
+                #     continue
+                # target = output_target_map.executable(j)
+                # if target:
+                #     # When cross compiling, binaries have to be executed with an exe_wrapper (for instance wine for mingw-w64)
+                #     if self.env.exe_wrapper is not None and self.env.properties[self.for_machine].get_cmake_use_exe_wrapper():
+                #         assert isinstance(self.env.exe_wrapper, ExternalProgram)
+                #         cmd += self.env.exe_wrapper.get_command()
+                #     cmd += [target]
+                #     continue
+                # elif j in trace.targets:
+                #     trace_tgt = trace.targets[j]
+                #     if trace_tgt.type == 'EXECUTABLE' and 'IMPORTED_LOCATION' in trace_tgt.properties:
+                #         cmd += trace_tgt.properties['IMPORTED_LOCATION']
+                #         continue
+                #     mlog.debug(f'CMake: Found invalid CMake target "{j}" --> ignoring \n{trace_tgt}')
 
                 # Fallthrough on error
                 cmd += [j]
@@ -982,6 +984,8 @@ class CMakeInterpreter:
                 return array(value)
             elif isinstance(value, BaseNode):
                 return value
+            elif isinstance(value, CmgeAst):
+                return value.to_meson_ast()
             raise RuntimeError('invalid type of value: {} ({})'.format(type(value).__name__, str(value)))
 
         def indexed(node: BaseNode, index: int) -> IndexNode:

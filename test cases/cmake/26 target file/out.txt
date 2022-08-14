@@ -5,18 +5,694 @@ Build dir: /home/volker/Sync/git/meson/test cases/cmake/26 target file/build
 Build type: native build
 Project name: cmake_code_gen
 Project version: undefined
-C compiler for the host machine: cc (gcc 12.1.0 "cc (GCC) 12.1.0")
-C linker for the host machine: cc ld.bfd 2.34.50.20200328
-C++ compiler for the host machine: c++ (gcc 12.1.0 "c++ (GCC) 12.1.0")
-C++ linker for the host machine: c++ ld.bfd 2.34.50.20200328
+C compiler for the host machine: cc (gcc 12.1.1 "cc (GCC) 12.1.1 20220730")
+C linker for the host machine: cc ld.bfd 2.39
+C++ compiler for the host machine: c++ (gcc 12.1.1 "c++ (GCC) 12.1.1 20220730")
+C++ linker for the host machine: c++ ld.bfd 2.39
 Host machine cpu family: x86_64
 Host machine cpu: x86_64
+<class 'mesonbuild.mparser.CodeBlockNode'>:
+	lineno: 1
+	colno: 0
+	filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+	end_lineno: 1
+	end_colno: 0
+	level: 0
+	ast_id: 
+	condition_level: 0
+	lines: list/tuple:
+		0: <class 'mesonbuild.mparser.FunctionNode'>:
+			lineno: 1
+			colno: 0
+			filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+			end_lineno: 1
+			end_colno: 39
+			level: 0
+			ast_id: 
+			condition_level: 0
+			func_name: project
+			args: <class 'mesonbuild.mparser.ArgumentNode'>:
+				lineno: 1
+				colno: 24
+				filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+				end_lineno: 1
+				end_colno: 24
+				level: 0
+				ast_id: 
+				condition_level: 0
+				arguments: list/tuple:
+					0: <class 'mesonbuild.mparser.StringNode'>:
+						lineno: 1
+						colno: 8
+						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+						end_lineno: 1
+						end_colno: 8
+						level: 0
+						ast_id: 
+						condition_level: 0
+						value: cmake_code_gen
+						bytespan: list/tuple:
+							0: 8
+							1: 24
+					1: <class 'mesonbuild.mparser.ArrayNode'>:
+						lineno: 1
+						colno: 26
+						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+						end_lineno: 1
+						end_colno: 38
+						level: 0
+						ast_id: 
+						condition_level: 0
+						args: <class 'mesonbuild.mparser.ArgumentNode'>:
+							lineno: 1
+							colno: 30
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 1
+							end_colno: 30
+							level: 0
+							ast_id: 
+							condition_level: 0
+							arguments: list/tuple:
+								0: <class 'mesonbuild.mparser.StringNode'>:
+									lineno: 1
+									colno: 27
+									filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+									end_lineno: 1
+									end_colno: 27
+									level: 0
+									ast_id: 
+									condition_level: 0
+									value: c
+									bytespan: list/tuple:
+										0: 27
+										1: 30
+								1: <class 'mesonbuild.mparser.StringNode'>:
+									lineno: 1
+									colno: 32
+									filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+									end_lineno: 1
+									end_colno: 32
+									level: 0
+									ast_id: 
+									condition_level: 0
+									value: cpp
+									bytespan: list/tuple:
+										0: 32
+										1: 37
+							commas: list/tuple:
+								0: <class 'mesonbuild.mparser.Token'>:
+									tid: comma
+									filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+									line_start: 0
+									lineno: 1
+									colno: 30
+									bytespan: list/tuple:
+										0: 30
+										1: 31
+									value: None
+							kwargs: dict:
+							order_error: False
+				commas: list/tuple:
+					0: <class 'mesonbuild.mparser.Token'>:
+						tid: comma
+						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+						line_start: 0
+						lineno: 1
+						colno: 24
+						bytespan: list/tuple:
+							0: 24
+							1: 25
+						value: None
+				kwargs: dict:
+				order_error: False
+		1: <class 'mesonbuild.mparser.AssignmentNode'>:
+			lineno: 11
+			colno: 0
+			filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+			end_lineno: 11
+			end_colno: 0
+			level: 0
+			ast_id: 
+			condition_level: 0
+			var_name: x
+			value: <class 'mesonbuild.mparser.ArithmeticNode'>:
+				lineno: 11
+				colno: 4
+				filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+				end_lineno: 11
+				end_colno: 4
+				level: 0
+				ast_id: 
+				condition_level: 0
+				left: <class 'mesonbuild.mparser.ArithmeticNode'>:
+					lineno: 11
+					colno: 4
+					filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+					end_lineno: 11
+					end_colno: 4
+					level: 0
+					ast_id: 
+					condition_level: 0
+					left: <class 'mesonbuild.mparser.StringNode'>:
+						lineno: 11
+						colno: 4
+						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+						end_lineno: 11
+						end_colno: 4
+						level: 0
+						ast_id: 
+						condition_level: 0
+						value: abc
+						bytespan: list/tuple:
+							0: 376
+							1: 381
+					right: <class 'mesonbuild.mparser.StringNode'>:
+						lineno: 11
+						colno: 12
+						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+						end_lineno: 11
+						end_colno: 12
+						level: 0
+						ast_id: 
+						condition_level: 0
+						value: def
+						bytespan: list/tuple:
+							0: 384
+							1: 389
+					operation: add
+				right: <class 'mesonbuild.mparser.StringNode'>:
+					lineno: 11
+					colno: 20
+					filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+					end_lineno: 11
+					end_colno: 20
+					level: 0
+					ast_id: 
+					condition_level: 0
+					value: ghi
+					bytespan: list/tuple:
+						0: 392
+						1: 397
+				operation: add
+		2: <class 'mesonbuild.mparser.IfClauseNode'>:
+			lineno: 13
+			colno: 9
+			filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+			end_lineno: 13
+			end_colno: 9
+			level: 0
+			ast_id: 
+			condition_level: 0
+			ifs: list/tuple:
+				0: <class 'mesonbuild.mparser.IfNode'>:
+					lineno: 13
+					colno: 9
+					filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+					end_lineno: 13
+					end_colno: 9
+					level: 0
+					ast_id: 
+					condition_level: 0
+					condition: <class 'mesonbuild.mparser.MethodNode'>:
+						lineno: 13
+						colno: 9
+						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+						end_lineno: 13
+						end_colno: 9
+						level: 0
+						ast_id: 
+						condition_level: 0
+						source_object: <class 'mesonbuild.mparser.IdNode'>:
+							lineno: 13
+							colno: 3
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 13
+							end_colno: 3
+							level: 0
+							ast_id: 
+							condition_level: 0
+							value: meson
+							bytespan: list/tuple:
+								0: 402
+								1: 407
+						name: is_cross_build
+						args: <class 'mesonbuild.mparser.ArgumentNode'>:
+							lineno: 13
+							colno: 24
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 13
+							end_colno: 24
+							level: 0
+							ast_id: 
+							condition_level: 0
+							arguments: list/tuple:
+							commas: list/tuple:
+							kwargs: dict:
+							order_error: False
+					block: <class 'mesonbuild.mparser.CodeBlockNode'>:
+						lineno: 14
+						colno: 4
+						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+						end_lineno: 14
+						end_colno: 4
+						level: 0
+						ast_id: 
+						condition_level: 0
+						lines: list/tuple:
+							0: <class 'mesonbuild.mparser.FunctionNode'>:
+								lineno: 14
+								colno: 4
+								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+								end_lineno: 14
+								end_colno: 123
+								level: 0
+								ast_id: 
+								condition_level: 0
+								func_name: message
+								args: <class 'mesonbuild.mparser.ArgumentNode'>:
+									lineno: 14
+									colno: 122
+									filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+									end_lineno: 14
+									end_colno: 122
+									level: 0
+									ast_id: 
+									condition_level: 0
+									arguments: list/tuple:
+										0: <class 'mesonbuild.mparser.StringNode'>:
+											lineno: 14
+											colno: 12
+											filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+											end_lineno: 14
+											end_colno: 12
+											level: 0
+											ast_id: 
+											condition_level: 0
+											value: Test skipped, see https://github.com/mesonbuild/meson/pull/10607#issuecomment-1188117276 for an explanation.
+											bytespan: list/tuple:
+												0: 437
+												1: 547
+									commas: list/tuple:
+									kwargs: dict:
+									order_error: False
+			elseblock: <class 'mesonbuild.mparser.CodeBlockNode'>:
+				lineno: 16
+				colno: 4
+				filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+				end_lineno: 16
+				end_colno: 4
+				level: 0
+				ast_id: 
+				condition_level: 0
+				lines: list/tuple:
+					0: <class 'mesonbuild.mparser.AssignmentNode'>:
+						lineno: 16
+						colno: 4
+						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+						end_lineno: 16
+						end_colno: 4
+						level: 0
+						ast_id: 
+						condition_level: 0
+						var_name: cm
+						value: <class 'mesonbuild.mparser.FunctionNode'>:
+							lineno: 16
+							colno: 9
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 16
+							end_colno: 24
+							level: 0
+							ast_id: 
+							condition_level: 0
+							func_name: import
+							args: <class 'mesonbuild.mparser.ArgumentNode'>:
+								lineno: 16
+								colno: 23
+								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+								end_lineno: 16
+								end_colno: 23
+								level: 0
+								ast_id: 
+								condition_level: 0
+								arguments: list/tuple:
+									0: <class 'mesonbuild.mparser.StringNode'>:
+										lineno: 16
+										colno: 16
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 16
+										end_colno: 16
+										level: 0
+										ast_id: 
+										condition_level: 0
+										value: cmake
+										bytespan: list/tuple:
+											0: 570
+											1: 577
+								commas: list/tuple:
+								kwargs: dict:
+								order_error: False
+					1: <class 'mesonbuild.mparser.AssignmentNode'>:
+						lineno: 19
+						colno: 4
+						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+						end_lineno: 19
+						end_colno: 4
+						level: 0
+						ast_id: 
+						condition_level: 0
+						var_name: sub_pro
+						value: <class 'mesonbuild.mparser.MethodNode'>:
+							lineno: 19
+							colno: 17
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 19
+							end_colno: 17
+							level: 0
+							ast_id: 
+							condition_level: 0
+							source_object: <class 'mesonbuild.mparser.IdNode'>:
+								lineno: 19
+								colno: 14
+								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+								end_lineno: 19
+								end_colno: 14
+								level: 0
+								ast_id: 
+								condition_level: 0
+								value: cm
+								bytespan: list/tuple:
+									0: 637
+									1: 639
+							name: subproject
+							args: <class 'mesonbuild.mparser.ArgumentNode'>:
+								lineno: 19
+								colno: 35
+								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+								end_lineno: 19
+								end_colno: 35
+								level: 0
+								ast_id: 
+								condition_level: 0
+								arguments: list/tuple:
+									0: <class 'mesonbuild.mparser.StringNode'>:
+										lineno: 19
+										colno: 28
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 19
+										end_colno: 28
+										level: 0
+										ast_id: 
+										condition_level: 0
+										value: cmMod
+										bytespan: list/tuple:
+											0: 651
+											1: 658
+								commas: list/tuple:
+								kwargs: dict:
+								order_error: False
+					2: <class 'mesonbuild.mparser.AssignmentNode'>:
+						lineno: 20
+						colno: 4
+						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+						end_lineno: 20
+						end_colno: 4
+						level: 0
+						ast_id: 
+						condition_level: 0
+						var_name: sub_final
+						value: <class 'mesonbuild.mparser.MethodNode'>:
+							lineno: 20
+							colno: 24
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 20
+							end_colno: 24
+							level: 0
+							ast_id: 
+							condition_level: 0
+							source_object: <class 'mesonbuild.mparser.IdNode'>:
+								lineno: 20
+								colno: 16
+								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+								end_lineno: 20
+								end_colno: 16
+								level: 0
+								ast_id: 
+								condition_level: 0
+								value: sub_pro
+								bytespan: list/tuple:
+									0: 676
+									1: 683
+							name: dependency
+							args: <class 'mesonbuild.mparser.ArgumentNode'>:
+								lineno: 20
+								colno: 42
+								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+								end_lineno: 20
+								end_colno: 42
+								level: 0
+								ast_id: 
+								condition_level: 0
+								arguments: list/tuple:
+									0: <class 'mesonbuild.mparser.StringNode'>:
+										lineno: 20
+										colno: 35
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 20
+										end_colno: 35
+										level: 0
+										ast_id: 
+										condition_level: 0
+										value: final
+										bytespan: list/tuple:
+											0: 695
+											1: 702
+								commas: list/tuple:
+									0: <class 'mesonbuild.mparser.Token'>:
+										tid: comma
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										line_start: 660
+										lineno: 20
+										colno: 42
+										bytespan: list/tuple:
+											0: 702
+											1: 703
+										value: None
+								kwargs: dict:
+									Id node: 'include_type' (20, 44).: <class 'mesonbuild.mparser.StringNode'>:
+										lineno: 20
+										colno: 58
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 20
+										end_colno: 58
+										level: 0
+										ast_id: 
+										condition_level: 0
+										value: system
+										bytespan: list/tuple:
+											0: 718
+											1: 726
+								order_error: False
+					3: <class 'mesonbuild.mparser.AssignmentNode'>:
+						lineno: 23
+						colno: 4
+						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+						end_lineno: 23
+						end_colno: 4
+						level: 0
+						ast_id: 
+						condition_level: 0
+						var_name: exe
+						value: <class 'mesonbuild.mparser.FunctionNode'>:
+							lineno: 23
+							colno: 10
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 23
+							end_colno: 69
+							level: 0
+							ast_id: 
+							condition_level: 0
+							func_name: executable
+							args: <class 'mesonbuild.mparser.ArgumentNode'>:
+								lineno: 23
+								colno: 27
+								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+								end_lineno: 23
+								end_colno: 27
+								level: 0
+								ast_id: 
+								condition_level: 0
+								arguments: list/tuple:
+									0: <class 'mesonbuild.mparser.StringNode'>:
+										lineno: 23
+										colno: 21
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 23
+										end_colno: 21
+										level: 0
+										ast_id: 
+										condition_level: 0
+										value: main
+										bytespan: list/tuple:
+											0: 770
+											1: 776
+									1: <class 'mesonbuild.mparser.ArrayNode'>:
+										lineno: 23
+										colno: 29
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 23
+										end_colno: 41
+										level: 0
+										ast_id: 
+										condition_level: 0
+										args: <class 'mesonbuild.mparser.ArgumentNode'>:
+											lineno: 23
+											colno: 40
+											filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+											end_lineno: 23
+											end_colno: 40
+											level: 0
+											ast_id: 
+											condition_level: 0
+											arguments: list/tuple:
+												0: <class 'mesonbuild.mparser.StringNode'>:
+													lineno: 23
+													colno: 30
+													filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+													end_lineno: 23
+													end_colno: 30
+													level: 0
+													ast_id: 
+													condition_level: 0
+													value: main.cpp
+													bytespan: list/tuple:
+														0: 779
+														1: 789
+											commas: list/tuple:
+											kwargs: dict:
+											order_error: False
+								commas: list/tuple:
+									0: <class 'mesonbuild.mparser.Token'>:
+										tid: comma
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										line_start: 749
+										lineno: 23
+										colno: 27
+										bytespan: list/tuple:
+											0: 776
+											1: 777
+										value: None
+									1: <class 'mesonbuild.mparser.Token'>:
+										tid: comma
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										line_start: 749
+										lineno: 23
+										colno: 41
+										bytespan: list/tuple:
+											0: 790
+											1: 791
+										value: None
+								kwargs: dict:
+									Id node: 'dependencies' (23, 43).: <class 'mesonbuild.mparser.ArrayNode'>:
+										lineno: 23
+										colno: 57
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 23
+										end_colno: 68
+										level: 0
+										ast_id: 
+										condition_level: 0
+										args: <class 'mesonbuild.mparser.ArgumentNode'>:
+											lineno: 23
+											colno: 67
+											filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+											end_lineno: 23
+											end_colno: 67
+											level: 0
+											ast_id: 
+											condition_level: 0
+											arguments: list/tuple:
+												0: <class 'mesonbuild.mparser.IdNode'>:
+													lineno: 23
+													colno: 58
+													filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+													end_lineno: 23
+													end_colno: 58
+													level: 0
+													ast_id: 
+													condition_level: 0
+													value: sub_final
+													bytespan: list/tuple:
+														0: 807
+														1: 816
+											commas: list/tuple:
+											kwargs: dict:
+											order_error: False
+								order_error: False
+					4: <class 'mesonbuild.mparser.FunctionNode'>:
+						lineno: 25
+						colno: 4
+						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+						end_lineno: 25
+						end_colno: 21
+						level: 0
+						ast_id: 
+						condition_level: 0
+						func_name: test
+						args: <class 'mesonbuild.mparser.ArgumentNode'>:
+							lineno: 25
+							colno: 15
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 25
+							end_colno: 15
+							level: 0
+							ast_id: 
+							condition_level: 0
+							arguments: list/tuple:
+								0: <class 'mesonbuild.mparser.StringNode'>:
+									lineno: 25
+									colno: 9
+									filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+									end_lineno: 25
+									end_colno: 9
+									level: 0
+									ast_id: 
+									condition_level: 0
+									value: test
+									bytespan: list/tuple:
+										0: 829
+										1: 835
+								1: <class 'mesonbuild.mparser.IdNode'>:
+									lineno: 25
+									colno: 17
+									filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+									end_lineno: 25
+									end_colno: 17
+									level: 0
+									ast_id: 
+									condition_level: 0
+									value: exe
+									bytespan: list/tuple:
+										0: 837
+										1: 840
+							commas: list/tuple:
+								0: <class 'mesonbuild.mparser.Token'>:
+									tid: comma
+									filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+									line_start: 820
+									lineno: 25
+									colno: 15
+									bytespan: list/tuple:
+										0: 835
+										1: 836
+									value: None
+							kwargs: dict:
+							order_error: False
 
 Executing subproject cmMod method cmake 
 
-cmMod| Found CMake: /usr/bin/cmake (3.23.2)
+cmMod| Found CMake: /usr/bin/cmake (3.23.3)
 
-| Configuring the build directory with CMake version 3.23.2
+| Configuring the build directory with CMake version 3.23.3
 | Running CMake with: -G Ninja -DCMAKE_INSTALL_PREFIX=/usr/local
 | - build directory:          /home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build
 | - source directory:         /home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod
@@ -28,8 +704,8 @@ cmMod| Found CMake: /usr/bin/cmake (3.23.2)
 | Running with expanded trace output on.
 | Not searching for unused variables given on the command line.
 | Trace will be written to cmake_trace.txt
-| -- The C compiler identification is GNU 12.1.0
-| -- The CXX compiler identification is GNU 12.1.0
+| -- The C compiler identification is GNU 12.1.1
+| -- The CXX compiler identification is GNU 12.1.1
 | -- Detecting C compiler ABI info
 | -- Detecting C compiler ABI info - done
 | -- Check for working C compiler: /usr/bin/cc - skipped
@@ -45,446 +721,13 @@ cmMod| Found CMake: /usr/bin/cmake (3.23.2)
 | -- Build files have been written to: /home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build
 
 cmMod| CMake configuration: SUCCEEDED
-
-_cmake_add_executable                              traceparser.py:385
-parse                                              traceparser.py:222
-analyse                                            interpreter.py:889
-_do_subproject_cmake                               interpreter.py:1013
-do_subproject                                      interpreter.py:936
-subproject                                         cmake.py:440
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-wrapped                                            decorators.py:672
-method_call                                        interpreterobjects.py:747
-method_call                                        interpreterbase.py:495
-evaluate_statement                                 interpreterbase.py:189
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-evaluate_if                                        interpreterbase.py:286
-evaluate_statement                                 interpreterbase.py:195
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_generate                                          msetup.py:230
-generate                                           msetup.py:186
-run                                                msetup.py:303
-run                                                mesonmain.py:152
-run                                                mesonmain.py:244
-main                                               mesonmain.py:253
-<module>                                           meson.py:39
-['/home/volker/Sync/git/meson/meson.py', 'build']
-
+curr_cmd: [CmgeAst(root=[CmgeSpecial(cmd=['TARGET_FILE'], args=[['cm_exe_local']])]), CmgeAst(root=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input1.txt']), CmgeAst(root=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp'])]
+curr_cmd: [CmgeAst(root=[CmgeSpecial(cmd=['TARGET_FILE'], args=[['cm_exe_imported']])]), CmgeAst(root=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input2.txt']), CmgeAst(root=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp'])]
 cmMod| CMake project cmMod has 6 build targets.
-volker process_custom_target
-['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-O', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build', "' + cm_exe_local.full_path_nonext() + '", '/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input1.txt', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp', ';;;']
-
-__init__                                           mparser.py:391
-string                                             interpreter.py:962
-nodeify                                            interpreter.py:972
-<listcomp>                                         interpreter.py:992
-array                                              interpreter.py:992
-nodeify                                            interpreter.py:980
-<dictcomp>                                         interpreter.py:1003
-function                                           interpreter.py:1003
-process_custom_target                              interpreter.py:1237
-pretend_to_be_meson                                interpreter.py:1244
-_do_subproject_cmake                               interpreter.py:1016
-do_subproject                                      interpreter.py:936
-subproject                                         cmake.py:440
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-wrapped                                            decorators.py:672
-method_call                                        interpreterobjects.py:747
-method_call                                        interpreterbase.py:495
-evaluate_statement                                 interpreterbase.py:189
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-evaluate_if                                        interpreterbase.py:286
-evaluate_statement                                 interpreterbase.py:195
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_generate                                          msetup.py:230
-generate                                           msetup.py:186
-run                                                msetup.py:303
-run                                                mesonmain.py:152
-run                                                mesonmain.py:244
-main                                               mesonmain.py:253
-<module>                                           meson.py:39
-['/home/volker/Sync/git/meson/meson.py', 'build']
-
-volker process_custom_target
-['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-O', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build', '/usr/bin/cp', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input2.txt', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp', ';;;']
-volker process_custom_target
-['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build']
-volker process_custom_target
-['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build']
-
-cmake-ast| Processing generated meson AST
-cmake-ast| Build file: /home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/meson.build
-
-cmMod| Project name: cmMod
-cmMod| Project version: undefined
-cmMod| C compiler for the host machine: cc (gcc 12.1.0 "cc (GCC) 12.1.0")
-cmMod| C linker for the host machine: cc ld.bfd 2.34.50.20200328
-cmMod| C++ compiler for the host machine: c++ (gcc 12.1.0 "c++ (GCC) 12.1.0")
-cmMod| C++ linker for the host machine: c++ ld.bfd 2.34.50.20200328
-Volker func_executable <mesonbuild.interpreter.interpreter.Interpreter object at 0x7f8ddd5d86a0> FunctionNode(lineno=6, colno=0, filename='subprojects/cmMod', end_lineno=0, end_colno=0) ['cm_exe_local', <File: subprojects/cmMod/local.cpp (not built)>] {'build_by_default': False, 'link_args': [], 'link_with': [], 'include_directories': [<IncludeDirs subprojects/cmMod/['__CMake_build', '.']>, <IncludeDirs subprojects/cmMod/[]>], 'install': False, 'override_options': ['cpp_std=gnu++14'], 'objects': [], 'cpp_args': [], 'pie': False}
-
-__init__                                           build.py:765
-__init__                                           build.py:1845
-build_target                                       interpreter.py:3125
-func_executable                                    interpreter.py:1726
-wrapped                                            decorators.py:127
-wrapped                                            decorators.py:774
-wrapped                                            decorators.py:774
-wrapped                                            decorators.py:774
-function_call                                      interpreterbase.py:467
-evaluate_statement                                 interpreterbase.py:185
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_do_subproject_meson                               interpreter.py:976
-_do_subproject_cmake                               interpreter.py:1037
-do_subproject                                      interpreter.py:936
-subproject                                         cmake.py:440
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-wrapped                                            decorators.py:672
-method_call                                        interpreterobjects.py:747
-method_call                                        interpreterbase.py:495
-evaluate_statement                                 interpreterbase.py:189
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-evaluate_if                                        interpreterbase.py:286
-evaluate_statement                                 interpreterbase.py:195
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_generate                                          msetup.py:230
-generate                                           msetup.py:186
-run                                                msetup.py:303
-run                                                mesonmain.py:152
-run                                                mesonmain.py:244
-main                                               mesonmain.py:253
-<module>                                           meson.py:39
-['/home/volker/Sync/git/meson/meson.py', 'build']
-
--> cm_exe_local
-
-post_init                                          build.py:1893
-process_compilers_late                             build.py:925
-add_target                                         interpreter.py:3005
-build_target                                       interpreter.py:3129
-func_executable                                    interpreter.py:1726
-wrapped                                            decorators.py:127
-wrapped                                            decorators.py:774
-wrapped                                            decorators.py:774
-wrapped                                            decorators.py:774
-function_call                                      interpreterbase.py:467
-evaluate_statement                                 interpreterbase.py:185
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_do_subproject_meson                               interpreter.py:976
-_do_subproject_cmake                               interpreter.py:1037
-do_subproject                                      interpreter.py:936
-subproject                                         cmake.py:440
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-wrapped                                            decorators.py:672
-method_call                                        interpreterobjects.py:747
-method_call                                        interpreterbase.py:495
-evaluate_statement                                 interpreterbase.py:189
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-evaluate_if                                        interpreterbase.py:286
-evaluate_statement                                 interpreterbase.py:195
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_generate                                          msetup.py:230
-generate                                           msetup.py:186
-run                                                msetup.py:303
-run                                                mesonmain.py:152
-run                                                mesonmain.py:244
-main                                               mesonmain.py:253
-<module>                                           meson.py:39
-['/home/volker/Sync/git/meson/meson.py', 'build']
-
-
-func_custom_target                                 interpreter.py:1888
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-function_call                                      interpreterbase.py:467
-evaluate_statement                                 interpreterbase.py:185
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_do_subproject_meson                               interpreter.py:976
-_do_subproject_cmake                               interpreter.py:1037
-do_subproject                                      interpreter.py:936
-subproject                                         cmake.py:440
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-wrapped                                            decorators.py:672
-method_call                                        interpreterobjects.py:747
-method_call                                        interpreterbase.py:495
-evaluate_statement                                 interpreterbase.py:189
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-evaluate_if                                        interpreterbase.py:286
-evaluate_statement                                 interpreterbase.py:195
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_generate                                          msetup.py:230
-generate                                           msetup.py:186
-run                                                msetup.py:303
-run                                                mesonmain.py:152
-run                                                mesonmain.py:244
-main                                               mesonmain.py:253
-<module>                                           meson.py:39
-['/home/volker/Sync/git/meson/meson.py', 'build']
-
-volker func_custom_target {'input': ['input1.txt'], 'output': ['output1.cpp'], 'command': ['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-O', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build', "' + cm_exe_local.full_path_nonext() + '", '/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input1.txt', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp', ';;;'], 'depends': [<Executable 198a311@@cm_exe_local@exe: cm_exe_local>], 'build_always': None, 'build_always_stale': None, 'build_by_default': None, 'install_dir': [], 'install_tag': [], 'depend_files': [], 'depfile': None, 'env': <EnvironmentVariables: []>, 'install': False, 'install_mode': <FileMode: None owner=None group=None, 'feed': False, 'capture': False, 'console': False}
-
-func_custom_target                                 interpreter.py:1888
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-function_call                                      interpreterbase.py:467
-evaluate_statement                                 interpreterbase.py:185
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_do_subproject_meson                               interpreter.py:976
-_do_subproject_cmake                               interpreter.py:1037
-do_subproject                                      interpreter.py:936
-subproject                                         cmake.py:440
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-wrapped                                            decorators.py:672
-method_call                                        interpreterobjects.py:747
-method_call                                        interpreterbase.py:495
-evaluate_statement                                 interpreterbase.py:189
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-evaluate_if                                        interpreterbase.py:286
-evaluate_statement                                 interpreterbase.py:195
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_generate                                          msetup.py:230
-generate                                           msetup.py:186
-run                                                msetup.py:303
-run                                                mesonmain.py:152
-run                                                mesonmain.py:244
-main                                               mesonmain.py:253
-<module>                                           meson.py:39
-['/home/volker/Sync/git/meson/meson.py', 'build']
-
-volker func_custom_target {'input': ['input2.txt'], 'output': ['output2.cpp'], 'command': ['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-O', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build', '/usr/bin/cp', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input2.txt', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp', ';;;'], 'depends': [], 'build_always': None, 'build_always_stale': None, 'build_by_default': None, 'install_dir': [], 'install_tag': [], 'depend_files': [], 'depfile': None, 'env': <EnvironmentVariables: []>, 'install': False, 'install_mode': <FileMode: None owner=None group=None, 'feed': False, 'capture': False, 'console': False}
-
-func_custom_target                                 interpreter.py:1888
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-function_call                                      interpreterbase.py:467
-evaluate_statement                                 interpreterbase.py:185
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_do_subproject_meson                               interpreter.py:976
-_do_subproject_cmake                               interpreter.py:1037
-do_subproject                                      interpreter.py:936
-subproject                                         cmake.py:440
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-wrapped                                            decorators.py:672
-method_call                                        interpreterobjects.py:747
-method_call                                        interpreterbase.py:495
-evaluate_statement                                 interpreterbase.py:189
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-evaluate_if                                        interpreterbase.py:286
-evaluate_statement                                 interpreterbase.py:195
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_generate                                          msetup.py:230
-generate                                           msetup.py:186
-run                                                msetup.py:303
-run                                                mesonmain.py:152
-run                                                mesonmain.py:244
-main                                               mesonmain.py:253
-<module>                                           meson.py:39
-['/home/volker/Sync/git/meson/meson.py', 'build']
-
-volker func_custom_target {'input': [<CustomTarget 198a311@@custom_tgt_0@cus: ['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-O', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build', "' + cm_exe_local.full_path_nonext() + '", '/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input1.txt', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp', ';;;']>], 'output': ['output1_cpp.h'], 'command': ['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build'], 'depends': [], 'build_always': None, 'build_always_stale': None, 'build_by_default': None, 'install_dir': [], 'install_tag': [], 'depend_files': [], 'depfile': None, 'env': <EnvironmentVariables: []>, 'install': False, 'install_mode': <FileMode: None owner=None group=None, 'feed': False, 'capture': False, 'console': False}
-
-func_custom_target                                 interpreter.py:1888
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-function_call                                      interpreterbase.py:467
-evaluate_statement                                 interpreterbase.py:185
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_do_subproject_meson                               interpreter.py:976
-_do_subproject_cmake                               interpreter.py:1037
-do_subproject                                      interpreter.py:936
-subproject                                         cmake.py:440
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-wrapped                                            decorators.py:672
-method_call                                        interpreterobjects.py:747
-method_call                                        interpreterbase.py:495
-evaluate_statement                                 interpreterbase.py:189
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-evaluate_if                                        interpreterbase.py:286
-evaluate_statement                                 interpreterbase.py:195
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_generate                                          msetup.py:230
-generate                                           msetup.py:186
-run                                                msetup.py:303
-run                                                mesonmain.py:152
-run                                                mesonmain.py:244
-main                                               mesonmain.py:253
-<module>                                           meson.py:39
-['/home/volker/Sync/git/meson/meson.py', 'build']
-
-volker func_custom_target {'input': [<CustomTarget 198a311@@custom_tgt_1@cus: ['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-O', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build', '/usr/bin/cp', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input2.txt', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp', ';;;']>], 'output': ['output2_cpp.h'], 'command': ['/usr/bin/python3', '/home/volker/Sync/git/meson/meson.py', '--internal', 'cmake_run_ctgt', '-o', '@OUTPUT@', '-d', '/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build'], 'depends': [], 'build_always': None, 'build_always_stale': None, 'build_by_default': None, 'install_dir': [], 'install_tag': [], 'depend_files': [], 'depfile': None, 'env': <EnvironmentVariables: []>, 'install': False, 'install_mode': <FileMode: None owner=None group=None, 'feed': False, 'capture': False, 'console': False}
-
-__init__                                           build.py:765
-__init__                                           build.py:2059
-build_target                                       interpreter.py:3125
-func_shared_lib                                    interpreter.py:1734
-wrapped                                            decorators.py:127
-function_call                                      interpreterbase.py:467
-evaluate_statement                                 interpreterbase.py:185
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_do_subproject_meson                               interpreter.py:976
-_do_subproject_cmake                               interpreter.py:1037
-do_subproject                                      interpreter.py:936
-subproject                                         cmake.py:440
-wrapper                                            decorators.py:580
-wrapper                                            decorators.py:277
-wrapped                                            decorators.py:672
-method_call                                        interpreterobjects.py:747
-method_call                                        interpreterbase.py:495
-evaluate_statement                                 interpreterbase.py:189
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-evaluate_if                                        interpreterbase.py:286
-evaluate_statement                                 interpreterbase.py:195
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_generate                                          msetup.py:230
-generate                                           msetup.py:186
-run                                                msetup.py:303
-run                                                mesonmain.py:152
-run                                                mesonmain.py:244
-main                                               mesonmain.py:253
-<module>                                           meson.py:39
-['/home/volker/Sync/git/meson/meson.py', 'build']
-
--> final
-cmMod| Build targets in project: 6
-cmMod| Subproject cmMod finished.
-
-
-Volker func_executable <mesonbuild.interpreter.interpreter.Interpreter object at 0x7f8dddded060> FunctionNode(lineno=21, colno=10, filename='/home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build', end_lineno=21, end_colno=69) ['main', 'main.cpp'] {'dependencies': [<InternalDependency null: True>]}
-
-__init__                                           build.py:765
-__init__                                           build.py:1845
-build_target                                       interpreter.py:3125
-func_executable                                    interpreter.py:1726
-wrapped                                            decorators.py:127
-wrapped                                            decorators.py:774
-wrapped                                            decorators.py:774
-wrapped                                            decorators.py:774
-function_call                                      interpreterbase.py:467
-evaluate_statement                                 interpreterbase.py:185
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-evaluate_if                                        interpreterbase.py:286
-evaluate_statement                                 interpreterbase.py:195
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_generate                                          msetup.py:230
-generate                                           msetup.py:186
-run                                                msetup.py:303
-run                                                mesonmain.py:152
-run                                                mesonmain.py:244
-main                                               mesonmain.py:253
-<module>                                           meson.py:39
-['/home/volker/Sync/git/meson/meson.py', 'build']
-
--> main
-
-post_init                                          build.py:1893
-process_compilers_late                             build.py:925
-add_target                                         interpreter.py:3005
-build_target                                       interpreter.py:3129
-func_executable                                    interpreter.py:1726
-wrapped                                            decorators.py:127
-wrapped                                            decorators.py:774
-wrapped                                            decorators.py:774
-wrapped                                            decorators.py:774
-function_call                                      interpreterbase.py:467
-evaluate_statement                                 interpreterbase.py:185
-assignment                                         interpreterbase.py:579
-evaluate_statement                                 interpreterbase.py:187
-evaluate_codeblock                                 interpreterbase.py:172
-evaluate_if                                        interpreterbase.py:286
-evaluate_statement                                 interpreterbase.py:195
-evaluate_codeblock                                 interpreterbase.py:172
-run                                                interpreterbase.py:154
-run                                                interpreter.py:2847
-_generate                                          msetup.py:230
-generate                                           msetup.py:186
-run                                                msetup.py:303
-run                                                mesonmain.py:152
-run                                                mesonmain.py:244
-main                                               mesonmain.py:253
-<module>                                           meson.py:39
-['/home/volker/Sync/git/meson/meson.py', 'build']
-
-Build targets in project: 7
-
-cmake_code_gen undefined
-
-  Subprojects
-    cmMod: YES
-
-Found ninja-1.11.0 at /usr/bin/ninja
+<class 'mesonbuild.cmake.generator.CmgeSpecial'>:
+	cmd: list/tuple:
+		0: TARGET_FILE
+	args: list/tuple:
+		0: list/tuple:
+			0: cm_exe_local
+[['cm_exe_local']]

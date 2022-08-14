@@ -316,7 +316,7 @@ class BaseNode:
 #     #     for el in ast.lines:
 #     #         astprint(el, indent+4)
 
-def dict_print(typename: str, dat: dict[str, any]) -> str:
+def dict_print(typename: str, dat: dict[str, T.Any]) -> str:
     ret = typename + ":"
     for key, value in dat.items():
         key = str(key)

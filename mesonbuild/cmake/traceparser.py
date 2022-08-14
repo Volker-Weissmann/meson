@@ -16,7 +16,7 @@
 # or an interpreter-based tool.
 
 from .common import CMakeException
-from .generator import parse_generator_expressions, parse_cmge, CmgeAst
+from .generator import parse_generator_expressions, parse_cmge, CmgeAstNode
 from .. import mlog
 from ..mesonlib import version_compare
 from ..mparser import StringNode
@@ -107,7 +107,7 @@ class CMakeGeneratorTarget(CMakeTarget):
         super().__init__(name, 'CUSTOM', {})
         self.outputs = []        # type: T.List[Path]
         self._outputs_str = []   # type: T.List[str]
-        self.command = []        # type: T.List[T.List[CmgeAst]]
+        self.command = []        # type: T.List[T.List[CmgeAstNode]]
         self._command_str = []   # type: T.List[T.List[str]]
         self.working_dir = None  # type: T.Optional[Path]
 

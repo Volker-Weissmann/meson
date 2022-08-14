@@ -25,7 +25,7 @@ import typing as T
 from .common import CMakeException, CMakeTarget, language_map, cmake_get_generator_args, check_cmake_args
 from .fileapi import CMakeFileAPI
 from .executor import CMakeExecutor
-from .generator import CmgeAst
+from .generator import CmgeAstNode
 from .toolchain import CMakeToolchain, CMakeExecScope
 from .traceparser import CMakeTraceParser
 from .tracetargets import resolve_cmake_trace_targets
@@ -60,7 +60,7 @@ if T.TYPE_CHECKING:
     from ..backend.backends import Backend
     from ..environment import Environment
 
-TYPE_mixed        = T.Union[str, int, bool, Path, BaseNode, CmgeAst]
+TYPE_mixed        = T.Union[str, int, bool, Path, BaseNode, CmgeAstNode]
 TYPE_mixed_list   = T.Union[TYPE_mixed, T.Sequence[TYPE_mixed]]
 TYPE_mixed_kwargs = T.Dict[str, TYPE_mixed_list]
 
@@ -614,7 +614,7 @@ class ConverterCustomTarget:
         self.original_outputs = list(target.outputs)
         self.outputs          = [x.name for x in self.original_outputs]
         self.conflict_map     = {}                      # type: T.Dict[str, str]
-        self.command          = []                      # type: T.List[T.List[CmgeAst]]
+        self.command          = []                      # type: T.List[T.List[CmgeAstNode]]
         self.working_dir      = target.working_dir
         self.depends_raw      = target.depends
         self.inputs           = []                      # type: T.List[T.Union[str, CustomTargetReference]]
@@ -665,12 +665,12 @@ class ConverterCustomTarget:
         self.outputs = temp_outputs
 
         # Check if the command is a build target
-        commands = []  # type: T.List[T.List[CmgeAst]]
+        commands = []  # type: T.List[T.List[CmgeAstNode]]
         for curr_cmd in self._raw_target.command:
             print("curr_cmd:", curr_cmd)
             assert isinstance(curr_cmd, list)
             #assert curr_cmd[0] != '', "An empty string is not a valid executable"
-            cmd = []  # type: T.List[CmgeAst]
+            cmd = []  # type: T.List[CmgeAstNode]
 
             for j in curr_cmd:
                 # todo
@@ -984,7 +984,7 @@ class CMakeInterpreter:
                 return array(value)
             elif isinstance(value, BaseNode):
                 return value
-            elif isinstance(value, CmgeAst):
+            elif isinstance(value, CmgeAstNode):
                 return value.to_meson_ast()
             raise RuntimeError('invalid type of value: {} ({})'.format(type(value).__name__, str(value)))
 

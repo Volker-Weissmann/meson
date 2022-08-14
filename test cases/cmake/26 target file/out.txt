@@ -721,13 +721,10 @@ cmMod| Found CMake: /usr/bin/cmake (3.23.3)
 | -- Build files have been written to: /home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build
 
 cmMod| CMake configuration: SUCCEEDED
-curr_cmd: [CmgeAst(root=[CmgeSpecial(cmd=['TARGET_FILE'], args=[['cm_exe_local']])]), CmgeAst(root=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input1.txt']), CmgeAst(root=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp'])]
-curr_cmd: [CmgeAst(root=[CmgeSpecial(cmd=['TARGET_FILE'], args=[['cm_exe_imported']])]), CmgeAst(root=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input2.txt']), CmgeAst(root=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp'])]
+curr_cmd: [CmgeAstNode(els=[CmgeSpecial(cmd=CmgeAstNode(els=['TARGET_FILE']), args=[CmgeAstNode(els=['cm_exe_local'])])]), CmgeAstNode(els=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input1.txt']), CmgeAstNode(els=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp'])]
+curr_cmd: [CmgeAstNode(els=[CmgeSpecial(cmd=CmgeAstNode(els=['TARGET_FILE']), args=[CmgeAstNode(els=['cm_exe_imported'])])]), CmgeAstNode(els=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input2.txt']), CmgeAstNode(els=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp'])]
 cmMod| CMake project cmMod has 6 build targets.
-<class 'mesonbuild.cmake.generator.CmgeSpecial'>:
-	cmd: list/tuple:
-		0: TARGET_FILE
-	args: list/tuple:
-		0: list/tuple:
-			0: cm_exe_local
-[['cm_exe_local']]
+
+meson.build:19:4: ERROR: Unhandled python exception
+
+    This is a Meson bug and should be reported!

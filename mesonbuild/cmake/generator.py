@@ -54,6 +54,7 @@ def tracepoint() -> None:
     print(sys.argv)
     print()
 
+# todo codestyle: "" or ''
 
 if T.TYPE_CHECKING:
     from .traceparser import CMakeTraceParser, CMakeTarget
@@ -76,7 +77,41 @@ def parse_generator_expressions_other(
 def string_to_node(str: str) -> StringNode:
     return StringNode(Token('string', "todo_self.subdir.as_posix()", 0, 0, 0, None, str))
 
-CmgeAstNode = T.List[T.Union[str, 'CmgeSpecial']]
+def cmge_single_to_meson_ast(this: T.Union[str, CmgeSpecial]):
+    print(ast_print(this))
+    if isinstance(this, CmgeSpecial):
+        if len(this.cmd) == 1 and this.cmd[0] == "TARGET_FILE":
+            print(this.args)
+            exit(1)
+            pass
+        else:
+            raise ValueError("todo")
+
+    elif isinstance(this, str):
+        return StringNode(Token("str", "todo self.subdir.as_posix()", 0, 0, 0, None, this))
+    else:
+        raise ValueError("todo")
+
+    exit(1)
+
+def cmge_list_to_meson_ast(this: CmgeAstNode):
+    if len(this) == 0:
+        return ''
+    elif len(this) == 1:
+        return cmge_single_to_meson_ast(this[-1])
+    else:
+        return ArithmeticNode("add", cmge_list_to_meson_ast(this[:-1]), cmge_single_to_meson_ast(this[-1]))
+
+@dataclass
+class CmgeAstNode:
+    els: T.List[T.Union[str, 'CmgeSpecial']]
+    def eval_to_string_now(self) -> str:
+        assert len(self.els) == 1, "todo"
+        assert(isinstance(self.els[0], str))
+        return self.els[0]
+    def to_meson_ast(self) -> BaseNode:
+        cmge_list_to_meson_ast(this)
+        exit(1)
 
 # A CmgeSpecial is something like $<cmd:arg[0],arg[1]...>
 @dataclass
@@ -135,66 +170,24 @@ class CmgeParser:
 
     @staticmethod
     def eat_expr(src: str, pos: int) -> T.Tuple[int, CmgeAstNode]:
-        ret: T.List[T.Union[str, 'CmgeSpecial']] = []
+        els: T.List[T.Union[str, 'CmgeSpecial']] = []
         while True:
             x = CmgeParser.try_eat_normal_chars(src, pos) or CmgeParser.try_eat_special(src, pos)
             if x is None:
-                return pos, ret
+                return pos, CmgeAstNode(els=els)
             pos = x[0]
-            ret.append(x[1])
+            els.append(x[1])
 
-def cmge_single_to_meson_ast(this: T.Union[str, CmgeSpecial]):
-    print(ast_print(this))
-    if isinstance(this, CmgeSpecial):
-        if len(this.cmd) == 1 and this.cmd[0] == "TARGET_FILE":
-            print(this.args)
-            exit(1)
-            pass
-        else:
-            raise ValueError("todo")
-
-    elif isinstance(this, str):
-        return StringNode(Token("str", "todo self.subdir.as_posix()", 0, 0, 0, None, this))
-    else:
-        raise ValueError("todo")
-
-    exit(1)
-
-# todo codestyle: "" or ''
-def cmge_list_to_meson_ast(this: CmgeAstNode):
-    if len(this) == 0:
-        return ''
-    elif len(this) == 1:
-        return cmge_single_to_meson_ast(this[-1])
-    else:
-        return ArithmeticNode("add", cmge_list_to_meson_ast(this[:-1]), cmge_single_to_meson_ast(this[-1]))
-
-@dataclass
-class CmgeAst:
-    root: CmgeAstNode
-    def eval_to_string_now(self) -> str:
-        #print(ast_print(self.root))
-        assert len(self.root) == 1, "todo"
-        assert(isinstance(self.root[0], str))
-        return self.root[0]
-    def token(self, val, tid: str = 'string') -> Token:
-        return Token(tid, "todo self.subdir.as_posix()", 0, 0, 0, None, val)
-
-    def to_meson_ast(self) -> BaseNode:
-        cmge_list_to_meson_ast(self.root)
-        exit(1)
-        #return  IdNode(self.token('cm_exe_local'))
-
-def parse_cmge(src: str) -> CmgeAst:
+def parse_cmge(src: str) -> CmgeAstNode:
     assert(isinstance(src, str)) # todo: remove
-    return CmgeAst(root=CmgeParser.parse(src))
+    return CmgeParser.parse(src)
 
 def parse_generator_expressions(
             raw: str,
             trace: 'CMakeTraceParser',
             *,
             context_tgt: T.Optional['CMakeTarget'] = None,
-        ) -> CmgeAst:
+        ) -> CmgeAstNode:
     # todo correct doc
     # https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html
 
@@ -202,7 +195,7 @@ def parse_generator_expressions(
     # function with something that is not a generator expression and should not
     # be parsed as one.
     if '$<' not in raw or True:
-        return CmgeAst(root=[raw])
+        return CmgeAstNode(els=[raw])
 
     return parse_cmge(raw)
 

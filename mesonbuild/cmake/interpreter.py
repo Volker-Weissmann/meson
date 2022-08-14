@@ -985,7 +985,7 @@ class CMakeInterpreter:
             elif isinstance(value, BaseNode):
                 return value
             elif isinstance(value, CmgeAst):
-                return value.to_meson_ast()
+                return value.to_meson_ast(self.trace)
             raise RuntimeError('invalid type of value: {} ({})'.format(type(value).__name__, str(value)))
 
         def indexed(node: BaseNode, index: int) -> IndexNode:

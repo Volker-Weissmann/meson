@@ -126,121 +126,485 @@ Host machine cpu: x86_64
 				kwargs: dict:
 				order_error: False
 		1: <class 'mesonbuild.mparser.AssignmentNode'>:
-			lineno: 11
+			lineno: 3
 			colno: 0
 			filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-			end_lineno: 11
+			end_lineno: 3
+			end_colno: 0
+			level: 0
+			ast_id: 
+			condition_level: 0
+			var_name: volker_inter_exe
+			value: <class 'mesonbuild.mparser.FunctionNode'>:
+				lineno: 3
+				colno: 19
+				filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+				end_lineno: 3
+				end_colno: 69
+				level: 0
+				ast_id: 
+				condition_level: 0
+				func_name: executable
+				args: <class 'mesonbuild.mparser.ArgumentNode'>:
+					lineno: 3
+					colno: 48
+					filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+					end_lineno: 3
+					end_colno: 48
+					level: 0
+					ast_id: 
+					condition_level: 0
+					arguments: list/tuple:
+						0: <class 'mesonbuild.mparser.StringNode'>:
+							lineno: 3
+							colno: 30
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 3
+							end_colno: 30
+							level: 0
+							ast_id: 
+							condition_level: 0
+							value: volker_inter_exe
+							bytespan: list/tuple:
+								0: 71
+								1: 89
+						1: <class 'mesonbuild.mparser.StringNode'>:
+							lineno: 3
+							colno: 50
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 3
+							end_colno: 50
+							level: 0
+							ast_id: 
+							condition_level: 0
+							value: volker_inter.cpp
+							bytespan: list/tuple:
+								0: 91
+								1: 109
+					commas: list/tuple:
+						0: <class 'mesonbuild.mparser.Token'>:
+							tid: comma
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							line_start: 41
+							lineno: 3
+							colno: 48
+							bytespan: list/tuple:
+								0: 89
+								1: 90
+							value: None
+					kwargs: dict:
+					order_error: False
+		2: <class 'mesonbuild.mparser.AssignmentNode'>:
+			lineno: 4
+			colno: 0
+			filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+			end_lineno: 4
+			end_colno: 0
+			level: 0
+			ast_id: 
+			condition_level: 0
+			var_name: test_tgt
+			value: <class 'mesonbuild.mparser.FunctionNode'>:
+				lineno: 4
+				colno: 11
+				filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+				end_lineno: 14
+				end_colno: 1
+				level: 0
+				ast_id: 
+				condition_level: 0
+				func_name: custom_target
+				args: <class 'mesonbuild.mparser.ArgumentNode'>:
+					lineno: 5
+					colno: 12
+					filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+					end_lineno: 5
+					end_colno: 12
+					level: 0
+					ast_id: 
+					condition_level: 0
+					arguments: list/tuple:
+						0: <class 'mesonbuild.mparser.StringNode'>:
+							lineno: 5
+							colno: 2
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 5
+							end_colno: 2
+							level: 0
+							ast_id: 
+							condition_level: 0
+							value: test_tgt
+							bytespan: list/tuple:
+								0: 139
+								1: 149
+					commas: list/tuple:
+						0: <class 'mesonbuild.mparser.Token'>:
+							tid: comma
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							line_start: 137
+							lineno: 5
+							colno: 12
+							bytespan: list/tuple:
+								0: 149
+								1: 150
+							value: None
+						1: <class 'mesonbuild.mparser.Token'>:
+							tid: comma
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							line_start: 151
+							lineno: 6
+							colno: 24
+							bytespan: list/tuple:
+								0: 175
+								1: 176
+							value: None
+						2: <class 'mesonbuild.mparser.Token'>:
+							tid: comma
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							line_start: 177
+							lineno: 7
+							colno: 26
+							bytespan: list/tuple:
+								0: 203
+								1: 204
+							value: None
+						3: <class 'mesonbuild.mparser.Token'>:
+							tid: comma
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							line_start: 287
+							lineno: 12
+							colno: 3
+							bytespan: list/tuple:
+								0: 290
+								1: 291
+							value: None
+					kwargs: dict:
+						Id node: 'input' (6, 2).: <class 'mesonbuild.mparser.ArrayNode'>:
+							lineno: 6
+							colno: 10
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 6
+							end_colno: 24
+							level: 0
+							ast_id: 
+							condition_level: 0
+							args: <class 'mesonbuild.mparser.ArgumentNode'>:
+								lineno: 6
+								colno: 23
+								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+								end_lineno: 6
+								end_colno: 23
+								level: 0
+								ast_id: 
+								condition_level: 0
+								arguments: list/tuple:
+									0: <class 'mesonbuild.mparser.StringNode'>:
+										lineno: 6
+										colno: 11
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 6
+										end_colno: 11
+										level: 0
+										ast_id: 
+										condition_level: 0
+										value: input1.txt
+										bytespan: list/tuple:
+											0: 162
+											1: 174
+								commas: list/tuple:
+								kwargs: dict:
+								order_error: False
+						Id node: 'output' (7, 2).: <class 'mesonbuild.mparser.ArrayNode'>:
+							lineno: 7
+							colno: 11
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 7
+							end_colno: 26
+							level: 0
+							ast_id: 
+							condition_level: 0
+							args: <class 'mesonbuild.mparser.ArgumentNode'>:
+								lineno: 7
+								colno: 25
+								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+								end_lineno: 7
+								end_colno: 25
+								level: 0
+								ast_id: 
+								condition_level: 0
+								arguments: list/tuple:
+									0: <class 'mesonbuild.mparser.StringNode'>:
+										lineno: 7
+										colno: 12
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 7
+										end_colno: 12
+										level: 0
+										ast_id: 
+										condition_level: 0
+										value: output1.cpp
+										bytespan: list/tuple:
+											0: 189
+											1: 202
+								commas: list/tuple:
+								kwargs: dict:
+								order_error: False
+						Id node: 'command' (8, 2).: <class 'mesonbuild.mparser.ArrayNode'>:
+							lineno: 8
+							colno: 12
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 12
+							end_colno: 3
+							level: 0
+							ast_id: 
+							condition_level: 0
+							args: <class 'mesonbuild.mparser.ArgumentNode'>:
+								lineno: 9
+								colno: 22
+								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+								end_lineno: 9
+								end_colno: 22
+								level: 0
+								ast_id: 
+								condition_level: 0
+								arguments: list/tuple:
+									0: <class 'mesonbuild.mparser.StringNode'>:
+										lineno: 9
+										colno: 4
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 9
+										end_colno: 4
+										level: 0
+										ast_id: 
+										condition_level: 0
+										value: /usr/bin/python3
+										bytespan: list/tuple:
+											0: 223
+											1: 241
+									1: <class 'mesonbuild.mparser.MethodNode'>:
+										lineno: 10
+										colno: 21
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 10
+										end_colno: 21
+										level: 0
+										ast_id: 
+										condition_level: 0
+										source_object: <class 'mesonbuild.mparser.IdNode'>:
+											lineno: 10
+											colno: 4
+											filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+											end_lineno: 10
+											end_colno: 4
+											level: 0
+											ast_id: 
+											condition_level: 0
+											value: volker_inter_exe
+											bytespan: list/tuple:
+												0: 247
+												1: 263
+										name: full_path
+										args: <class 'mesonbuild.mparser.ArgumentNode'>:
+											lineno: 10
+											colno: 31
+											filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+											end_lineno: 10
+											end_colno: 31
+											level: 0
+											ast_id: 
+											condition_level: 0
+											arguments: list/tuple:
+											commas: list/tuple:
+											kwargs: dict:
+											order_error: False
+									2: <class 'mesonbuild.mparser.StringNode'>:
+										lineno: 11
+										colno: 4
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 11
+										end_colno: 4
+										level: 0
+										ast_id: 
+										condition_level: 0
+										value: ;;;
+										bytespan: list/tuple:
+											0: 281
+											1: 286
+								commas: list/tuple:
+									0: <class 'mesonbuild.mparser.Token'>:
+										tid: comma
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										line_start: 219
+										lineno: 9
+										colno: 22
+										bytespan: list/tuple:
+											0: 241
+											1: 242
+										value: None
+									1: <class 'mesonbuild.mparser.Token'>:
+										tid: comma
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										line_start: 243
+										lineno: 10
+										colno: 32
+										bytespan: list/tuple:
+											0: 275
+											1: 276
+										value: None
+								kwargs: dict:
+								order_error: False
+						Id node: 'depends' (13, 2).: <class 'mesonbuild.mparser.ArrayNode'>:
+							lineno: 13
+							colno: 12
+							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+							end_lineno: 14
+							end_colno: 0
+							level: 0
+							ast_id: 
+							condition_level: 0
+							args: <class 'mesonbuild.mparser.ArgumentNode'>:
+								lineno: 13
+								colno: 29
+								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+								end_lineno: 13
+								end_colno: 29
+								level: 0
+								ast_id: 
+								condition_level: 0
+								arguments: list/tuple:
+									0: <class 'mesonbuild.mparser.IdNode'>:
+										lineno: 13
+										colno: 13
+										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+										end_lineno: 13
+										end_colno: 13
+										level: 0
+										ast_id: 
+										condition_level: 0
+										value: volker_inter_exe
+										bytespan: list/tuple:
+											0: 305
+											1: 321
+								commas: list/tuple:
+								kwargs: dict:
+								order_error: False
+					order_error: False
+		3: <class 'mesonbuild.mparser.AssignmentNode'>:
+			lineno: 21
+			colno: 0
+			filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
+			end_lineno: 21
 			end_colno: 0
 			level: 0
 			ast_id: 
 			condition_level: 0
 			var_name: x
 			value: <class 'mesonbuild.mparser.ArithmeticNode'>:
-				lineno: 11
+				lineno: 21
 				colno: 4
 				filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-				end_lineno: 11
+				end_lineno: 21
 				end_colno: 4
 				level: 0
 				ast_id: 
 				condition_level: 0
 				left: <class 'mesonbuild.mparser.ArithmeticNode'>:
-					lineno: 11
+					lineno: 21
 					colno: 4
 					filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-					end_lineno: 11
+					end_lineno: 21
 					end_colno: 4
 					level: 0
 					ast_id: 
 					condition_level: 0
 					left: <class 'mesonbuild.mparser.StringNode'>:
-						lineno: 11
+						lineno: 21
 						colno: 4
 						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-						end_lineno: 11
+						end_lineno: 21
 						end_colno: 4
 						level: 0
 						ast_id: 
 						condition_level: 0
 						value: abc
 						bytespan: list/tuple:
-							0: 376
-							1: 381
+							0: 560
+							1: 565
 					right: <class 'mesonbuild.mparser.StringNode'>:
-						lineno: 11
+						lineno: 21
 						colno: 12
 						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-						end_lineno: 11
+						end_lineno: 21
 						end_colno: 12
 						level: 0
 						ast_id: 
 						condition_level: 0
 						value: def
 						bytespan: list/tuple:
-							0: 384
-							1: 389
+							0: 568
+							1: 573
 					operation: add
 				right: <class 'mesonbuild.mparser.StringNode'>:
-					lineno: 11
+					lineno: 21
 					colno: 20
 					filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-					end_lineno: 11
+					end_lineno: 21
 					end_colno: 20
 					level: 0
 					ast_id: 
 					condition_level: 0
 					value: ghi
 					bytespan: list/tuple:
-						0: 392
-						1: 397
+						0: 576
+						1: 581
 				operation: add
-		2: <class 'mesonbuild.mparser.IfClauseNode'>:
-			lineno: 13
+		4: <class 'mesonbuild.mparser.IfClauseNode'>:
+			lineno: 23
 			colno: 9
 			filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-			end_lineno: 13
+			end_lineno: 23
 			end_colno: 9
 			level: 0
 			ast_id: 
 			condition_level: 0
 			ifs: list/tuple:
 				0: <class 'mesonbuild.mparser.IfNode'>:
-					lineno: 13
+					lineno: 23
 					colno: 9
 					filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-					end_lineno: 13
+					end_lineno: 23
 					end_colno: 9
 					level: 0
 					ast_id: 
 					condition_level: 0
 					condition: <class 'mesonbuild.mparser.MethodNode'>:
-						lineno: 13
+						lineno: 23
 						colno: 9
 						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-						end_lineno: 13
+						end_lineno: 23
 						end_colno: 9
 						level: 0
 						ast_id: 
 						condition_level: 0
 						source_object: <class 'mesonbuild.mparser.IdNode'>:
-							lineno: 13
+							lineno: 23
 							colno: 3
 							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-							end_lineno: 13
+							end_lineno: 23
 							end_colno: 3
 							level: 0
 							ast_id: 
 							condition_level: 0
 							value: meson
 							bytespan: list/tuple:
-								0: 402
-								1: 407
+								0: 586
+								1: 591
 						name: is_cross_build
 						args: <class 'mesonbuild.mparser.ArgumentNode'>:
-							lineno: 13
+							lineno: 23
 							colno: 24
 							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-							end_lineno: 13
+							end_lineno: 23
 							end_colno: 24
 							level: 0
 							ast_id: 
@@ -250,323 +614,323 @@ Host machine cpu: x86_64
 							kwargs: dict:
 							order_error: False
 					block: <class 'mesonbuild.mparser.CodeBlockNode'>:
-						lineno: 14
+						lineno: 24
 						colno: 4
 						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-						end_lineno: 14
+						end_lineno: 24
 						end_colno: 4
 						level: 0
 						ast_id: 
 						condition_level: 0
 						lines: list/tuple:
 							0: <class 'mesonbuild.mparser.FunctionNode'>:
-								lineno: 14
+								lineno: 24
 								colno: 4
 								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-								end_lineno: 14
+								end_lineno: 24
 								end_colno: 123
 								level: 0
 								ast_id: 
 								condition_level: 0
 								func_name: message
 								args: <class 'mesonbuild.mparser.ArgumentNode'>:
-									lineno: 14
+									lineno: 24
 									colno: 122
 									filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-									end_lineno: 14
+									end_lineno: 24
 									end_colno: 122
 									level: 0
 									ast_id: 
 									condition_level: 0
 									arguments: list/tuple:
 										0: <class 'mesonbuild.mparser.StringNode'>:
-											lineno: 14
+											lineno: 24
 											colno: 12
 											filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-											end_lineno: 14
+											end_lineno: 24
 											end_colno: 12
 											level: 0
 											ast_id: 
 											condition_level: 0
 											value: Test skipped, see https://github.com/mesonbuild/meson/pull/10607#issuecomment-1188117276 for an explanation.
 											bytespan: list/tuple:
-												0: 437
-												1: 547
+												0: 621
+												1: 731
 									commas: list/tuple:
 									kwargs: dict:
 									order_error: False
 			elseblock: <class 'mesonbuild.mparser.CodeBlockNode'>:
-				lineno: 16
+				lineno: 26
 				colno: 4
 				filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-				end_lineno: 16
+				end_lineno: 26
 				end_colno: 4
 				level: 0
 				ast_id: 
 				condition_level: 0
 				lines: list/tuple:
 					0: <class 'mesonbuild.mparser.AssignmentNode'>:
-						lineno: 16
+						lineno: 26
 						colno: 4
 						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-						end_lineno: 16
+						end_lineno: 26
 						end_colno: 4
 						level: 0
 						ast_id: 
 						condition_level: 0
 						var_name: cm
 						value: <class 'mesonbuild.mparser.FunctionNode'>:
-							lineno: 16
+							lineno: 26
 							colno: 9
 							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-							end_lineno: 16
+							end_lineno: 26
 							end_colno: 24
 							level: 0
 							ast_id: 
 							condition_level: 0
 							func_name: import
 							args: <class 'mesonbuild.mparser.ArgumentNode'>:
-								lineno: 16
+								lineno: 26
 								colno: 23
 								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-								end_lineno: 16
+								end_lineno: 26
 								end_colno: 23
 								level: 0
 								ast_id: 
 								condition_level: 0
 								arguments: list/tuple:
 									0: <class 'mesonbuild.mparser.StringNode'>:
-										lineno: 16
+										lineno: 26
 										colno: 16
 										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-										end_lineno: 16
+										end_lineno: 26
 										end_colno: 16
 										level: 0
 										ast_id: 
 										condition_level: 0
 										value: cmake
 										bytespan: list/tuple:
-											0: 570
-											1: 577
+											0: 754
+											1: 761
 								commas: list/tuple:
 								kwargs: dict:
 								order_error: False
 					1: <class 'mesonbuild.mparser.AssignmentNode'>:
-						lineno: 19
+						lineno: 29
 						colno: 4
 						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-						end_lineno: 19
+						end_lineno: 29
 						end_colno: 4
 						level: 0
 						ast_id: 
 						condition_level: 0
 						var_name: sub_pro
 						value: <class 'mesonbuild.mparser.MethodNode'>:
-							lineno: 19
+							lineno: 29
 							colno: 17
 							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-							end_lineno: 19
+							end_lineno: 29
 							end_colno: 17
 							level: 0
 							ast_id: 
 							condition_level: 0
 							source_object: <class 'mesonbuild.mparser.IdNode'>:
-								lineno: 19
+								lineno: 29
 								colno: 14
 								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-								end_lineno: 19
+								end_lineno: 29
 								end_colno: 14
 								level: 0
 								ast_id: 
 								condition_level: 0
 								value: cm
 								bytespan: list/tuple:
-									0: 637
-									1: 639
+									0: 821
+									1: 823
 							name: subproject
 							args: <class 'mesonbuild.mparser.ArgumentNode'>:
-								lineno: 19
+								lineno: 29
 								colno: 35
 								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-								end_lineno: 19
+								end_lineno: 29
 								end_colno: 35
 								level: 0
 								ast_id: 
 								condition_level: 0
 								arguments: list/tuple:
 									0: <class 'mesonbuild.mparser.StringNode'>:
-										lineno: 19
+										lineno: 29
 										colno: 28
 										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-										end_lineno: 19
+										end_lineno: 29
 										end_colno: 28
 										level: 0
 										ast_id: 
 										condition_level: 0
 										value: cmMod
 										bytespan: list/tuple:
-											0: 651
-											1: 658
+											0: 835
+											1: 842
 								commas: list/tuple:
 								kwargs: dict:
 								order_error: False
 					2: <class 'mesonbuild.mparser.AssignmentNode'>:
-						lineno: 20
+						lineno: 30
 						colno: 4
 						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-						end_lineno: 20
+						end_lineno: 30
 						end_colno: 4
 						level: 0
 						ast_id: 
 						condition_level: 0
 						var_name: sub_final
 						value: <class 'mesonbuild.mparser.MethodNode'>:
-							lineno: 20
+							lineno: 30
 							colno: 24
 							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-							end_lineno: 20
+							end_lineno: 30
 							end_colno: 24
 							level: 0
 							ast_id: 
 							condition_level: 0
 							source_object: <class 'mesonbuild.mparser.IdNode'>:
-								lineno: 20
+								lineno: 30
 								colno: 16
 								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-								end_lineno: 20
+								end_lineno: 30
 								end_colno: 16
 								level: 0
 								ast_id: 
 								condition_level: 0
 								value: sub_pro
 								bytespan: list/tuple:
-									0: 676
-									1: 683
+									0: 860
+									1: 867
 							name: dependency
 							args: <class 'mesonbuild.mparser.ArgumentNode'>:
-								lineno: 20
+								lineno: 30
 								colno: 42
 								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-								end_lineno: 20
+								end_lineno: 30
 								end_colno: 42
 								level: 0
 								ast_id: 
 								condition_level: 0
 								arguments: list/tuple:
 									0: <class 'mesonbuild.mparser.StringNode'>:
-										lineno: 20
+										lineno: 30
 										colno: 35
 										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-										end_lineno: 20
+										end_lineno: 30
 										end_colno: 35
 										level: 0
 										ast_id: 
 										condition_level: 0
 										value: final
 										bytespan: list/tuple:
-											0: 695
-											1: 702
+											0: 879
+											1: 886
 								commas: list/tuple:
 									0: <class 'mesonbuild.mparser.Token'>:
 										tid: comma
 										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-										line_start: 660
-										lineno: 20
+										line_start: 844
+										lineno: 30
 										colno: 42
 										bytespan: list/tuple:
-											0: 702
-											1: 703
+											0: 886
+											1: 887
 										value: None
 								kwargs: dict:
-									Id node: 'include_type' (20, 44).: <class 'mesonbuild.mparser.StringNode'>:
-										lineno: 20
+									Id node: 'include_type' (30, 44).: <class 'mesonbuild.mparser.StringNode'>:
+										lineno: 30
 										colno: 58
 										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-										end_lineno: 20
+										end_lineno: 30
 										end_colno: 58
 										level: 0
 										ast_id: 
 										condition_level: 0
 										value: system
 										bytespan: list/tuple:
-											0: 718
-											1: 726
+											0: 902
+											1: 910
 								order_error: False
 					3: <class 'mesonbuild.mparser.AssignmentNode'>:
-						lineno: 23
+						lineno: 33
 						colno: 4
 						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-						end_lineno: 23
+						end_lineno: 33
 						end_colno: 4
 						level: 0
 						ast_id: 
 						condition_level: 0
 						var_name: exe
 						value: <class 'mesonbuild.mparser.FunctionNode'>:
-							lineno: 23
+							lineno: 33
 							colno: 10
 							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-							end_lineno: 23
+							end_lineno: 33
 							end_colno: 69
 							level: 0
 							ast_id: 
 							condition_level: 0
 							func_name: executable
 							args: <class 'mesonbuild.mparser.ArgumentNode'>:
-								lineno: 23
+								lineno: 33
 								colno: 27
 								filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-								end_lineno: 23
+								end_lineno: 33
 								end_colno: 27
 								level: 0
 								ast_id: 
 								condition_level: 0
 								arguments: list/tuple:
 									0: <class 'mesonbuild.mparser.StringNode'>:
-										lineno: 23
+										lineno: 33
 										colno: 21
 										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-										end_lineno: 23
+										end_lineno: 33
 										end_colno: 21
 										level: 0
 										ast_id: 
 										condition_level: 0
 										value: main
 										bytespan: list/tuple:
-											0: 770
-											1: 776
+											0: 954
+											1: 960
 									1: <class 'mesonbuild.mparser.ArrayNode'>:
-										lineno: 23
+										lineno: 33
 										colno: 29
 										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-										end_lineno: 23
+										end_lineno: 33
 										end_colno: 41
 										level: 0
 										ast_id: 
 										condition_level: 0
 										args: <class 'mesonbuild.mparser.ArgumentNode'>:
-											lineno: 23
+											lineno: 33
 											colno: 40
 											filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-											end_lineno: 23
+											end_lineno: 33
 											end_colno: 40
 											level: 0
 											ast_id: 
 											condition_level: 0
 											arguments: list/tuple:
 												0: <class 'mesonbuild.mparser.StringNode'>:
-													lineno: 23
+													lineno: 33
 													colno: 30
 													filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-													end_lineno: 23
+													end_lineno: 33
 													end_colno: 30
 													level: 0
 													ast_id: 
 													condition_level: 0
 													value: main.cpp
 													bytespan: list/tuple:
-														0: 779
-														1: 789
+														0: 963
+														1: 973
 											commas: list/tuple:
 											kwargs: dict:
 											order_error: False
@@ -574,160 +938,120 @@ Host machine cpu: x86_64
 									0: <class 'mesonbuild.mparser.Token'>:
 										tid: comma
 										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-										line_start: 749
-										lineno: 23
+										line_start: 933
+										lineno: 33
 										colno: 27
 										bytespan: list/tuple:
-											0: 776
-											1: 777
+											0: 960
+											1: 961
 										value: None
 									1: <class 'mesonbuild.mparser.Token'>:
 										tid: comma
 										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-										line_start: 749
-										lineno: 23
+										line_start: 933
+										lineno: 33
 										colno: 41
 										bytespan: list/tuple:
-											0: 790
-											1: 791
+											0: 974
+											1: 975
 										value: None
 								kwargs: dict:
-									Id node: 'dependencies' (23, 43).: <class 'mesonbuild.mparser.ArrayNode'>:
-										lineno: 23
+									Id node: 'dependencies' (33, 43).: <class 'mesonbuild.mparser.ArrayNode'>:
+										lineno: 33
 										colno: 57
 										filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-										end_lineno: 23
+										end_lineno: 33
 										end_colno: 68
 										level: 0
 										ast_id: 
 										condition_level: 0
 										args: <class 'mesonbuild.mparser.ArgumentNode'>:
-											lineno: 23
+											lineno: 33
 											colno: 67
 											filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-											end_lineno: 23
+											end_lineno: 33
 											end_colno: 67
 											level: 0
 											ast_id: 
 											condition_level: 0
 											arguments: list/tuple:
 												0: <class 'mesonbuild.mparser.IdNode'>:
-													lineno: 23
+													lineno: 33
 													colno: 58
 													filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-													end_lineno: 23
+													end_lineno: 33
 													end_colno: 58
 													level: 0
 													ast_id: 
 													condition_level: 0
 													value: sub_final
 													bytespan: list/tuple:
-														0: 807
-														1: 816
+														0: 991
+														1: 1000
 											commas: list/tuple:
 											kwargs: dict:
 											order_error: False
 								order_error: False
 					4: <class 'mesonbuild.mparser.FunctionNode'>:
-						lineno: 25
+						lineno: 35
 						colno: 4
 						filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-						end_lineno: 25
+						end_lineno: 35
 						end_colno: 21
 						level: 0
 						ast_id: 
 						condition_level: 0
 						func_name: test
 						args: <class 'mesonbuild.mparser.ArgumentNode'>:
-							lineno: 25
+							lineno: 35
 							colno: 15
 							filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-							end_lineno: 25
+							end_lineno: 35
 							end_colno: 15
 							level: 0
 							ast_id: 
 							condition_level: 0
 							arguments: list/tuple:
 								0: <class 'mesonbuild.mparser.StringNode'>:
-									lineno: 25
+									lineno: 35
 									colno: 9
 									filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-									end_lineno: 25
+									end_lineno: 35
 									end_colno: 9
 									level: 0
 									ast_id: 
 									condition_level: 0
 									value: test
 									bytespan: list/tuple:
-										0: 829
-										1: 835
+										0: 1013
+										1: 1019
 								1: <class 'mesonbuild.mparser.IdNode'>:
-									lineno: 25
+									lineno: 35
 									colno: 17
 									filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-									end_lineno: 25
+									end_lineno: 35
 									end_colno: 17
 									level: 0
 									ast_id: 
 									condition_level: 0
 									value: exe
 									bytespan: list/tuple:
-										0: 837
-										1: 840
+										0: 1021
+										1: 1024
 							commas: list/tuple:
 								0: <class 'mesonbuild.mparser.Token'>:
 									tid: comma
 									filename: /home/volker/Sync/git/meson/test cases/cmake/26 target file/meson.build
-									line_start: 820
-									lineno: 25
+									line_start: 1004
+									lineno: 35
 									colno: 15
 									bytespan: list/tuple:
-										0: 835
-										1: 836
+										0: 1019
+										1: 1020
 									value: None
 							kwargs: dict:
 							order_error: False
 
-Executing subproject cmMod method cmake 
+meson.build:4:0: ERROR: File input1.txt does not exist.
 
-cmMod| Found CMake: /usr/bin/cmake (3.23.3)
-
-| Configuring the build directory with CMake version 3.23.3
-| Running CMake with: -G Ninja -DCMAKE_INSTALL_PREFIX=/usr/local
-| - build directory:          /home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build
-| - source directory:         /home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod
-| - toolchain file:           /home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/CMakeMesonToolchainFile.cmake
-| - preload file:             /home/volker/Sync/git/meson/mesonbuild/cmake/data/preload.cmake
-| - trace args:               --trace-expand --trace-format=json-v1 --no-warn-unused-cli --trace-redirect=cmake_trace.txt
-| - disabled policy warnings: [CMP0025, CMP0047, CMP0056, CMP0060, CMP0065, CMP0066, CMP0067, CMP0082, CMP0089, CMP0102]
-
-| Running with expanded trace output on.
-| Not searching for unused variables given on the command line.
-| Trace will be written to cmake_trace.txt
-| -- The C compiler identification is GNU 12.1.1
-| -- The CXX compiler identification is GNU 12.1.1
-| -- Detecting C compiler ABI info
-| -- Detecting C compiler ABI info - done
-| -- Check for working C compiler: /usr/bin/cc - skipped
-| -- Detecting C compile features
-| -- Detecting C compile features - done
-| -- Detecting CXX compiler ABI info
-| -- Detecting CXX compiler ABI info - done
-| -- Check for working CXX compiler: /usr/bin/c++ - skipped
-| -- Detecting CXX compile features
-| -- Detecting CXX compile features - done
-| -- Configuring done
-| -- Generating done
-| -- Build files have been written to: /home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build
-
-cmMod| CMake configuration: SUCCEEDED
-curr_cmd: [CmgeAst(root=[CmgeSpecial(cmd=['TARGET_FILE'], args=[['cm_exe_local']])]), CmgeAst(root=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input1.txt']), CmgeAst(root=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output1.cpp'])]
-curr_cmd: [CmgeAst(root=[CmgeSpecial(cmd=['TARGET_FILE'], args=[['cm_exe_imported']])]), CmgeAst(root=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/subprojects/cmMod/input2.txt']), CmgeAst(root=['/home/volker/Sync/git/meson/test cases/cmake/26 target file/build/subprojects/cmMod/__CMake_build/output2.cpp'])]
-cmMod| CMake project cmMod has 6 build targets.
-<class 'mesonbuild.cmake.generator.CmgeSpecial'>:
-	cmd: list/tuple:
-		0: TARGET_FILE
-	args: list/tuple:
-		0: list/tuple:
-			0: cm_exe_local
-[['cm_exe_local']]
+A full log can be found at /home/volker/Sync/git/meson/test cases/cmake/26 target file/build/meson-logs/meson-log.txt

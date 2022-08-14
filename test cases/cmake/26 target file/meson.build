@@ -1,7 +1,17 @@
 project('cmake_code_gen', ['c', 'cpp'])
 
 # volker_inter_exe = executable('volker_inter_exe', 'volker_inter.cpp')
-# message(volker_inter_exe)
+# test_tgt = custom_target(
+#   'test_tgt',
+#   input : ['input1.txt'],
+#   output : ['output1.cpp'],
+#   command : [
+#     '/usr/bin/python3',
+#     volker_inter_exe.full_path(),
+#     ';;;'
+#   ],
+#   depends : [volker_inter_exe]
+# )
 
 # gen_src = custom_target('gen-output',
 #                         output : ['out.c'],

@@ -76,7 +76,8 @@ def parse_generator_expressions_other(
 def string_to_node(str: str) -> StringNode:
     return StringNode(Token('string', "todo_self.subdir.as_posix()", 0, 0, 0, None, str))
 
-CmgeAstNode = T.List[T.Union[str, 'CmgeSpecial']]
+CmgeSingle = T.Union[str, 'CmgeSpecial']
+CmgeAstNode = T.List[CmgeSingle]
 
 # A CmgeSpecial is something like $<cmd:arg[0],arg[1]...>
 @dataclass
@@ -135,7 +136,7 @@ class CmgeParser:
 
     @staticmethod
     def eat_expr(src: str, pos: int) -> T.Tuple[int, CmgeAstNode]:
-        ret: T.List[T.Union[str, 'CmgeSpecial']] = []
+        ret: T.List[CmgeSingle] = []
         while True:
             x = CmgeParser.try_eat_normal_chars(src, pos) or CmgeParser.try_eat_special(src, pos)
             if x is None:
@@ -143,31 +144,41 @@ class CmgeParser:
             pos = x[0]
             ret.append(x[1])
 
-def cmge_single_to_meson_ast(this: T.Union[str, CmgeSpecial]):
+def token(val):
+    return Token("string", "todo self.subdir.as_posix()", 0, 0, 0, None, val)
+
+def cmge_single_to_meson_ast(this: CmgeSingle, trace: 'CMakeTraceParser') -> BaseNode:
     print(ast_print(this))
     if isinstance(this, CmgeSpecial):
         if len(this.cmd) == 1 and this.cmd[0] == "TARGET_FILE":
-            print(this.args)
-            exit(1)
-            pass
+            assert(len(this.args) == 1)
+            assert(len(this.args[0]) == 1)
+            assert(isinstance(this.args[0][0], str))
+            exename = this.args[0][0]
+            if trace.targets[exename].imported:
+                locations = trace.targets[exename].properties['IMPORTED_LOCATION']
+                assert(len(locations) == 1)
+                return StringNode(token(locations[0]))
+            else:
+                ret = MethodNode("todo", 0, 0, IdNode(token(exename)), "full_path", ArgumentNode(token("?")))
+                return ret
+
         else:
             raise ValueError("todo")
 
     elif isinstance(this, str):
-        return StringNode(Token("str", "todo self.subdir.as_posix()", 0, 0, 0, None, this))
+        return StringNode(token(this))
     else:
-        raise ValueError("todo")
-
-    exit(1)
+        raise RuntimeError('Unreachable code')
 
 # todo codestyle: "" or ''
-def cmge_list_to_meson_ast(this: CmgeAstNode):
+def cmge_list_to_meson_ast(this: CmgeAstNode, trace: 'CMakeTraceParser'):
     if len(this) == 0:
         return ''
     elif len(this) == 1:
-        return cmge_single_to_meson_ast(this[-1])
+        return cmge_single_to_meson_ast(this[-1], trace)
     else:
-        return ArithmeticNode("add", cmge_list_to_meson_ast(this[:-1]), cmge_single_to_meson_ast(this[-1]))
+        return ArithmeticNode("add", cmge_list_to_meson_ast(this[:-1], trace), cmge_single_to_meson_ast(this[-1], trace))
 
 @dataclass
 class CmgeAst:
@@ -180,10 +191,10 @@ class CmgeAst:
     def token(self, val, tid: str = 'string') -> Token:
         return Token(tid, "todo self.subdir.as_posix()", 0, 0, 0, None, val)
 
-    def to_meson_ast(self) -> BaseNode:
-        cmge_list_to_meson_ast(self.root)
-        exit(1)
-        #return  IdNode(self.token('cm_exe_local'))
+    # I don't like that this function takes trace as an argument. Maybe this
+    # dependency on trace could be removed by restructuring the code a bit.
+    def to_meson_ast(self, trace: 'CMakeTraceParser') -> BaseNode:
+        return cmge_list_to_meson_ast(self.root, trace)
 
 def parse_cmge(src: str) -> CmgeAst:
     assert(isinstance(src, str)) # todo: remove

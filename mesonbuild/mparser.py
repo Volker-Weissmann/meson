@@ -353,7 +353,7 @@ def debugast(ast):
     # print("##################################################")
     #print(ast_print([1,2,(3,8),4]))
     #print(ast_print({"a": 1, "inner": {"k": 8, "g": 9}, "b": 2, "c": 3}))
-    print(ast_print(ast))
+    #print(ast_print(ast))
 
     mycount += 1
     if mycount == 2:

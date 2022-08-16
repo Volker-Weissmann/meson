@@ -12,69 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This module concerns CMake Generator Expressions, abbreviated Cmge
+# This module concerns CMake Generator Expressions, abbreviated Cmge.
 # Doc: https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html
 
 from .. import mesonlib
+from ..mesonlib import MesonBugException
 from .. import mlog
 from .common import cmake_is_debug
 import typing as T
-from ..mparser import ( # todo: which of those are actually needed?
+from ..mparser import (
     Token,
     BaseNode,
-    CodeBlockNode,
+    MethodNode,
     FunctionNode,
-    ArrayNode,
     ArgumentNode,
-    AssignmentNode,
     ArithmeticNode,
-    BooleanNode,
     StringNode,
     IdNode,
-    IndexNode,
-    MethodNode,
-    NumberNode,
-    ast_print
 )
 from dataclasses import dataclass
 
-import inspect
-import pprint
-import sys
-
-
-def tracepoint() -> None:
-    print()
-    cf = inspect.currentframe()
-    head = cf.f_back
-    while head is not None:
-        print(head.f_code.co_name.ljust(50), head.f_code.co_filename.split("/")[-1] + ':'  + str(head.f_lineno) )
-        #pprint.pprint({key: head.f_locals.get(key) for key in head.f_code.co_varnames}, indent=4)
-        head = head.f_back
-    print(sys.argv)
-    print()
-
-
 if T.TYPE_CHECKING:
     from .traceparser import CMakeTraceParser, CMakeTarget
-
-def parse_generator_expressions_other(
-            raw: str,
-            trace: 'CMakeTraceParser',
-            *,
-            context_tgt: T.Optional['CMakeTarget'] = None,
-        ) -> StringNode:
-    value = parse_generator_expressions_inner(raw, trace, context_tgt=context_tgt)
-    if raw != value:
-        with open("/home/volker/writeout.txt", "a") as ofile:
-            ofile.write("--------------------------------\n" + raw + "---------\n" + value + "\n\n")
-    #print(value)
-    #assert(";" not in value)
-    return value
-    return StringNode(Token('string', "todo_self.subdir.as_posix()", 0, 0, 0, None, value))
-
-def string_to_node(str: str) -> StringNode:
-    return StringNode(Token('string', "todo_self.subdir.as_posix()", 0, 0, 0, None, str))
 
 CmgeSingle = T.Union[str, 'CmgeSpecial']
 CmgeAstNode = T.List[CmgeSingle]
@@ -85,23 +44,36 @@ class CmgeSpecial:
     cmd: CmgeAstNode
     args: T.List[CmgeAstNode]
 
+@dataclass
+class CmgeAst:
+    root: CmgeAstNode
+
+    # todo: remove this function
+    def eval_to_string_now(self) -> str:
+        if len(self.root) != 1 or not isinstance(self.root[0], str):
+            raise NotImplementedError('We cannot evaluate this right now.')
+        return self.root[0]
+
 # This class converts a string to a CmgeAst.
-# The grammar is (https://pest.rs/ has a live editor for this grammar):
-# expr = { ( normal_chars | special )* }
+# The grammar is:
+# expr = { ( plain | special )* }
 # special = { "$<" ~ expr ~ ":" ~ expr ~ ("," ~ expr)* ~ ">" }
-# normal_chars = { ( !("$" | "<" | ">" | ":" | ",") ~ ANY )+ }
+# plain = { ( !("$" | "<" | ">" | ":" | ",") ~ ANY )+ }
+# (https://pest.rs/ has a live editor for this grammar)
 class CmgeParser:
     @staticmethod
-    def parse(src: str) -> CmgeAstNode:
+    def parse(src: str) -> 'CmgeAst':
         ret = CmgeParser.eat_expr(src, 0)
-        assert ret[0] == len(src), "parsing failed" # todo: better error handling
-        return ret[1]
+        if ret[0] != len(src):
+            import pdb
+            pdb.set_trace()
+            raise MesonBugException('Unable to parse CMake Generator Expression')
+        return CmgeAst(root=ret[1])
 
     @staticmethod
-    # todo: maybe this function should just accept a single char?
-    def try_eat_normal_chars(src: str, pos: int) -> T.Optional[T.Tuple[int, str]]:
+    def try_eat_plain(src: str, pos: int) -> T.Optional[T.Tuple[int, str]]:
         startpos = pos
-        while(pos < len(src) and not src[pos] in ["$", "<", ">", ":", ","]):
+        while(pos < len(src) and not src[pos] in ['$', '<', '>', ':', ',']):
             pos += 1
         if pos != startpos:
             return pos, src[startpos:pos]
@@ -110,12 +82,12 @@ class CmgeParser:
 
     @staticmethod
     def try_eat_special(src: str, pos: int) -> T.Optional[T.Tuple[int, CmgeSpecial]]:
-        if pos+1 >= len(src) or src[pos:pos+2] != "$<":
+        if pos+1 >= len(src) or src[pos:pos+2] != '$<':
             return None
         pos += 2
         cmd = CmgeParser.eat_expr(src, pos)
         pos = cmd[0]
-        if pos >= len(src) or src[pos] != ":":
+        if pos >= len(src) or src[pos] != ':':
             return None
         pos += 1
         args = []
@@ -123,13 +95,13 @@ class CmgeParser:
         pos = a[0]
         args.append(a[1])
         while True:
-            if pos >= len(src) or src[pos] != ",":
+            if pos >= len(src) or src[pos] != ',':
                 break
             pos += 1
             a = CmgeParser.eat_expr(src, pos)
             pos = a[0]
             args.append(a[1])
-        if pos >= len(src) or src[pos] != ">":
+        if pos >= len(src) or src[pos] != '>':
             return None
         pos += 1
         return pos, CmgeSpecial(cmd=cmd[1], args=args)
@@ -138,275 +110,58 @@ class CmgeParser:
     def eat_expr(src: str, pos: int) -> T.Tuple[int, CmgeAstNode]:
         ret: T.List[CmgeSingle] = []
         while True:
-            x = CmgeParser.try_eat_normal_chars(src, pos) or CmgeParser.try_eat_special(src, pos)
+            x = CmgeParser.try_eat_plain(src, pos) or CmgeParser.try_eat_special(src, pos)
             if x is None:
                 return pos, ret
             pos = x[0]
             ret.append(x[1])
 
-def token(val):
-    return Token("string", "todo self.subdir.as_posix()", 0, 0, 0, None, val)
+# This class converts our Cmge Ast to a corresponding Meson Ast.
+class CmgeToMeson:
+    @staticmethod
+    def convert_ast(this: CmgeAst, trace: 'CMakeTraceParser') -> BaseNode:
+        return CmgeToMeson.convert_list(this.root, trace)
 
-def cmge_single_to_meson_ast(this: CmgeSingle, trace: 'CMakeTraceParser') -> BaseNode:
-    print(ast_print(this))
-    if isinstance(this, CmgeSpecial):
-        if len(this.cmd) == 1 and this.cmd[0] == "TARGET_FILE":
-            assert(len(this.args) == 1)
-            assert(len(this.args[0]) == 1)
-            assert(isinstance(this.args[0][0], str))
-            exename = this.args[0][0]
-            if trace.targets[exename].imported:
-                locations = trace.targets[exename].properties['IMPORTED_LOCATION']
-                assert(len(locations) == 1)
-                return StringNode(token(locations[0]))
+    @staticmethod
+    def token(val) -> Token:
+        return Token('string', 'todo self.subdir.as_posix()', 0, 0, 0, None, val)
+
+    emptyToken = Token('string', 'todo self.subdir.as_posix()', 0, 0, 0, None, '')
+
+    @staticmethod
+    def convert_single(this: CmgeSingle, trace: 'CMakeTraceParser') -> BaseNode:
+        if isinstance(this, CmgeSpecial):
+            if this.cmd == ['IF']:
+                assert(len(this.args) == 3)
+                args = ArgumentNode(self.emptyToken)
+                args.append(this.args[0])
+                args.append(this.args[1])
+                args.append(this.args[2])
+                ret = FunctionNode('todo self.subdir.as_posix()', 0, 0, 'ternary', args)
+            elif this.cmd == ['TARGET_FILE'] :
+                assert(len(this.args) == 1)
+                assert(len(this.args[0]) == 1)
+                assert(isinstance(this.args[0][0], str))
+                exename = this.args[0][0]
+                if trace.targets[exename].imported:
+                    locations = trace.targets[exename].properties['IMPORTED_LOCATION']
+                    assert(len(locations) == 1)
+                    return StringNode(CmgeToMeson.token(locations[0]))
+                else:
+                    ret = MethodNode('todo self.subdir.as_posix()', 0, 0, IdNode(CmgeToMeson.token(exename)), 'full_path', ArgumentNode(self.emptyToken))
+                    return ret
             else:
-                ret = MethodNode("todo", 0, 0, IdNode(token(exename)), "full_path", ArgumentNode(token("?")))
-                return ret
-
+                raise NotImplementedError(f'Unsupported CMake Generator Expression: {this.cmd}')
+        elif isinstance(this, str):
+            return StringNode(CmgeToMeson.token(this))
         else:
-            raise ValueError("todo")
+            raise MesonBugException('Unreachable code')
 
-    elif isinstance(this, str):
-        return StringNode(token(this))
-    else:
-        raise RuntimeError('Unreachable code')
-
-# todo codestyle: "" or ''
-def cmge_list_to_meson_ast(this: CmgeAstNode, trace: 'CMakeTraceParser'):
-    if len(this) == 0:
-        return ''
-    elif len(this) == 1:
-        return cmge_single_to_meson_ast(this[-1], trace)
-    else:
-        return ArithmeticNode("add", cmge_list_to_meson_ast(this[:-1], trace), cmge_single_to_meson_ast(this[-1], trace))
-
-@dataclass
-class CmgeAst:
-    root: CmgeAstNode
-    def eval_to_string_now(self) -> str:
-        #print(ast_print(self.root))
-        assert len(self.root) == 1, "todo"
-        assert(isinstance(self.root[0], str))
-        return self.root[0]
-    def token(self, val, tid: str = 'string') -> Token:
-        return Token(tid, "todo self.subdir.as_posix()", 0, 0, 0, None, val)
-
-    # I don't like that this function takes trace as an argument. Maybe this
-    # dependency on trace could be removed by restructuring the code a bit.
-    def to_meson_ast(self, trace: 'CMakeTraceParser') -> BaseNode:
-        return cmge_list_to_meson_ast(self.root, trace)
-
-def parse_cmge(src: str) -> CmgeAst:
-    assert(isinstance(src, str)) # todo: remove
-    return CmgeAst(root=CmgeParser.parse(src))
-
-def parse_generator_expressions(
-            raw: str,
-            trace: 'CMakeTraceParser',
-            *,
-            context_tgt: T.Optional['CMakeTarget'] = None,
-        ) -> CmgeAst:
-    # todo correct doc
-    # https://cmake.org/cmake/help/latest/manual/cmake-generator-expressions.7.html
-
-    # I'm not sure, but I think there is a bug that some code calls this
-    # function with something that is not a generator expression and should not
-    # be parsed as one.
-    if '$<' not in raw or True:
-        return CmgeAst(root=[raw])
-
-    return parse_cmge(raw)
-
-    # ret = CmakeGenExpr()
-    # ret.str = parse_generator_expressions_old(raw, trace, context_tgt=context_tgt)
-    # return ret
-
-def parse_generator_expressions_old_wrap(
-            raw: str,
-            trace: 'CMakeTraceParser',
-            *,
-            context_tgt: T.Optional['CMakeTarget'] = None,
-        ) -> str:
-    value = parse_generator_expressions_old_inner(raw, trace, context_tgt=context_tgt)
-    if raw != value:
-        with open("/home/volker/writeout.txt", "a") as ofile:
-            ofile.write("--------------------------------\n" + raw + "\n---------\n" + value + "\n\n")
-    return value
-
-def parse_generator_expressions_old(
-            raw: str,
-            trace: 'CMakeTraceParser',
-            *,
-            context_tgt: T.Optional['CMakeTarget'] = None,
-        ) -> str:
-    '''Parse CMake generator expressions
-
-    Most generator expressions are simply ignored for
-    simplicety, however some are required for some common
-    use cases.
-    '''
-
-    # Early abort if no generator expression present
-    if '$<' not in raw:
-        return raw
-
-    out = ''  # type: str
-    i = 0     # type: int
-
-    def equal(arg: str) -> str:
-        col_pos = arg.find(',')
-        if col_pos < 0:
-            return '0'
+    @staticmethod
+    def convert_list(this: T.List[CmgeSingle], trace: 'CMakeTraceParser') -> BaseNode:
+        if len(this) == 0:
+            return StringNode(CmgeToMeson.token(''))
+        elif len(this) == 1:
+            return CmgeToMeson.convert_single(this[0], trace)
         else:
-            return '1' if arg[:col_pos] == arg[col_pos + 1:] else '0'
-
-    def vers_comp(op: str, arg: str) -> str:
-        col_pos = arg.find(',')
-        if col_pos < 0:
-            return '0'
-        else:
-            return '1' if mesonlib.version_compare(arg[:col_pos], '{}{}'.format(op, arg[col_pos + 1:])) else '0'
-
-    def target_property(arg: str) -> str:
-        # We can't really support this since we don't have any context
-        if ',' not in arg:
-            if context_tgt is None:
-                return ''
-            return ';'.join(context_tgt.properties.get(arg, []))
-
-        args = arg.split(',')
-        props = trace.targets[args[0]].properties.get(args[1], []) if args[0] in trace.targets else []
-        return ';'.join(props)
-
-    def target_file(arg: str) -> str:
-        if arg not in trace.targets:
-            mlog.warning(f"Unable to evaluate the cmake variable '$<TARGET_FILE:{arg}>'.")
-            return ''
-        tgt = trace.targets[arg]
-
-        cfgs = []
-        cfg = ''
-
-        if 'IMPORTED_CONFIGURATIONS' in tgt.properties:
-            cfgs = [x for x in tgt.properties['IMPORTED_CONFIGURATIONS'] if x]
-            cfg = cfgs[0]
-
-        if cmake_is_debug(trace.env):
-            if 'DEBUG' in cfgs:
-                cfg = 'DEBUG'
-            elif 'RELEASE' in cfgs:
-                cfg = 'RELEASE'
-        else:
-            if 'RELEASE' in cfgs:
-                cfg = 'RELEASE'
-
-        if f'IMPORTED_IMPLIB_{cfg}' in tgt.properties:
-            return ';'.join([x for x in tgt.properties[f'IMPORTED_IMPLIB_{cfg}'] if x])
-        elif 'IMPORTED_IMPLIB' in tgt.properties:
-            return ';'.join([x for x in tgt.properties['IMPORTED_IMPLIB'] if x])
-        elif f'IMPORTED_LOCATION_{cfg}' in tgt.properties:
-            return ';'.join([x for x in tgt.properties[f'IMPORTED_LOCATION_{cfg}'] if x])
-        elif 'IMPORTED_LOCATION' in tgt.properties:
-            return ';'.join([x for x in tgt.properties['IMPORTED_LOCATION'] if x])
-        else:
-            #return "' + {}.full_path_nonext() + '".format(arg)
-            #return "VOLKER TRACE########################'####"
-            return "TODO"
-            #return str(tgt.build_path)
-
-    supported = {
-        # Boolean functions
-        'BOOL': lambda x: '0' if x.upper() in ['0', 'FALSE', 'OFF', 'N', 'NO', 'IGNORE', 'NOTFOUND'] or x.endswith('-NOTFOUND') else '1',
-        'AND': lambda x: '1' if all([y == '1' for y in x.split(',')]) else '0',
-        'OR': lambda x: '1' if any([y == '1' for y in x.split(',')]) else '0',
-        'NOT': lambda x: '0' if x == '1' else '1',
-
-        'IF': lambda x: x.split(',')[1] if x.split(',')[0] == '1' else x.split(',')[2],
-
-        '0': lambda x: '',
-        '1': lambda x: x,
-
-        # String operations
-        'STREQUAL': equal,
-        'EQUAL': equal,
-        'VERSION_LESS': lambda x: vers_comp('<', x),
-        'VERSION_GREATER': lambda x: vers_comp('>', x),
-        'VERSION_EQUAL': lambda x: vers_comp('=', x),
-        'VERSION_LESS_EQUAL': lambda x: vers_comp('<=', x),
-        'VERSION_GREATER_EQUAL': lambda x: vers_comp('>=', x),
-
-        # String modification
-        'LOWER_CASE': lambda x: x.lower(),
-        'UPPER_CASE': lambda x: x.upper(),
-
-        # Always assume the BUILD_INTERFACE is valid.
-        # INSTALL_INTERFACE is always invalid for subprojects and
-        # it should also never appear in CMake config files, used
-        # for dependencies
-        'INSTALL_INTERFACE': lambda x: '',
-        'BUILD_INTERFACE': lambda x: x,
-
-        # Constants
-        'ANGLE-R': lambda x: '>',
-        'COMMA': lambda x: ',',
-        'SEMICOLON': lambda x: ';',
-
-        # Target related expressions
-        'TARGET_EXISTS': lambda x: '1' if x in trace.targets else '0',
-        'TARGET_NAME_IF_EXISTS': lambda x: x if x in trace.targets else '',
-        'TARGET_PROPERTY': target_property,
-        'TARGET_FILE': target_file,
-    }  # type: T.Dict[str, T.Callable[[str], str]]
-
-    # Recursively evaluate generator expressions
-    def eval_generator_expressions() -> str:
-        nonlocal i
-        i += 2
-
-        func = ''  # type: str
-        args = ''  # type: str
-        res = ''   # type: str
-        exp = ''   # type: str
-
-        # Determine the body of the expression
-        while i < len(raw):
-            if raw[i] == '>':
-                # End of the generator expression
-                break
-            elif i < len(raw) - 1 and raw[i] == '$' and raw[i + 1] == '<':
-                # Nested generator expression
-                exp += eval_generator_expressions()
-            else:
-                # Generator expression body
-                exp += raw[i]
-
-            i += 1
-
-        # Split the expression into a function and arguments part
-        col_pos = exp.find(':')
-        if col_pos < 0:
-            func = exp
-        else:
-            func = exp[:col_pos]
-            args = exp[col_pos + 1:]
-
-        func = func.strip()
-        args = args.strip()
-
-        # Evaluate the function
-        if func in supported:
-            res = supported[func](args)
-
-        return res
-
-    while i < len(raw):
-        if i < len(raw) - 1 and raw[i] == '$' and raw[i + 1] == '<':
-            # Generator expression detected --> try resolving it
-            out += eval_generator_expressions()
-        else:
-            # Normal string, leave unchanged
-            out += raw[i]
-
-        i += 1
-
-    return out
+            return ArithmeticNode('add', CmgeToMeson.convert_list(this[:-1], trace), CmgeToMeson.convert_single(this[-1], trace))

@@ -25,21 +25,6 @@ import re
 import textwrap
 import typing as T
 
-import inspect
-import pprint
-import sys
-
-
-def tracepoint():
-    print()
-    cf = inspect.currentframe()
-    head = cf.f_back
-    while head is not None:
-        print(head.f_code.co_name.ljust(50), head.f_code.co_filename.split("/")[-1] + ':'  + str(head.f_lineno) )
-        #pprint.pprint({key: head.f_locals.get(key) for key in head.f_code.co_varnames}, indent=4)
-        head = head.f_back
-    print(sys.argv)
-    print()
 
 from . import environment
 from . import dependencies
@@ -54,7 +39,7 @@ from .mesonlib import (
     MesonBugException
 )
 from .compilers import (
-    is_object, clink_langs, sort_clink, all_languages,
+    is_object, clink_langs, sort_clink, lang_suffixes, all_languages,
     is_known_suffix, detect_static_linker
 )
 from .interpreterbase import FeatureNew, FeatureDeprecated
@@ -72,7 +57,6 @@ if T.TYPE_CHECKING:
     from .mparser import BaseNode
 
     GeneratedTypes = T.Union['CustomTarget', 'CustomTargetIndex', 'GeneratedList']
-    LibTypes = T.Union['SharedLibrary', 'StaticLibrary', 'CustomTarget', 'CustomTargetIndex']
 
 pch_kwargs = {'c_pch', 'cpp_pch'}
 
@@ -771,7 +755,7 @@ class BuildTarget(Target):
         self.external_deps: T.List[dependencies.Dependency] = []
         self.include_dirs: T.List['IncludeDirs'] = []
         self.link_language = kwargs.get('link_language')
-        self.link_targets: T.List[LibTypes] = []
+        self.link_targets: T.List[T.Union[SharedLibrary, StaticLibrary, 'CustomTarget', 'CustomTargetIndex']] = []
         self.link_whole_targets: T.List[T.Union[StaticLibrary, CustomTarget, CustomTargetIndex]] = []
         self.link_depends = []
         self.added_deps = set()
@@ -965,15 +949,12 @@ class BuildTarget(Target):
         for o in self.objects:
             if not isinstance(o, ExtractedObjects):
                 continue
-            compsrcs = o.classify_all_sources(o.srclist, [])
-            for comp in compsrcs:
+            for s in o.srclist:
                 # Don't add Vala sources since that will pull in the Vala
                 # compiler even though we will never use it since we are
                 # dealing with compiled C code.
-                if comp.language == 'vala':
-                    continue
-                if comp.language not in self.compilers:
-                    self.compilers[comp.language] = comp
+                if not s.endswith(lang_suffixes['vala']):
+                    sources.append(s)
         if sources:
             # For each source, try to add one compiler that can compile it.
             #
@@ -1887,7 +1868,7 @@ class Executable(BuildTarget):
                   'cpp' in self.compilers and self.compilers['cpp'].get_id() in ('ti', 'c2000')):
                 self.suffix = 'out'
             else:
-                self.suffix = machine.get_exe_suffix()# + "volker"
+                self.suffix = machine.get_exe_suffix()
         self.filename = self.name
         if self.suffix:
             self.filename += '.' + self.suffix

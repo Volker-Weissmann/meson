@@ -161,11 +161,10 @@ kwargs:
 
   install:
     type: bool
-    description: When true, one or more files of this target are installed during
-      the install step (see `install_dir` for details).
+    description: When true, this target is installed during the install step.
 
   install_dir:
-    type: str | list[str | bool]
+    type: str | list[str]
     description: |
       If only one install_dir is provided, all outputs are installed there.
       *Since 0.40.0* Allows you to specify the installation directory for each

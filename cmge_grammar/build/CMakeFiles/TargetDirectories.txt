@@ -1,0 +1,3 @@
+/home/volker/Sync/git/meson/cmge_grammar/build/CMakeFiles/genexdebug.dir
+/home/volker/Sync/git/meson/cmge_grammar/build/CMakeFiles/edit_cache.dir
+/home/volker/Sync/git/meson/cmge_grammar/build/CMakeFiles/rebuild_cache.dir

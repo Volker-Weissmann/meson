@@ -16,7 +16,7 @@
 # or an interpreter-based tool.
 
 from .common import CMakeException
-from .generator import parse_generator_expressions, parse_cmge, CmgeAst
+from .generator import CmgeParser
 from .. import mlog
 from ..mesonlib import version_compare
 from ..mparser import StringNode
@@ -110,14 +110,6 @@ class CMakeGeneratorTarget(CMakeTarget):
         self.command = []        # type: T.List[T.List[CmgeAst]]
         self._command_str = []   # type: T.List[T.List[str]]
         self.working_dir = None  # type: T.Optional[Path]
-
-def unpack_helper(val):
-    if isinstance(val, StringNode):
-        return val.value
-    else:
-        import pdb
-        pdb.set_trace()
-        raise ValueError("not implemented")
 
 class CMakeTraceParser:
     def __init__(self, cmake_version: str, build_dir: Path, env: 'Environment', permissive: bool = True) -> None:
@@ -236,19 +228,33 @@ class CMakeTraceParser:
         import pdb
         #pdb.set_trace()
 
-        strlist_gen:  T.Callable[[T.List[str]], T.List[str]]  = lambda strlist: parse_generator_expressions(';'.join(strlist), self).eval_to_string_now().split(';') if strlist else []
-        pathlist_gen: T.Callable[[T.List[str]], T.List[Path]] = lambda strlist: [Path(x) for x in parse_generator_expressions(';'.join(strlist), self).eval_to_string_now().split(';')] if strlist else []
 
-        # Evaluate generator expressions
-        # strlist_gen:  T.Callable[[T.List[str]], T.List[str]]  = lambda strlist: [unpack_helper(parse_generator_expressions(el, self)) for el in strlist]
-        # pathlist_gen:  T.Callable[[T.List[str]], T.List[str]]  = lambda strlist: [Path(unpack_helper(parse_generator_expressions(el, self))) for el in strlist]
+        # todo
+        def strlist_gen(strlist: [T.List[str]]) -> T.List[str]:
+            for el in strlist:
+                assert('%<' not in el)
+                assert(';' not in el)
+            return strlist
+
+        # todo
+        def pathlist_gen(strlist: [T.List[str]]) -> T.List[str]:
+            for el in strlist:
+                assert('%<' not in el)
+                assert(';' not in el)
+            return [Path(el) for el in strlist]
 
         self.vars = {k: strlist_gen(v) for k, v in self.vars.items()}
         self.vars_by_file = {
             p: {k: strlist_gen(v) for k, v in d.items()}
             for p, d in self.vars_by_file.items()
         }
-        self.explicit_headers = set(Path(unpack_helper(parse_generator_expressions(str(x), self))) for x in self.explicit_headers)
+        # todo
+        for x in self.explicit_headers:
+            if not isinstance(x, str):
+                import pdb
+                pdb.set_trace()
+            assert(isinstance(x, str))
+        self.explicit_headers = set(Path(x) for x in self.explicit_headers)
         self.cache = {
             k: CMakeCacheEntry(
                 strlist_gen(v.value),
@@ -258,32 +264,26 @@ class CMakeTraceParser:
         }
 
         for tgt in self.targets.values():
-            # tgtlist_gen: T.Callable[[T.List[str], CMakeTarget], T.List[str]] = lambda strlist, t: [unpack_helper(parse_generator_expressions(el, self, context_tgt=t)) for el in strlist]
-            # tgt.name = unpack_helper(parse_generator_expressions(tgt.name, self, context_tgt=tgt))
-            # tgt.type = unpack_helper(parse_generator_expressions(tgt.type, self, context_tgt=tgt))
-
-            tgtlist_gen: T.Callable[[T.List[str], CMakeTarget], T.List[str]] = lambda strlist, t: parse_generator_expressions(';'.join(strlist), self, context_tgt=t).eval_to_string_now().split(';') if strlist else []
-            tgt.name = parse_generator_expressions(tgt.name, self, context_tgt=tgt).eval_to_string_now()
-            tgt.type = parse_generator_expressions(tgt.type, self, context_tgt=tgt).eval_to_string_now()
-
+            assert('%<' not in tgt.name)
+            assert(';' not in tgt.name)
+            assert('%<' not in tgt.type)
+            assert(';' not in tgt.type)
 
             tgt.properties = {
-                k: tgtlist_gen(v, tgt) for k, v in tgt.properties.items()
+                k: strlist_gen(v) for k, v in tgt.properties.items()
             } if tgt.properties is not None else None
-            tgt.depends = tgtlist_gen(tgt.depends, tgt)
+            tgt.depends = strlist_gen(tgt.depends)
 
         for ctgt in self.custom_targets:
             ctgt.outputs = pathlist_gen(ctgt._outputs_str)
-            #
+
             for a in ctgt._command_str:
                 for b in a:
                     assert ";" not in b # todo can we trigger this?
-            ctgt.command = [[parse_cmge(b) for b in a] for a in ctgt._command_str]
-            # todo: assert command is not an empty string
+            ctgt.command = [[CmgeParser.parse(b) for b in a] for a in ctgt._command_str]
 
-            ctgt.working_dir = Path(parse_generator_expressions(str(ctgt.working_dir), self).eval_to_string_now()) if ctgt.working_dir is not None else None
-
-            #ctgt.working_dir = Path(unpack_helper(parse_generator_expressions(str(ctgt.working_dir), self))) if ctgt.working_dir is not None else None
+            assert(ctgt.working_dir is None or isinstance(ctgt.working_dir, str))
+            ctgt.working_dir = Path(ctgt.working_dir) if ctgt.working_dir is not None else None
 
         # Postprocess
         for tgt in self.targets.values():

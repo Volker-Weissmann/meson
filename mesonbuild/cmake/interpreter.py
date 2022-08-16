@@ -25,7 +25,7 @@ import typing as T
 from .common import CMakeException, CMakeTarget, language_map, cmake_get_generator_args, check_cmake_args
 from .fileapi import CMakeFileAPI
 from .executor import CMakeExecutor
-from .generator import CmgeAst
+from .generator import CmgeAst, CmgeToMeson
 from .toolchain import CMakeToolchain, CMakeExecScope
 from .traceparser import CMakeTraceParser
 from .tracetargets import resolve_cmake_trace_targets
@@ -985,7 +985,7 @@ class CMakeInterpreter:
             elif isinstance(value, BaseNode):
                 return value
             elif isinstance(value, CmgeAst):
-                return value.to_meson_ast(self.trace)
+                return CmgeToMeson.convert_ast(value, self.trace)
             raise RuntimeError('invalid type of value: {} ({})'.format(type(value).__name__, str(value)))
 
         def indexed(node: BaseNode, index: int) -> IndexNode:

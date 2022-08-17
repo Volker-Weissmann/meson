@@ -25,7 +25,7 @@ import typing as T
 from .common import CMakeException, CMakeTarget, language_map, cmake_get_generator_args, check_cmake_args
 from .fileapi import CMakeFileAPI
 from .executor import CMakeExecutor
-from .generator import CmgeAst, CmgeToMeson
+from .generator import Cmge
 from .toolchain import CMakeToolchain, CMakeExecScope
 from .traceparser import CMakeTraceParser
 from .tracetargets import resolve_cmake_trace_targets
@@ -60,7 +60,7 @@ if T.TYPE_CHECKING:
     from ..backend.backends import Backend
     from ..environment import Environment
 
-TYPE_mixed        = T.Union[str, int, bool, Path, BaseNode, CmgeAst]
+TYPE_mixed        = T.Union[str, int, bool, Path, BaseNode, Cmge]
 TYPE_mixed_list   = T.Union[TYPE_mixed, T.Sequence[TYPE_mixed]]
 TYPE_mixed_kwargs = T.Dict[str, TYPE_mixed_list]
 
@@ -984,8 +984,8 @@ class CMakeInterpreter:
                 return array(value)
             elif isinstance(value, BaseNode):
                 return value
-            elif isinstance(value, CmgeAst):
-                return CmgeToMeson.convert_ast(value, self.trace)
+            elif isinstance(value, Cmge):
+                return Cmge.to_meson_ast(value, self.trace)
             raise RuntimeError('invalid type of value: {} ({})'.format(type(value).__name__, str(value)))
 
         def indexed(node: BaseNode, index: int) -> IndexNode:

@@ -67,7 +67,7 @@ include CMakeFiles/genexdebug.dir/compiler_depend.make
 include CMakeFiles/genexdebug.dir/progress.make
 
 CMakeFiles/genexdebug:
-	/usr/bin/cmake -E echo $><k<abc,dK:,>:$
+	/usr/bin/cmake -E echo $><k<abc::dK:,>:$
 
 genexdebug: CMakeFiles/genexdebug
 genexdebug: CMakeFiles/genexdebug.dir/build.make

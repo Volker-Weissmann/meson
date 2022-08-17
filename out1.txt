@@ -1,0 +1,1353 @@
+Meson build system 0.63.99 Project Tests
+Using python 3.10.5 (main, Aug  1 2022, 07:53:20) [GCC 12.1.0]
+
+host machine compilers
+
+c      : [gcc]      cc (gcc 12.1.1 "cc (GCC) 12.1.1 20220730")
+cpp    : [gcc]      c++ (gcc 12.1.1 "c++ (GCC) 12.1.1 20220730")
+cs     : [mono]     mcs (mono 6.12.0.0)
+cuda   : [not found]
+cython : [not found]
+d      : [not found]
+fortran: [gcc]      gfortran (gcc 12.1.1 "GNU Fortran (GCC) 12.1.1 20220730")
+java   : [unknown]  javac (unknown 17.0.4)
+objc   : [gcc]      cc (gcc 12.1.1)
+objcpp : [gcc]      c++ (gcc 12.1.1)
+rust   : [rustc]    rustc -C linker=cc (rustc 1.61.0)
+swift  : [not found]
+vala   : [valac]    valac (valac 0.56.2)
+
+tools
+
+ninja  : /usr/bin/ninja (1.11.0)
+cmake  : /usr/bin/cmake (3.23.3)
+hotdoc : not found
+
+Checking that configuring works...
+Checking that introspect works...
+Checking that building works...
+Checking that testing works...
+Checking that installing works...
+
+Running tests with 4 workers
+
+Running cmake tests.
+
+ [SUCCESS]   cmake: 1 basic
+ [SUCCESS]   cmake: 2 advanced
+ [SUCCESS]   cmake: 3 advanced no dep
+ [SUCCESS]   cmake: 4 code gen
+ [SUCCESS]   cmake: 5 object library
+ [SUCCESS]   cmake: 6 object library no dep
+ [SUCCESS]   cmake: 7 cmake options    (cmake_prefix_path=['val1', 'val2'] build.cmake_prefix_path=['val1', 'val2'])
+  [ERROR]    cmake: 8 custom command
+During: configure
+Reason: Generating the build system failed.
+ [SUCCESS]   cmake: 9 disabled subproject
+ [SUCCESS]   cmake: 10 header only
+  [ERROR]    cmake: 11 cmake_module_path
+During: configure
+Reason: Generating the build system failed.
+  [ERROR]    cmake: 12 generator expressions
+During: build
+Reason: Compiling source code failed.
+ [SUCCESS]   cmake: 13 system includes
+ [SUCCESS]   cmake: 14 fortran threads
+  [ERROR]    cmake: 15 object library advanced
+During: configure
+Reason: Generating the build system failed.
+ [SUCCESS]   cmake: 16 threads    (use_pthread=NOT_SET)
+ [SUCCESS]   cmake: 16 threads    (use_pthread=OFF)
+ [SUCCESS]   cmake: 16 threads    (use_pthread=ON)
+ [SUCCESS]   cmake: 17 include path order
+  [ERROR]    cmake: 18 skip include files
+During: configure
+Reason: Generating the build system failed.
+ [SUCCESS]   cmake: 19 advanced options
+ [SUCCESS]   cmake: 20 cmake file
+ [SUCCESS]   cmake: 21 shared module
+ [SUCCESS]   cmake: 22 cmake module
+ [SUCCESS]   cmake: 23 cmake toolchain
+ [SKIPPED]   cmake: 24 mixing languages
+Reason: No ObjC compiler
+ [SUCCESS]   cmake: 25 assembler
+ [SUCCESS]   cmake: 26 target file
+
+Total configuration time: 35.08s
+Total build time:         24.53s
+Total test time:          0.77s
+
+Total passed tests:  22
+Total failed tests:  5
+Total skipped tests: 1
+
+Mesonlogs of failing tests
+
+
+[31m======================================[0m cmake: 8 custom command [31m=====================================[0m
+ 
+
+Build started at 2022-08-17T18:55:58.607947
+Main binary: /usr/bin/python3
+Build Options: -Dprefix=/usr -Dlibdir=lib -Dbackend=ninja
+Python system: Linux
+The Meson build system
+Version: 0.63.99
+Source dir: /home/volker/Sync/git/meson/test cases/cmake/8 custom command
+Build dir: /home/volker/Sync/git/meson/b 20e902fe75
+Build type: native build
+Project name: cmakeSubTest
+Project version: undefined
+-----
+Detecting compiler via: cc --version
+compiler returned <Popen: returncode: 0 args: ['cc', '--version']>
+compiler stdout:
+cc (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: cc -E -dM -
+-----
+Detecting linker via: cc -Wl,--version
+linker returned <Popen: returncode: 0 args: ['cc', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccpt6Gms.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C compiler: cc
+Is cross compiler: False.
+Sanity check compiler command line: cc sanitycheckc.c -o sanitycheckc.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b 20e902fe75/meson-private/sanitycheckc.exe
+C compiler for the host machine: cc (gcc 12.1.1 "cc (GCC) 12.1.1 20220730")
+C linker for the host machine: cc ld.bfd 2.39
+-----
+Detecting compiler via: c++ --version
+compiler returned <Popen: returncode: 0 args: ['c++', '--version']>
+compiler stdout:
+c++ (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: c++ -E -dM -
+-----
+Detecting linker via: c++ -Wl,--version
+linker returned <Popen: returncode: 0 args: ['c++', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccIdSt05.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C++ compiler: c++
+Is cross compiler: False.
+Sanity check compiler command line: c++ sanitycheckcpp.cc -o sanitycheckcpp.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b 20e902fe75/meson-private/sanitycheckcpp.exe
+C++ compiler for the host machine: c++ (gcc 12.1.1 "c++ (GCC) 12.1.1 20220730")
+C++ linker for the host machine: c++ ld.bfd 2.39
+-----
+Detecting compiler via: cc --version
+compiler returned <Popen: returncode: 0 args: ['cc', '--version']>
+compiler stdout:
+cc (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: cc -E -dM -
+-----
+Detecting linker via: cc -Wl,--version
+linker returned <Popen: returncode: 0 args: ['cc', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccAH8PoU.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C compiler: cc
+Is cross compiler: False.
+Sanity check compiler command line: cc sanitycheckc.c -o sanitycheckc.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b 20e902fe75/meson-private/sanitycheckc.exe
+C compiler for the build machine: cc (gcc 12.1.1 "cc (GCC) 12.1.1 20220730")
+C linker for the build machine: cc ld.bfd 2.39
+-----
+Detecting compiler via: c++ --version
+compiler returned <Popen: returncode: 0 args: ['c++', '--version']>
+compiler stdout:
+c++ (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: c++ -E -dM -
+-----
+Detecting linker via: c++ -Wl,--version
+linker returned <Popen: returncode: 0 args: ['c++', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccaiZF0j.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C++ compiler: c++
+Is cross compiler: False.
+Sanity check compiler command line: c++ sanitycheckcpp.cc -o sanitycheckcpp.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b 20e902fe75/meson-private/sanitycheckcpp.exe
+C++ compiler for the build machine: c++ (gcc 12.1.1 "c++ (GCC) 12.1.1 20220730")
+C++ linker for the build machine: c++ ld.bfd 2.39
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Target machine cpu family: x86_64
+Target machine cpu: x86_64
+
+Executing subproject cmMod method cmake 
+
+CMake binary for 0 is cached.
+
+Configuring the build directory with CMake version 3.23.3
+Running CMake with: -G Ninja -DCMAKE_INSTALL_PREFIX=/usr
+  - build directory:          /home/volker/Sync/git/meson/b 20e902fe75/subprojects/cmMod/__CMake_build
+  - source directory:         /home/volker/Sync/git/meson/test cases/cmake/8 custom command/subprojects/cmMod
+  - toolchain file:           /home/volker/Sync/git/meson/b 20e902fe75/subprojects/cmMod/__CMake_build/CMakeMesonToolchainFile.cmake
+  - preload file:             /home/volker/Sync/git/meson/mesonbuild/cmake/data/preload.cmake
+  - trace args:               --trace-expand --trace-format=json-v1 --no-warn-unused-cli --trace-redirect=cmake_trace.txt
+  - disabled policy warnings: [CMP0025, CMP0047, CMP0056, CMP0060, CMP0065, CMP0066, CMP0067, CMP0082, CMP0089, CMP0102]
+
+Calling CMake (['/usr/bin/cmake']) in /home/volker/Sync/git/meson/b 20e902fe75/subprojects/cmMod/__CMake_build with:
+  - "-G"
+  - "Ninja"
+  - "-DCMAKE_INSTALL_PREFIX=/usr"
+  - "--trace-expand"
+  - "--trace-format=json-v1"
+  - "--no-warn-unused-cli"
+  - "--trace-redirect=cmake_trace.txt"
+  - "-DCMAKE_POLICY_WARNING_CMP0025=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0047=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0056=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0060=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0065=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0066=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0067=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0082=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0089=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0102=OFF"
+  - "-DCMAKE_TOOLCHAIN_FILE=/home/volker/Sync/git/meson/b 20e902fe75/subprojects/cmMod/__CMake_build/CMakeMesonToolchainFile.cmake"
+  - "-DMESON_PRELOAD_FILE=/home/volker/Sync/git/meson/mesonbuild/cmake/data/preload.cmake"
+  - "/home/volker/Sync/git/meson/test cases/cmake/8 custom command/subprojects/cmMod"
+Running with expanded trace output on.
+Not searching for unused variables given on the command line.
+Trace will be written to cmake_trace.txt
+-- The C compiler identification is GNU 12.1.1
+-- The CXX compiler identification is GNU 12.1.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY
+-- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY - Success
+-- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY
+-- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY - Success
+-- Performing Test COMPILER_HAS_DEPRECATED_ATTR
+-- Performing Test COMPILER_HAS_DEPRECATED_ATTR - Success
+-- Running the -include test case on macro_name
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/volker/Sync/git/meson/b 20e902fe75/subprojects/cmMod/__CMake_build
+
+CMake configuration: SUCCEEDED
+ 
+
+Traceback (most recent call last):
+  File "/home/volker/Sync/git/meson/run_tests.py", line 305, in run_configure_inprocess
+    returncode = mesonmain.run(commandlist, get_meson_script())
+  File "/home/volker/Sync/git/meson/mesonbuild/mesonmain.py", line 257, in run
+    return CommandLineParser().run(args)
+  File "/home/volker/Sync/git/meson/mesonbuild/mesonmain.py", line 153, in run
+    return options.run_func(options)
+  File "/home/volker/Sync/git/meson/mesonbuild/msetup.py", line 303, in run
+    app.generate()
+  File "/home/volker/Sync/git/meson/mesonbuild/msetup.py", line 186, in generate
+    self._generate(env)
+  File "/home/volker/Sync/git/meson/mesonbuild/msetup.py", line 230, in _generate
+    intr.run()
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 2867, in run
+    super().run()
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 154, in run
+    self.evaluate_codeblock(self.ast, start=1)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 179, in evaluate_codeblock
+    raise e
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 172, in evaluate_codeblock
+    self.evaluate_statement(cur)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 187, in evaluate_statement
+    self.assignment(cur)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 579, in assignment
+    value = self.evaluate_statement(node.value)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 189, in evaluate_statement
+    return self.method_call(cur)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 495, in method_call
+    res = obj.method_call(method_name, args, kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreterobjects.py", line 747, in method_call
+    ret = method(state, args, kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/decorators.py", line 672, in wrapped
+    return f(*wrapped_args, **wrapped_kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/decorators.py", line 277, in wrapper
+    return f(*nargs, **wrapped_kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/decorators.py", line 580, in wrapper
+    return f(*wrapped_args, **wrapped_kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/modules/cmake.py", line 440, in subproject
+    subp = self.interpreter.do_subproject(dirname, 'cmake', kw)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 963, in do_subproject
+    raise e
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 949, in do_subproject
+    return self._do_subproject_cmake(subp_name, subdir, subdir_abs, default_options, kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 1028, in _do_subproject_cmake
+    cm_int.analyse()
+  File "/home/volker/Sync/git/meson/mesonbuild/cmake/interpreter.py", line 893, in analyse
+    self.trace.parse(self.cmake_stderr)
+  File "/home/volker/Sync/git/meson/mesonbuild/cmake/traceparser.py", line 285, in parse
+    assert(ctgt.working_dir is None or isinstance(ctgt.working_dir, str))
+AssertionError
+ 
+
+
+[31m====================================[0m cmake: 11 cmake_module_path [31m===================================[0m
+ 
+
+Build started at 2022-08-17T18:56:01.100735
+Main binary: /usr/bin/python3
+Build Options: -Dprefix=/usr -Dlibdir=lib -Dbackend=ninja
+Python system: Linux
+The Meson build system
+Version: 0.63.99
+Source dir: /home/volker/Sync/git/meson/test cases/cmake/11 cmake_module_path
+Build dir: /home/volker/Sync/git/meson/b f4b2cc2d09
+Build type: native build
+Project name: user CMake find_package module using cmake_module_path
+Project version: undefined
+-----
+Detecting compiler via: cc --version
+compiler returned <Popen: returncode: 0 args: ['cc', '--version']>
+compiler stdout:
+cc (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: cc -E -dM -
+-----
+Detecting linker via: cc -Wl,--version
+linker returned <Popen: returncode: 0 args: ['cc', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccKG3Y33.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C compiler: cc
+Is cross compiler: False.
+Sanity check compiler command line: cc sanitycheckc.c -o sanitycheckc.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b f4b2cc2d09/meson-private/sanitycheckc.exe
+C compiler for the host machine: cc (gcc 12.1.1 "cc (GCC) 12.1.1 20220730")
+C linker for the host machine: cc ld.bfd 2.39
+-----
+Detecting compiler via: c++ --version
+compiler returned <Popen: returncode: 0 args: ['c++', '--version']>
+compiler stdout:
+c++ (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: c++ -E -dM -
+-----
+Detecting linker via: c++ -Wl,--version
+linker returned <Popen: returncode: 0 args: ['c++', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccyAvUq8.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C++ compiler: c++
+Is cross compiler: False.
+Sanity check compiler command line: c++ sanitycheckcpp.cc -o sanitycheckcpp.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b f4b2cc2d09/meson-private/sanitycheckcpp.exe
+C++ compiler for the host machine: c++ (gcc 12.1.1 "c++ (GCC) 12.1.1 20220730")
+C++ linker for the host machine: c++ ld.bfd 2.39
+-----
+Detecting compiler via: cc --version
+compiler returned <Popen: returncode: 0 args: ['cc', '--version']>
+compiler stdout:
+cc (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: cc -E -dM -
+-----
+Detecting linker via: cc -Wl,--version
+linker returned <Popen: returncode: 0 args: ['cc', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccuolcFz.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C compiler: cc
+Is cross compiler: False.
+Sanity check compiler command line: cc sanitycheckc.c -o sanitycheckc.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b f4b2cc2d09/meson-private/sanitycheckc.exe
+C compiler for the build machine: cc (gcc 12.1.1 "cc (GCC) 12.1.1 20220730")
+C linker for the build machine: cc ld.bfd 2.39
+-----
+Detecting compiler via: c++ --version
+compiler returned <Popen: returncode: 0 args: ['c++', '--version']>
+compiler stdout:
+c++ (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: c++ -E -dM -
+-----
+Detecting linker via: c++ -Wl,--version
+linker returned <Popen: returncode: 0 args: ['c++', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccvnqijo.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C++ compiler: c++
+Is cross compiler: False.
+Sanity check compiler command line: c++ sanitycheckcpp.cc -o sanitycheckcpp.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b f4b2cc2d09/meson-private/sanitycheckcpp.exe
+C++ compiler for the build machine: c++ (gcc 12.1.1 "c++ (GCC) 12.1.1 20220730")
+C++ linker for the build machine: c++ ld.bfd 2.39
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Target machine cpu family: x86_64
+Target machine cpu: x86_64
+[Errno 21] Is a directory: '/home/volker/Sync/git/meson/test cases/cmake/11 cmake_module_path/cmake'
+Unusable script '/home/volker/Sync/git/meson/test cases/cmake/11 cmake_module_path/cmake'
+Program cmake found: YES (/usr/bin/cmake)
+CMake binary for 1 is not cached
+CMake binary missing from cross or native file, or env var undefined.
+Trying a default CMake fallback at cmake
+Found CMake: /usr/bin/cmake (3.23.3)
+Extracting basic cmake information
+CMake Toolchain: Calling CMake once to generate the compiler state
+Calling CMake (['/usr/bin/cmake']) in /home/volker/Sync/git/meson/b f4b2cc2d09/meson-private/__CMake_compiler_info__ with:
+  - "--trace-expand"
+  - "--trace-format=json-v1"
+  - "--no-warn-unused-cli"
+  - "--trace-redirect=cmake_trace.txt"
+  - "-G"
+  - "Ninja"
+  - "-DCMAKE_TOOLCHAIN_FILE=/home/volker/Sync/git/meson/b f4b2cc2d09/meson-private/__CMake_compiler_info__/CMakeMesonTempToolchainFile.cmake"
+  - "."
+Try CMake generator: auto
+Calling CMake (['/usr/bin/cmake']) in /home/volker/Sync/git/meson/b f4b2cc2d09/meson-private/cmake_SomethingLikePython with:
+  - "--trace-expand"
+  - "--trace-format=json-v1"
+  - "--no-warn-unused-cli"
+  - "--trace-redirect=cmake_trace.txt"
+  - "-DCMAKE_TOOLCHAIN_FILE=/home/volker/Sync/git/meson/b f4b2cc2d09/meson-private/cmake_SomethingLikePython/CMakeMesonToolchainFile.cmake"
+  - "."
+  -- Module search paths:    ['/', '/opt', '/usr', '/usr/local']
+  -- CMake root:             /usr/share/cmake
+  -- CMake architectures:    ['libpyldb-util.cpython-310-x86-64-linux-gnu.so', 'libpyldb-util.cpython-310-x86-64-linux-gnu.so.2', 'libpyldb-util.cpython-310-x86-64-linux-gnu.so.2.5.2', 'libpyside2.cpython-310-x86_64-linux-gnu.so', 'libpyside2.cpython-310-x86_64-linux-gnu.so.5.15', 'libpyside2.cpython-310-x86_64-linux-gnu.so.5.15.5', 'libpytalloc-util.cpython-310-x86-64-linux-gnu.so', 'libpytalloc-util.cpython-310-x86-64-linux-gnu.so.2', 'libpytalloc-util.cpython-310-x86-64-linux-gnu.so.2.3.4', 'libsamba-policy.cpython-310-x86-64-linux-gnu.so', 'libsamba-policy.cpython-310-x86-64-linux-gnu.so.0', 'libsamba-policy.cpython-310-x86-64-linux-gnu.so.0.0.1', 'libshiboken2.cpython-310-x86_64-linux-gnu.so', 'libshiboken2.cpython-310-x86_64-linux-gnu.so.5.15', 'libshiboken2.cpython-310-x86_64-linux-gnu.so.5.15.5']
+  -- CMake lib search paths: ['lib', 'lib32', 'lib64', 'libx32', 'share', 'lib/libpyldb-util.cpython-310-x86-64-linux-gnu.so', 'lib/libpyldb-util.cpython-310-x86-64-linux-gnu.so.2', 'lib/libpyldb-util.cpython-310-x86-64-linux-gnu.so.2.5.2', 'lib/libpyside2.cpython-310-x86_64-linux-gnu.so', 'lib/libpyside2.cpython-310-x86_64-linux-gnu.so.5.15', 'lib/libpyside2.cpython-310-x86_64-linux-gnu.so.5.15.5', 'lib/libpytalloc-util.cpython-310-x86-64-linux-gnu.so', 'lib/libpytalloc-util.cpython-310-x86-64-linux-gnu.so.2', 'lib/libpytalloc-util.cpython-310-x86-64-linux-gnu.so.2.3.4', 'lib/libsamba-policy.cpython-310-x86-64-linux-gnu.so', 'lib/libsamba-policy.cpython-310-x86-64-linux-gnu.so.0', 'lib/libsamba-policy.cpython-310-x86-64-linux-gnu.so.0.0.1', 'lib/libshiboken2.cpython-310-x86_64-linux-gnu.so', 'lib/libshiboken2.cpython-310-x86_64-linux-gnu.so.5.15', 'lib/libshiboken2.cpython-310-x86_64-linux-gnu.so.5.15.5']
+
+Determining dependency 'SomethingLikePython' with CMake executable '/usr/bin/cmake'
+Try CMake generator: auto
+Calling CMake (['/usr/bin/cmake']) in /home/volker/Sync/git/meson/b f4b2cc2d09/meson-private/cmake_SomethingLikePython with:
+  - "-DNAME=SomethingLikePython"
+  - "-DARCHS=libpyldb-util.cpython-310-x86-64-linux-gnu.so;libpyldb-util.cpython-310-x86-64-linux-gnu.so.2;libpyldb-util.cpython-310-x86-64-linux-gnu.so.2.5.2;libpyside2.cpython-310-x86_64-linux-gnu.so;libpyside2.cpython-310-x86_64-linux-gnu.so.5.15;libpyside2.cpython-310-x86_64-linux-gnu.so.5.15.5;libpytalloc-util.cpython-310-x86-64-linux-gnu.so;libpytalloc-util.cpython-310-x86-64-linux-gnu.so.2;libpytalloc-util.cpython-310-x86-64-linux-gnu.so.2.3.4;libsamba-policy.cpython-310-x86-64-linux-gnu.so;libsamba-policy.cpython-310-x86-64-linux-gnu.so.0;libsamba-policy.cpython-310-x86-64-linux-gnu.so.0.0.1;libshiboken2.cpython-310-x86_64-linux-gnu.so;libshiboken2.cpython-310-x86_64-linux-gnu.so.5.15;libshiboken2.cpython-310-x86_64-linux-gnu.so.5.15.5"
+  - "-DVERSION="
+  - "-DCOMPS="
+  - "-DCMAKE_MODULE_PATH=/home/volker/Sync/git/meson/test cases/cmake/11 cmake_module_path/cmake"
+  - "--trace-expand"
+  - "--trace-format=json-v1"
+  - "--no-warn-unused-cli"
+  - "--trace-redirect=cmake_trace.txt"
+  - "-DCMAKE_TOOLCHAIN_FILE=/home/volker/Sync/git/meson/b f4b2cc2d09/meson-private/cmake_SomethingLikePython/CMakeMesonToolchainFile.cmake"
+  - "."
+CMake TARGET:
+  -- name:      Python::Interpreter
+  -- type:      EXECUTABLE
+  -- imported:  True
+  -- properties: {
+      'IMPORTED_LOCATION': ['/usr/bin/python3.10']
+     }
+  -- tline: CMake TRACE: /usr/share/cmake/Modules/FindPython/Support.cmake:3204 add_executable(['Python::Interpreter', 'IMPORTED'])
+Include Dirs:         []
+Compiler Options:     []
+Libraries:            ['/usr/bin/python3.10']
+Run-time dependency somethinglikepython (modules: Python::Interpreter) found: YES
+CMake binary for 1 is cached.
+
+Determining dependency 'SomethingLikePython' with CMake executable '/usr/bin/cmake'
+Try CMake generator: auto
+Calling CMake (['/usr/bin/cmake']) in /home/volker/Sync/git/meson/b f4b2cc2d09/meson-private/cmake_SomethingLikePython with:
+  - "-DNAME=SomethingLikePython"
+  - "-DARCHS=libpyldb-util.cpython-310-x86-64-linux-gnu.so;libpyldb-util.cpython-310-x86-64-linux-gnu.so.2;libpyldb-util.cpython-310-x86-64-linux-gnu.so.2.5.2;libpyside2.cpython-310-x86_64-linux-gnu.so;libpyside2.cpython-310-x86_64-linux-gnu.so.5.15;libpyside2.cpython-310-x86_64-linux-gnu.so.5.15.5;libpytalloc-util.cpython-310-x86-64-linux-gnu.so;libpytalloc-util.cpython-310-x86-64-linux-gnu.so.2;libpytalloc-util.cpython-310-x86-64-linux-gnu.so.2.3.4;libsamba-policy.cpython-310-x86-64-linux-gnu.so;libsamba-policy.cpython-310-x86-64-linux-gnu.so.0;libsamba-policy.cpython-310-x86-64-linux-gnu.so.0.0.1;libshiboken2.cpython-310-x86_64-linux-gnu.so;libshiboken2.cpython-310-x86_64-linux-gnu.so.5.15;libshiboken2.cpython-310-x86_64-linux-gnu.so.5.15.5"
+  - "-DVERSION="
+  - "-DCOMPS="
+  - "-DCMAKE_MODULE_PATH=/home/volker/Sync/git/meson/test cases/cmake/11 cmake_module_path/doesNotExist;/home/volker/Sync/git/meson/test cases/cmake/11 cmake_module_path/cmake"
+  - "--trace-expand"
+  - "--trace-format=json-v1"
+  - "--no-warn-unused-cli"
+  - "--trace-redirect=cmake_trace.txt"
+  - "-DCMAKE_TOOLCHAIN_FILE=/home/volker/Sync/git/meson/b f4b2cc2d09/meson-private/cmake_SomethingLikePython/CMakeMesonToolchainFile.cmake"
+  - "."
+CMake TARGET:
+  -- name:      Python::Interpreter
+  -- type:      EXECUTABLE
+  -- imported:  True
+  -- properties: {
+      'IMPORTED_LOCATION': ['/usr/bin/python3.10']
+     }
+  -- tline: CMake TRACE: /usr/share/cmake/Modules/FindPython/Support.cmake:3204 add_executable(['Python::Interpreter', 'IMPORTED'])
+Include Dirs:         []
+Compiler Options:     []
+Libraries:            ['/usr/bin/python3.10']
+Run-time dependency somethinglikepython (modules: Python::Interpreter) found: YES
+
+Executing subproject cmMod method cmake 
+
+CMake binary for 0 is cached.
+
+Configuring the build directory with CMake version 3.23.3
+Running CMake with: -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_MODULE_PATH=/home/volker/Sync/git/meson/test cases/cmake/11 cmake_module_path/cmake
+  - build directory:          /home/volker/Sync/git/meson/b f4b2cc2d09/subprojects/cmMod/__CMake_build
+  - source directory:         /home/volker/Sync/git/meson/test cases/cmake/11 cmake_module_path/subprojects/cmMod
+  - toolchain file:           /home/volker/Sync/git/meson/b f4b2cc2d09/subprojects/cmMod/__CMake_build/CMakeMesonToolchainFile.cmake
+  - preload file:             /home/volker/Sync/git/meson/mesonbuild/cmake/data/preload.cmake
+  - trace args:               --trace-expand --trace-format=json-v1 --no-warn-unused-cli --trace-redirect=cmake_trace.txt
+  - disabled policy warnings: [CMP0025, CMP0047, CMP0056, CMP0060, CMP0065, CMP0066, CMP0067, CMP0082, CMP0089, CMP0102]
+
+Calling CMake (['/usr/bin/cmake']) in /home/volker/Sync/git/meson/b f4b2cc2d09/subprojects/cmMod/__CMake_build with:
+  - "-G"
+  - "Ninja"
+  - "-DCMAKE_INSTALL_PREFIX=/usr"
+  - "-DCMAKE_MODULE_PATH=/home/volker/Sync/git/meson/test cases/cmake/11 cmake_module_path/cmake"
+  - "--trace-expand"
+  - "--trace-format=json-v1"
+  - "--no-warn-unused-cli"
+  - "--trace-redirect=cmake_trace.txt"
+  - "-DCMAKE_POLICY_WARNING_CMP0025=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0047=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0056=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0060=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0065=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0066=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0067=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0082=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0089=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0102=OFF"
+  - "-DCMAKE_TOOLCHAIN_FILE=/home/volker/Sync/git/meson/b f4b2cc2d09/subprojects/cmMod/__CMake_build/CMakeMesonToolchainFile.cmake"
+  - "-DMESON_PRELOAD_FILE=/home/volker/Sync/git/meson/mesonbuild/cmake/data/preload.cmake"
+  - "/home/volker/Sync/git/meson/test cases/cmake/11 cmake_module_path/subprojects/cmMod"
+Running with expanded trace output on.
+Not searching for unused variables given on the command line.
+Trace will be written to cmake_trace.txt
+-- The C compiler identification is GNU 12.1.1
+-- The CXX compiler identification is GNU 12.1.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- CMAKE_MODULE_PATH: '/home/volker/Sync/git/meson/test cases/cmake/11 cmake_module_path/cmake'
+-- Found Python: /usr/bin/python3.10 (found version "3.10.5") found components: Interpreter 
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/volker/Sync/git/meson/b f4b2cc2d09/subprojects/cmMod/__CMake_build
+
+CMake configuration: SUCCEEDED
+ 
+
+Traceback (most recent call last):
+  File "/home/volker/Sync/git/meson/run_tests.py", line 305, in run_configure_inprocess
+    returncode = mesonmain.run(commandlist, get_meson_script())
+  File "/home/volker/Sync/git/meson/mesonbuild/mesonmain.py", line 257, in run
+    return CommandLineParser().run(args)
+  File "/home/volker/Sync/git/meson/mesonbuild/mesonmain.py", line 153, in run
+    return options.run_func(options)
+  File "/home/volker/Sync/git/meson/mesonbuild/msetup.py", line 303, in run
+    app.generate()
+  File "/home/volker/Sync/git/meson/mesonbuild/msetup.py", line 186, in generate
+    self._generate(env)
+  File "/home/volker/Sync/git/meson/mesonbuild/msetup.py", line 230, in _generate
+    intr.run()
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 2867, in run
+    super().run()
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 154, in run
+    self.evaluate_codeblock(self.ast, start=1)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 179, in evaluate_codeblock
+    raise e
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 172, in evaluate_codeblock
+    self.evaluate_statement(cur)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 187, in evaluate_statement
+    self.assignment(cur)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 579, in assignment
+    value = self.evaluate_statement(node.value)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 189, in evaluate_statement
+    return self.method_call(cur)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 495, in method_call
+    res = obj.method_call(method_name, args, kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreterobjects.py", line 747, in method_call
+    ret = method(state, args, kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/decorators.py", line 672, in wrapped
+    return f(*wrapped_args, **wrapped_kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/decorators.py", line 277, in wrapper
+    return f(*nargs, **wrapped_kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/decorators.py", line 580, in wrapper
+    return f(*wrapped_args, **wrapped_kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/modules/cmake.py", line 440, in subproject
+    subp = self.interpreter.do_subproject(dirname, 'cmake', kw)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 963, in do_subproject
+    raise e
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 949, in do_subproject
+    return self._do_subproject_cmake(subp_name, subdir, subdir_abs, default_options, kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 1028, in _do_subproject_cmake
+    cm_int.analyse()
+  File "/home/volker/Sync/git/meson/mesonbuild/cmake/interpreter.py", line 893, in analyse
+    self.trace.parse(self.cmake_stderr)
+  File "/home/volker/Sync/git/meson/mesonbuild/cmake/traceparser.py", line 285, in parse
+    assert(ctgt.working_dir is None or isinstance(ctgt.working_dir, str))
+AssertionError
+ 
+
+
+[31m==================================[0m cmake: 12 generator expressions [31m=================================[0m
+ 
+
+The Meson build system
+Version: 0.63.99
+Source dir: /home/volker/Sync/git/meson/test cases/cmake/12 generator expressions
+Build dir: /home/volker/Sync/git/meson/b dc0df45464
+Build type: native build
+Project name: cmakeSubTest
+Project version: undefined
+C compiler for the host machine: cc (gcc 12.1.1 "cc (GCC) 12.1.1 20220730")
+C linker for the host machine: cc ld.bfd 2.39
+C++ compiler for the host machine: c++ (gcc 12.1.1 "c++ (GCC) 12.1.1 20220730")
+C++ linker for the host machine: c++ ld.bfd 2.39
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+
+Executing subproject cmMod method cmake 
+
+
+| Configuring the build directory with CMake version 3.23.3
+| Running CMake with: -G Ninja -DCMAKE_INSTALL_PREFIX=/usr
+| - build directory:          /home/volker/Sync/git/meson/b dc0df45464/subprojects/cmMod/__CMake_build
+| - source directory:         /home/volker/Sync/git/meson/test cases/cmake/12 generator expressions/subprojects/cmMod
+| - toolchain file:           /home/volker/Sync/git/meson/b dc0df45464/subprojects/cmMod/__CMake_build/CMakeMesonToolchainFile.cmake
+| - preload file:             /home/volker/Sync/git/meson/mesonbuild/cmake/data/preload.cmake
+| - trace args:               --trace-expand --trace-format=json-v1 --no-warn-unused-cli --trace-redirect=cmake_trace.txt
+| - disabled policy warnings: [CMP0025, CMP0047, CMP0056, CMP0060, CMP0065, CMP0066, CMP0067, CMP0082, CMP0089, CMP0102]
+
+| Running with expanded trace output on.
+| Not searching for unused variables given on the command line.
+| Trace will be written to cmake_trace.txt
+| -- The C compiler identification is GNU 12.1.1
+| -- The CXX compiler identification is GNU 12.1.1
+| -- Detecting C compiler ABI info
+| -- Detecting C compiler ABI info - done
+| -- Check for working C compiler: /usr/bin/cc - skipped
+| -- Detecting C compile features
+| -- Detecting C compile features - done
+| -- Detecting CXX compiler ABI info
+| -- Detecting CXX compiler ABI info - done
+| -- Check for working CXX compiler: /usr/bin/c++ - skipped
+| -- Detecting CXX compile features
+| -- Detecting CXX compile features - done
+| -- Configuring done
+| -- Generating done
+| -- Build files have been written to: /home/volker/Sync/git/meson/b dc0df45464/subprojects/cmMod/__CMake_build
+
+cmMod| CMake configuration: SUCCEEDED
+cmMod| WARNING: CMake: path /home/volker/Sync/git/meson/test cases/cmake/12 generator expressions/subprojects/cmMod/$<BUILD_INTERFACE:/home/volker/Sync/git/meson/test cases/cmake/12 generator expressions/subprojects/cmMod/include> does not exist.
+cmMod| WARNING:  --> Ignoring. This can lead to build errors.
+cmMod| WARNING: CMake: path /home/volker/Sync/git/meson/test cases/cmake/12 generator expressions/subprojects/cmMod/$<INSTALL_INTERFACE:include> does not exist.
+cmMod| WARNING:  --> Ignoring. This can lead to build errors.
+cmMod| CMake project cmMod has 1 build targets.
+
+cmake-ast| Processing generated meson AST
+cmake-ast| Build file: /home/volker/Sync/git/meson/b dc0df45464/subprojects/cmMod/meson.build
+
+cmMod| Project name: cmMod
+cmMod| Project version: undefined
+cmMod| Build targets in project: 0
+cmMod| Subproject cmMod finished.
+
+
+Build targets in project: 1
+
+cmakeSubTest undefined
+
+  Subprojects
+    cmMod  : YES
+
+  User defined options
+    backend: ninja
+    libdir : lib
+    prefix : /usr
+
+Found ninja-1.11.0 at /usr/bin/ninja
+[1/2] Compiling C++ object main.p/main.cpp.o
+FAILED: main.p/main.cpp.o 
+c++ -Imain.p -I. '-I../test cases/cmake/12 generator expressions' -Isubprojects/cmMod/__CMake_build '-I../test cases/cmake/12 generator expressions/subprojects/cmMod/__CMake_build' -Isubprojects/cmMod '-I../test cases/cmake/12 generator expressions/subprojects/cmMod' -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wnon-virtual-dtor -O0 -g '$<$<AND:$<CONFIG:Release>,$<CONFIG:Debug>>:-DCMAKE_FLAG_ERROR_A>' '$<$<AND:1,$<STREQUAL:asd,$<LOWER_CASE:AsD>>,$<NOT:$<EQUAL:4,2>>>:-DCMAKE_FLAG_REQUIRED_B>' '$<$<VERSION_LESS:1.2.3,2.1.0>:-DCMAKE_FLAG_REQUIRED_C>' '$<IF:$<NOT:$<BOOL:OFF>>,-DCMAKE_TRUE_FLAG,-DCMAKE_FALSE_FLAG>' '$<IF:$<TARGET_EXISTS:cmModLib>,-DCMAKE_TGT_EXISTS,-DCMAKE_TGT_NEXISTS>' '$<IF:$<TARGET_PROPERTY:IMPORTED_NO_SONAME>,-DCMAKE_PROP1_OK,-DCMAKE_PROP1_ERROR>' '$<IF:$<TARGET_PROPERTY:cmModLib,IMPORT_SUFFIX>,-DCMAKE_PROP2_ERROR,-DCMAKE_PROP2_OK>' '-DCMAKE_COMPILER_DEFINE_STR="compDef"' -DCMAKE_FLAG_REQUIRED_A -MD -MQ main.p/main.cpp.o -MF main.p/main.cpp.o.d -o main.p/main.cpp.o -c '../test cases/cmake/12 generator expressions/main.cpp'
+../test cases/cmake/12 generator expressions/main.cpp:2:10: fatal error: cmMod.hpp: No such file or directory
+    2 | #include <cmMod.hpp>
+      |          ^~~~~~~~~~~
+compilation terminated.
+ninja: build stopped: subcommand failed.
+ 
+
+Generating targets:   0%|                                                     | 0/1 [00:00<?, ?it/s]                                                                                                    Writing build.ninja:   0%|                                                   | 0/32 [00:00<?, ?it/s]                                                                                                    ninja explain: deps for 'main.p/main.cpp.o' are missing
+ninja explain: main.p/main.cpp.o is dirty
+ninja explain: main is dirty
+ninja explain: meson-test-prereq is dirty
+ninja explain: output meson-benchmark-prereq of phony edge with no inputs doesn't exist
+ninja explain: meson-benchmark-prereq is dirty
+ninja explain: main is dirty
+ 
+
+
+[31m=================================[0m cmake: 15 object library advanced [31m================================[0m
+ 
+
+Build started at 2022-08-17T18:56:04.571612
+Main binary: /usr/bin/python3
+Build Options: -Dprefix=/usr -Dlibdir=lib -Dbackend=ninja
+Python system: Linux
+The Meson build system
+Version: 0.63.99
+Source dir: /home/volker/Sync/git/meson/test cases/cmake/15 object library advanced
+Build dir: /home/volker/Sync/git/meson/b db046beeb4
+Build type: native build
+Project name: cmake_object_lib_test
+Project version: undefined
+-----
+Detecting compiler via: c++ --version
+compiler returned <Popen: returncode: 0 args: ['c++', '--version']>
+compiler stdout:
+c++ (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: c++ -E -dM -
+-----
+Detecting linker via: c++ -Wl,--version
+linker returned <Popen: returncode: 0 args: ['c++', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccgM8SHG.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C++ compiler: c++
+Is cross compiler: False.
+Sanity check compiler command line: c++ sanitycheckcpp.cc -o sanitycheckcpp.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b db046beeb4/meson-private/sanitycheckcpp.exe
+C++ compiler for the host machine: c++ (gcc 12.1.1 "c++ (GCC) 12.1.1 20220730")
+C++ linker for the host machine: c++ ld.bfd 2.39
+-----
+Detecting compiler via: c++ --version
+compiler returned <Popen: returncode: 0 args: ['c++', '--version']>
+compiler stdout:
+c++ (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: c++ -E -dM -
+-----
+Detecting linker via: c++ -Wl,--version
+linker returned <Popen: returncode: 0 args: ['c++', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/cce6n8fV.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C++ compiler: c++
+Is cross compiler: False.
+Sanity check compiler command line: c++ sanitycheckcpp.cc -o sanitycheckcpp.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b db046beeb4/meson-private/sanitycheckcpp.exe
+C++ compiler for the build machine: c++ (gcc 12.1.1 "c++ (GCC) 12.1.1 20220730")
+C++ linker for the build machine: c++ ld.bfd 2.39
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Target machine cpu family: x86_64
+Target machine cpu: x86_64
+
+Executing subproject cmObjLib method cmake 
+
+CMake binary for 0 is cached.
+
+Configuring the build directory with CMake version 3.23.3
+Running CMake with: -G Ninja -DCMAKE_INSTALL_PREFIX=/usr
+  - build directory:          /home/volker/Sync/git/meson/b db046beeb4/subprojects/cmObjLib/__CMake_build
+  - source directory:         /home/volker/Sync/git/meson/test cases/cmake/15 object library advanced/subprojects/cmObjLib
+  - toolchain file:           /home/volker/Sync/git/meson/b db046beeb4/subprojects/cmObjLib/__CMake_build/CMakeMesonToolchainFile.cmake
+  - preload file:             /home/volker/Sync/git/meson/mesonbuild/cmake/data/preload.cmake
+  - trace args:               --trace-expand --trace-format=json-v1 --no-warn-unused-cli --trace-redirect=cmake_trace.txt
+  - disabled policy warnings: [CMP0025, CMP0047, CMP0056, CMP0060, CMP0065, CMP0066, CMP0067, CMP0082, CMP0089, CMP0102]
+
+Calling CMake (['/usr/bin/cmake']) in /home/volker/Sync/git/meson/b db046beeb4/subprojects/cmObjLib/__CMake_build with:
+  - "-G"
+  - "Ninja"
+  - "-DCMAKE_INSTALL_PREFIX=/usr"
+  - "--trace-expand"
+  - "--trace-format=json-v1"
+  - "--no-warn-unused-cli"
+  - "--trace-redirect=cmake_trace.txt"
+  - "-DCMAKE_POLICY_WARNING_CMP0025=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0047=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0056=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0060=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0065=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0066=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0067=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0082=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0089=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0102=OFF"
+  - "-DCMAKE_TOOLCHAIN_FILE=/home/volker/Sync/git/meson/b db046beeb4/subprojects/cmObjLib/__CMake_build/CMakeMesonToolchainFile.cmake"
+  - "-DMESON_PRELOAD_FILE=/home/volker/Sync/git/meson/mesonbuild/cmake/data/preload.cmake"
+  - "/home/volker/Sync/git/meson/test cases/cmake/15 object library advanced/subprojects/cmObjLib"
+Running with expanded trace output on.
+Not searching for unused variables given on the command line.
+Trace will be written to cmake_trace.txt
+-- The CXX compiler identification is GNU 12.1.1
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/volker/Sync/git/meson/b db046beeb4/subprojects/cmObjLib/__CMake_build
+
+CMake configuration: SUCCEEDED
+CMake trace warning: add_library() OBJECT libraries are not supported
+CMake TRACE: /home/volker/Sync/git/meson/test cases/cmake/15 object library advanced/subprojects/cmObjLib/CMakeLists.txt:14 add_library(['lib_obj', 'OBJECT', 'libA.cpp', 'libB.cpp', '/home/volker/Sync/git/meson/b db046beeb4/subprojects/cmObjLib/__CMake_build/libC.cpp', '/home/volker/Sync/git/meson/b db046beeb4/subprojects/cmObjLib/__CMake_build/libC.hpp'])
+CMake trace warning: target_compile_definitions() TARGET lib_obj not found
+CMake TRACE: /home/volker/Sync/git/meson/test cases/cmake/15 object library advanced/subprojects/cmObjLib/CMakeLists.txt:18 target_compile_definitions(['lib_obj', 'PRIVATE', '-DBUILD_AS_OBJ=1'])
+ 
+
+Traceback (most recent call last):
+  File "/home/volker/Sync/git/meson/run_tests.py", line 305, in run_configure_inprocess
+    returncode = mesonmain.run(commandlist, get_meson_script())
+  File "/home/volker/Sync/git/meson/mesonbuild/mesonmain.py", line 257, in run
+    return CommandLineParser().run(args)
+  File "/home/volker/Sync/git/meson/mesonbuild/mesonmain.py", line 153, in run
+    return options.run_func(options)
+  File "/home/volker/Sync/git/meson/mesonbuild/msetup.py", line 303, in run
+    app.generate()
+  File "/home/volker/Sync/git/meson/mesonbuild/msetup.py", line 186, in generate
+    self._generate(env)
+  File "/home/volker/Sync/git/meson/mesonbuild/msetup.py", line 230, in _generate
+    intr.run()
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 2867, in run
+    super().run()
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 154, in run
+    self.evaluate_codeblock(self.ast, start=1)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 179, in evaluate_codeblock
+    raise e
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 172, in evaluate_codeblock
+    self.evaluate_statement(cur)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 187, in evaluate_statement
+    self.assignment(cur)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 579, in assignment
+    value = self.evaluate_statement(node.value)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 189, in evaluate_statement
+    return self.method_call(cur)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 495, in method_call
+    res = obj.method_call(method_name, args, kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreterobjects.py", line 747, in method_call
+    ret = method(state, args, kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/decorators.py", line 672, in wrapped
+    return f(*wrapped_args, **wrapped_kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/decorators.py", line 277, in wrapper
+    return f(*nargs, **wrapped_kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/decorators.py", line 580, in wrapper
+    return f(*wrapped_args, **wrapped_kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/modules/cmake.py", line 440, in subproject
+    subp = self.interpreter.do_subproject(dirname, 'cmake', kw)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 963, in do_subproject
+    raise e
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 949, in do_subproject
+    return self._do_subproject_cmake(subp_name, subdir, subdir_abs, default_options, kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 1028, in _do_subproject_cmake
+    cm_int.analyse()
+  File "/home/volker/Sync/git/meson/mesonbuild/cmake/interpreter.py", line 893, in analyse
+    self.trace.parse(self.cmake_stderr)
+  File "/home/volker/Sync/git/meson/mesonbuild/cmake/traceparser.py", line 285, in parse
+    assert(ctgt.working_dir is None or isinstance(ctgt.working_dir, str))
+AssertionError
+ 
+
+
+[31m===================================[0m cmake: 18 skip include files [31m===================================[0m
+ 
+
+Build started at 2022-08-17T18:56:10.223662
+Main binary: /usr/bin/python3
+Build Options: -Dprefix=/usr -Dlibdir=lib -Dbackend=ninja
+Python system: Linux
+The Meson build system
+Version: 0.63.99
+Source dir: /home/volker/Sync/git/meson/test cases/cmake/18 skip include files
+Build dir: /home/volker/Sync/git/meson/b d7cb25745f
+Build type: native build
+Project name: cmakeSubTest
+Project version: undefined
+-----
+Detecting compiler via: cc --version
+compiler returned <Popen: returncode: 0 args: ['cc', '--version']>
+compiler stdout:
+cc (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: cc -E -dM -
+-----
+Detecting linker via: cc -Wl,--version
+linker returned <Popen: returncode: 0 args: ['cc', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccfzxIUj.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C compiler: cc
+Is cross compiler: False.
+Sanity check compiler command line: cc sanitycheckc.c -o sanitycheckc.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b d7cb25745f/meson-private/sanitycheckc.exe
+C compiler for the host machine: cc (gcc 12.1.1 "cc (GCC) 12.1.1 20220730")
+C linker for the host machine: cc ld.bfd 2.39
+-----
+Detecting compiler via: c++ --version
+compiler returned <Popen: returncode: 0 args: ['c++', '--version']>
+compiler stdout:
+c++ (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: c++ -E -dM -
+-----
+Detecting linker via: c++ -Wl,--version
+linker returned <Popen: returncode: 0 args: ['c++', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccl1AH8f.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C++ compiler: c++
+Is cross compiler: False.
+Sanity check compiler command line: c++ sanitycheckcpp.cc -o sanitycheckcpp.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b d7cb25745f/meson-private/sanitycheckcpp.exe
+C++ compiler for the host machine: c++ (gcc 12.1.1 "c++ (GCC) 12.1.1 20220730")
+C++ linker for the host machine: c++ ld.bfd 2.39
+-----
+Detecting compiler via: cc --version
+compiler returned <Popen: returncode: 0 args: ['cc', '--version']>
+compiler stdout:
+cc (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: cc -E -dM -
+-----
+Detecting linker via: cc -Wl,--version
+linker returned <Popen: returncode: 0 args: ['cc', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccm3NbnX.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C compiler: cc
+Is cross compiler: False.
+Sanity check compiler command line: cc sanitycheckc.c -o sanitycheckc.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b d7cb25745f/meson-private/sanitycheckc.exe
+C compiler for the build machine: cc (gcc 12.1.1 "cc (GCC) 12.1.1 20220730")
+C linker for the build machine: cc ld.bfd 2.39
+-----
+Detecting compiler via: c++ --version
+compiler returned <Popen: returncode: 0 args: ['c++', '--version']>
+compiler stdout:
+c++ (GCC) 12.1.1 20220730
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+compiler stderr:
+
+Running command: c++ -E -dM -
+-----
+Detecting linker via: c++ -Wl,--version
+linker returned <Popen: returncode: 0 args: ['c++', '-Wl,--version']>
+linker stdout:
+GNU ld (GNU Binutils) 2.39
+Copyright (C) 2022 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or (at your option) a later version.
+This program has absolutely no warranty.
+
+linker stderr:
+collect2 version 12.1.1 20220730
+/usr/bin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccWn9xhH.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../.. --version -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/12.1.1/../../../../lib/crtn.o
+
+Sanity testing C++ compiler: c++
+Is cross compiler: False.
+Sanity check compiler command line: c++ sanitycheckcpp.cc -o sanitycheckcpp.exe -D_FILE_OFFSET_BITS=64
+Sanity check compile stdout:
+
+-----
+Sanity check compile stderr:
+
+-----
+Running test binary command: /home/volker/Sync/git/meson/b d7cb25745f/meson-private/sanitycheckcpp.exe
+C++ compiler for the build machine: c++ (gcc 12.1.1 "c++ (GCC) 12.1.1 20220730")
+C++ linker for the build machine: c++ ld.bfd 2.39
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Target machine cpu family: x86_64
+Target machine cpu: x86_64
+
+Executing subproject cmMod method cmake 
+
+CMake binary for 0 is cached.
+
+Configuring the build directory with CMake version 3.23.3
+Running CMake with: -G Ninja -DCMAKE_INSTALL_PREFIX=/usr
+  - build directory:          /home/volker/Sync/git/meson/b d7cb25745f/subprojects/cmMod/__CMake_build
+  - source directory:         /home/volker/Sync/git/meson/test cases/cmake/18 skip include files/subprojects/cmMod
+  - toolchain file:           /home/volker/Sync/git/meson/b d7cb25745f/subprojects/cmMod/__CMake_build/CMakeMesonToolchainFile.cmake
+  - preload file:             /home/volker/Sync/git/meson/mesonbuild/cmake/data/preload.cmake
+  - trace args:               --trace-expand --trace-format=json-v1 --no-warn-unused-cli --trace-redirect=cmake_trace.txt
+  - disabled policy warnings: [CMP0025, CMP0047, CMP0056, CMP0060, CMP0065, CMP0066, CMP0067, CMP0082, CMP0089, CMP0102]
+
+Calling CMake (['/usr/bin/cmake']) in /home/volker/Sync/git/meson/b d7cb25745f/subprojects/cmMod/__CMake_build with:
+  - "-G"
+  - "Ninja"
+  - "-DCMAKE_INSTALL_PREFIX=/usr"
+  - "--trace-expand"
+  - "--trace-format=json-v1"
+  - "--no-warn-unused-cli"
+  - "--trace-redirect=cmake_trace.txt"
+  - "-DCMAKE_POLICY_WARNING_CMP0025=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0047=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0056=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0060=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0065=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0066=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0067=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0082=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0089=OFF"
+  - "-DCMAKE_POLICY_WARNING_CMP0102=OFF"
+  - "-DCMAKE_TOOLCHAIN_FILE=/home/volker/Sync/git/meson/b d7cb25745f/subprojects/cmMod/__CMake_build/CMakeMesonToolchainFile.cmake"
+  - "-DMESON_PRELOAD_FILE=/home/volker/Sync/git/meson/mesonbuild/cmake/data/preload.cmake"
+  - "/home/volker/Sync/git/meson/test cases/cmake/18 skip include files/subprojects/cmMod"
+Running with expanded trace output on.
+Not searching for unused variables given on the command line.
+Trace will be written to cmake_trace.txt
+-- The C compiler identification is GNU 12.1.1
+-- The CXX compiler identification is GNU 12.1.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY
+-- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY - Success
+-- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY
+-- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY - Success
+-- Performing Test COMPILER_HAS_DEPRECATED_ATTR
+-- Performing Test COMPILER_HAS_DEPRECATED_ATTR - Success
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/volker/Sync/git/meson/b d7cb25745f/subprojects/cmMod/__CMake_build
+
+CMake configuration: SUCCEEDED
+ 
+
+Traceback (most recent call last):
+  File "/home/volker/Sync/git/meson/run_tests.py", line 305, in run_configure_inprocess
+    returncode = mesonmain.run(commandlist, get_meson_script())
+  File "/home/volker/Sync/git/meson/mesonbuild/mesonmain.py", line 257, in run
+    return CommandLineParser().run(args)
+  File "/home/volker/Sync/git/meson/mesonbuild/mesonmain.py", line 153, in run
+    return options.run_func(options)
+  File "/home/volker/Sync/git/meson/mesonbuild/msetup.py", line 303, in run
+    app.generate()
+  File "/home/volker/Sync/git/meson/mesonbuild/msetup.py", line 186, in generate
+    self._generate(env)
+  File "/home/volker/Sync/git/meson/mesonbuild/msetup.py", line 230, in _generate
+    intr.run()
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 2867, in run
+    super().run()
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 154, in run
+    self.evaluate_codeblock(self.ast, start=1)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 179, in evaluate_codeblock
+    raise e
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 172, in evaluate_codeblock
+    self.evaluate_statement(cur)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 187, in evaluate_statement
+    self.assignment(cur)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 579, in assignment
+    value = self.evaluate_statement(node.value)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 189, in evaluate_statement
+    return self.method_call(cur)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/interpreterbase.py", line 495, in method_call
+    res = obj.method_call(method_name, args, kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreterobjects.py", line 747, in method_call
+    ret = method(state, args, kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/decorators.py", line 672, in wrapped
+    return f(*wrapped_args, **wrapped_kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/decorators.py", line 277, in wrapper
+    return f(*nargs, **wrapped_kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreterbase/decorators.py", line 580, in wrapper
+    return f(*wrapped_args, **wrapped_kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/modules/cmake.py", line 440, in subproject
+    subp = self.interpreter.do_subproject(dirname, 'cmake', kw)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 963, in do_subproject
+    raise e
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 949, in do_subproject
+    return self._do_subproject_cmake(subp_name, subdir, subdir_abs, default_options, kwargs)
+  File "/home/volker/Sync/git/meson/mesonbuild/interpreter/interpreter.py", line 1028, in _do_subproject_cmake
+    cm_int.analyse()
+  File "/home/volker/Sync/git/meson/mesonbuild/cmake/interpreter.py", line 893, in analyse
+    self.trace.parse(self.cmake_stderr)
+  File "/home/volker/Sync/git/meson/mesonbuild/cmake/traceparser.py", line 256, in parse
+    assert(isinstance(x, str))
+  File "/home/volker/Sync/git/meson/mesonbuild/cmake/traceparser.py", line 256, in parse
+    assert(isinstance(x, str))
+  File "/usr/lib/python3.10/bdb.py", line 90, in trace_dispatch
+    return self.dispatch_line(frame)
+  File "/usr/lib/python3.10/bdb.py", line 115, in dispatch_line
+    if self.quitting: raise BdbQuit
+bdb.BdbQuit
+ 
+

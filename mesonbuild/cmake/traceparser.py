@@ -16,7 +16,7 @@
 # or an interpreter-based tool.
 
 from .common import CMakeException
-from .generator import CmgeParser
+from .generator import Cmge
 from .. import mlog
 from ..mesonlib import version_compare
 from ..mparser import StringNode
@@ -280,10 +280,16 @@ class CMakeTraceParser:
             for a in ctgt._command_str:
                 for b in a:
                     assert ";" not in b # todo can we trigger this?
-            ctgt.command = [[CmgeParser.parse(b) for b in a] for a in ctgt._command_str]
+            ctgt.command = [[Cmge(b) for b in a] for a in ctgt._command_str]
 
-            assert(ctgt.working_dir is None or isinstance(ctgt.working_dir, str))
-            ctgt.working_dir = Path(ctgt.working_dir) if ctgt.working_dir is not None else None
+            if ctgt.working_dir is None:
+                pass
+            elif isinstance(ctgt.working_dir, str):
+                ctgt.working_dir = Path(ctgt.working_dir)
+            elif isinstance(ctgt.working_dir, Path):
+                pass
+            else:
+                raise ValueError
 
         # Postprocess
         for tgt in self.targets.values():

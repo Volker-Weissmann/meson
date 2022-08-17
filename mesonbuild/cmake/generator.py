@@ -45,35 +45,28 @@ class CmgeSpecial:
     args: T.List[CmgeAstNode]
 
 @dataclass
-class CmgeAst:
-    root: CmgeAstNode
+class Cmge:
+    raw: str
+    def to_meson_ast(self, trace: 'CMakeTraceParser') -> BaseNode:
+        ir = CmgeParser.parse(self.raw)
+        return convert_list(ir, trace)
 
-    # todo: remove this function
-    def eval_to_string_now(self) -> str:
-        if len(self.root) != 1 or not isinstance(self.root[0], str):
-            raise NotImplementedError('We cannot evaluate this right now.')
-        return self.root[0]
 
-# This class converts a string to a CmgeAst.
-# The grammar is:
-# expr = { ( plain | special )* }
-# special = { "$<" ~ expr ~ ":" ~ expr ~ ("," ~ expr)* ~ ">" }
-# plain = { ( !("$" | "<" | ">" | ":" | ",") ~ ANY )+ }
-# (https://pest.rs/ has a live editor for this grammar)
+#todo codestyle: this should be a module
 class CmgeParser:
     @staticmethod
-    def parse(src: str) -> 'CmgeAst':
-        ret = CmgeParser.eat_expr(src, 0)
+    def parse(src: str) -> CmgeAstNode:
+        ret = CmgeParser.eat_expr(src, 0, False)
         if ret[0] != len(src):
-            import pdb
-            pdb.set_trace()
             raise MesonBugException('Unable to parse CMake Generator Expression')
-        return CmgeAst(root=ret[1])
+        return ret[1]
 
     @staticmethod
-    def try_eat_plain(src: str, pos: int) -> T.Optional[T.Tuple[int, str]]:
+    def try_eat_plain(src: str, pos: int, depth_greater_zero: bool) -> T.Optional[T.Tuple[int, str]]:
         startpos = pos
-        while(pos < len(src) and not src[pos] in ['$', '<', '>', ':', ',']):
+        while(pos < len(src) and not src[pos:].startswith('$<')):
+            if depth_greater_zero and src[pos] in ['>', ':', ',']:
+                break
             pos += 1
         if pos != startpos:
             return pos, src[startpos:pos]
@@ -85,20 +78,20 @@ class CmgeParser:
         if pos+1 >= len(src) or src[pos:pos+2] != '$<':
             return None
         pos += 2
-        cmd = CmgeParser.eat_expr(src, pos)
+        cmd = CmgeParser.eat_expr(src, pos, True)
         pos = cmd[0]
         if pos >= len(src) or src[pos] != ':':
             return None
         pos += 1
         args = []
-        a = CmgeParser.eat_expr(src, pos)
+        a = CmgeParser.eat_expr(src, pos, True)
         pos = a[0]
         args.append(a[1])
         while True:
             if pos >= len(src) or src[pos] != ',':
                 break
             pos += 1
-            a = CmgeParser.eat_expr(src, pos)
+            a = CmgeParser.eat_expr(src, pos, True)
             pos = a[0]
             args.append(a[1])
         if pos >= len(src) or src[pos] != '>':
@@ -107,61 +100,55 @@ class CmgeParser:
         return pos, CmgeSpecial(cmd=cmd[1], args=args)
 
     @staticmethod
-    def eat_expr(src: str, pos: int) -> T.Tuple[int, CmgeAstNode]:
+    def eat_expr(src: str, pos: int, depth_greater_zero: bool) -> T.Tuple[int, CmgeAstNode]:
         ret: T.List[CmgeSingle] = []
         while True:
-            x = CmgeParser.try_eat_plain(src, pos) or CmgeParser.try_eat_special(src, pos)
+            x = CmgeParser.try_eat_plain(src, pos, depth_greater_zero) or CmgeParser.try_eat_special(src, pos)
             if x is None:
                 return pos, ret
             pos = x[0]
             ret.append(x[1])
 
-# This class converts our Cmge Ast to a corresponding Meson Ast.
-class CmgeToMeson:
-    @staticmethod
-    def convert_ast(this: CmgeAst, trace: 'CMakeTraceParser') -> BaseNode:
-        return CmgeToMeson.convert_list(this.root, trace)
 
-    @staticmethod
-    def token(val) -> Token:
-        return Token('string', 'todo self.subdir.as_posix()', 0, 0, 0, None, val)
 
-    emptyToken = Token('string', 'todo self.subdir.as_posix()', 0, 0, 0, None, '')
 
-    @staticmethod
-    def convert_single(this: CmgeSingle, trace: 'CMakeTraceParser') -> BaseNode:
-        if isinstance(this, CmgeSpecial):
-            if this.cmd == ['IF']:
-                assert(len(this.args) == 3)
-                args = ArgumentNode(self.emptyToken)
-                args.append(this.args[0])
-                args.append(this.args[1])
-                args.append(this.args[2])
-                ret = FunctionNode('todo self.subdir.as_posix()', 0, 0, 'ternary', args)
-            elif this.cmd == ['TARGET_FILE'] :
-                assert(len(this.args) == 1)
-                assert(len(this.args[0]) == 1)
-                assert(isinstance(this.args[0][0], str))
-                exename = this.args[0][0]
-                if trace.targets[exename].imported:
-                    locations = trace.targets[exename].properties['IMPORTED_LOCATION']
-                    assert(len(locations) == 1)
-                    return StringNode(CmgeToMeson.token(locations[0]))
-                else:
-                    ret = MethodNode('todo self.subdir.as_posix()', 0, 0, IdNode(CmgeToMeson.token(exename)), 'full_path', ArgumentNode(self.emptyToken))
-                    return ret
+emptyToken = Token('string', 'todo self.subdir.as_posix()', 0, 0, 0, None, '')
+
+def token(val) -> Token:
+    return Token('string', 'todo self.subdir.as_posix()', 0, 0, 0, None, val)
+
+def convert_single(this: CmgeSingle, trace: 'CMakeTraceParser') -> BaseNode:
+    if isinstance(this, CmgeSpecial):
+        if this.cmd == ['IF']:
+            assert(len(this.args) == 3)
+            args = ArgumentNode(emptyToken)
+            args.append(this.args[0])
+            args.append(this.args[1])
+            args.append(this.args[2])
+            ret = FunctionNode('todo self.subdir.as_posix()', 0, 0, 'ternary', args)
+        elif this.cmd == ['TARGET_FILE'] :
+            assert(len(this.args) == 1)
+            assert(len(this.args[0]) == 1)
+            assert(isinstance(this.args[0][0], str))
+            exename = this.args[0][0]
+            if trace.targets[exename].imported:
+                locations = trace.targets[exename].properties['IMPORTED_LOCATION']
+                assert(len(locations) == 1)
+                return StringNode(token(locations[0]))
             else:
-                raise NotImplementedError(f'Unsupported CMake Generator Expression: {this.cmd}')
-        elif isinstance(this, str):
-            return StringNode(CmgeToMeson.token(this))
+                ret = MethodNode('todo self.subdir.as_posix()', 0, 0, IdNode(token(exename)), 'full_path', ArgumentNode(emptyToken))
+                return ret
         else:
-            raise MesonBugException('Unreachable code')
+            raise NotImplementedError(f'Unsupported CMake Generator Expression: {this.cmd}')
+    elif isinstance(this, str):
+        return StringNode(token(this))
+    else:
+        raise MesonBugException('Unreachable code')
 
-    @staticmethod
-    def convert_list(this: T.List[CmgeSingle], trace: 'CMakeTraceParser') -> BaseNode:
-        if len(this) == 0:
-            return StringNode(CmgeToMeson.token(''))
-        elif len(this) == 1:
-            return CmgeToMeson.convert_single(this[0], trace)
-        else:
-            return ArithmeticNode('add', CmgeToMeson.convert_list(this[:-1], trace), CmgeToMeson.convert_single(this[-1], trace))
+def convert_list(this: T.List[CmgeSingle], trace: 'CMakeTraceParser') -> BaseNode:
+    if len(this) == 0:
+        return StringNode(emptyToken)
+    elif len(this) == 1:
+        return convert_single(this[0], trace)
+    else:
+        return ArithmeticNode('add', convert_list(this[:-1], trace), convert_single(this[-1], trace))

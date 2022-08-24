@@ -1958,6 +1958,12 @@ class Interpreter(InterpreterBase, HoldableObject):
             self.validate_forbidden_targets(t)
         self._validate_custom_target_outputs(len(inputs) > 1, kwargs['output'], "custom_target")
 
+        output_set = set(kwargs['output'])
+        if len(output_set) != len(kwargs['output']):
+            for el in output_set:
+                if kwargs['output'].count(el) > 1:
+                    raise InvalidArguments(f'custom_target: "output" keyword argument contains "{el}" multiple times')
+
         tg = build.CustomTarget(
             name,
             self.subdir,

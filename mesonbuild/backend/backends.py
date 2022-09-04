@@ -1186,6 +1186,7 @@ class Backend:
         definition needs to be regenerated.'''
         deps = OrderedSet([str(Path(self.build_to_src) / df)
                            for df in self.interpreter.get_build_def_files()])
+        deps.update(self.interpreter.regen_dirs)
         if self.environment.is_cross_build():
             deps.update(self.environment.coredata.cross_files)
         deps.update(self.environment.coredata.config_files)

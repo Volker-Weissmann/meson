@@ -101,6 +101,7 @@ import typing as T
 import textwrap
 import importlib
 import copy
+import glob
 
 if T.TYPE_CHECKING:
     import argparse
@@ -329,6 +330,7 @@ class Interpreter(InterpreterBase, HoldableObject):
         self.build_holder_map()
         self.user_defined_options = user_defined_options
         self.compilers: PerMachine[T.Dict[str, 'compilers.Compiler']] = PerMachine({}, {})
+        self.regen_dirs = set() # type: T.Set[str]
 
         # build_def_files needs to be defined before parse_project is called
         #
@@ -411,6 +413,7 @@ class Interpreter(InterpreterBase, HoldableObject):
                            'option': self.func_option,
                            'project': self.func_project,
                            'range': self.func_range,
+                           'regen_on_dir_change': self.func_regen_on_dir_change,
                            'run_command': self.func_run_command,
                            'run_target': self.func_run_target,
                            'set_variable': self.func_set_variable,
@@ -3275,3 +3278,25 @@ This will become a hard error in the future.''', location=self.current_node)
         if step < 1:
             raise InterpreterException('step must be >=1')
         return P_OBJ.RangeHolder(start, stop, step, subproject=self.subproject)
+
+    # todo: FeatureNew
+    # todo: Documentation
+    # todo: Unittest
+    @typed_kwargs('regen_on_dir_change', KwargInfo('recursive', (bool, NoneType), default=None))
+    @typed_pos_args('regen_on_dir_change', varargs=str)
+    def func_regen_on_dir_change(self, node: mparser.BaseNode, args: T.Tuple[str, bool],
+                                 kwargs: T.Dict[str, T.Any]) -> None:
+        mlog.warning('You are using regen_on_dir_change, which is a bit hacky and should only be used if there are no good other options.', once=True)
+        if kwargs['recursive'] is None:
+            raise InterpreterException('"recursive" kwarg missing')
+        recursive: bool = kwargs['recursive']
+        for dirp in args[0]:
+            src_root = self.environment.get_source_dir()
+            absbase_src = os.path.join(src_root, self.subdir)
+            absdir_src = os.path.join(absbase_src, dirp)
+            if not os.path.isdir(absdir_src):
+                raise InvalidArguments(f'Directory {dirp} does not exist.')
+            self.regen_dirs.add(absdir_src)
+            if recursive:
+                for el in glob.glob(f'{absdir_src}/*/', recursive=True):
+                    self.regen_dirs.add(el)

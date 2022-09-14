@@ -781,9 +781,17 @@ class Backend:
 
     @staticmethod
     def canonicalize_filename(fname: str) -> str:
+        parts = Path(fname).parts
+        hashed = ''
+        if len(parts) > 5:
+            temp = '/'.join(parts[-5:])
+            # is it shorter to hash the beginning of the path?
+            if len(fname) > len(temp) + 41:
+                hashed = hashlib.sha1(fname.encode('utf-8')).hexdigest() + '_'
+                fname = temp
         for ch in ('/', '\\', ':'):
             fname = fname.replace(ch, '_')
-        return fname
+        return hashed + fname
 
     def object_filename_from_source(self, target: build.BuildTarget, source: 'FileOrString') -> str:
         assert isinstance(source, mesonlib.File)
@@ -1755,9 +1763,11 @@ class Backend:
             dst_dir = os.path.join(self.environment.get_prefix(),
                                    sd.install_dir)
             dst_name = os.path.join('{prefix}', sd.install_dir)
+            if sd.install_dir != sd.install_dir_name:
+                dst_name = sd.install_dir_name
             if not sd.strip_directory:
                 dst_dir = os.path.join(dst_dir, os.path.basename(src_dir))
-                dst_name = os.path.join(dst_dir, os.path.basename(src_dir))
+                dst_name = os.path.join(dst_name, os.path.basename(src_dir))
             i = SubdirInstallData(src_dir, dst_dir, dst_name, sd.install_mode, sd.exclude, sd.subproject, sd.install_tag)
             d.install_subdirs.append(i)
 

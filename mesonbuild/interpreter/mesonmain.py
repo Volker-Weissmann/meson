@@ -425,6 +425,8 @@ class MesonMain(MesonInterpreterObject):
     @noKwargs
     def get_cross_property_method(self, args: T.Tuple[str, T.Optional[object]], kwargs: 'TYPE_kwargs') -> object:
         propname, fallback = args
+        if propname == 'hack_to_detect_forks_regen_on_dir_change':
+            return 1
         return self.__get_external_property_impl(propname, fallback, MachineChoice.HOST)
 
     @noArgsFlattening

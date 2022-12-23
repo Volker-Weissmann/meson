@@ -175,7 +175,7 @@ class Lexer:
                     span_end = loc
                     bytespan = (span_start, span_end)
                     match_text = mo.group()
-                    if tid == 'ignore' or tid == 'comment':
+                    if tid in {'ignore', 'comment'}:
                         break
                     elif tid == 'lparen':
                         par_count += 1
@@ -525,7 +525,7 @@ class Parser:
             return True
         return False
 
-    def accept_any(self, tids: T.Sequence[str]) -> str:
+    def accept_any(self, tids: T.Tuple[str, ...]) -> str:
         tid = self.current.tid
         if tid in tids:
             self.getsym()

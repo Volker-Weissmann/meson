@@ -266,6 +266,9 @@ Manages subprojects of the Meson project. *Since 0.59.0* commands are run on
 multiple subprojects in parallel by default, use `--num-processes=1` if it is
 not desired.
 
+Since *0.64.0* the `update` subcommand will not download new wrap files
+from WrapDB any more. Use `meson wrap update` command for that instead.
+
 {{ subprojects_arguments.inc }}
 
 ### test
@@ -342,6 +345,8 @@ These variables are set in environment in addition to those set using [[meson.ad
   schemas is compiled. This is automatically set when using `gnome.compile_schemas()`.
   Note that this requires GLib >= 2.64 when `gnome.compile_schemas()` is used in
   more than one directory.
+- `QEMU_LD_PREFIX` *Since 1.0.0* is set to the `sys_root` value from cross file
+  when cross compiling and that property is defined.
 
 Since *Since 0.62.0* if bash-completion scripts are being installed and the
 shell is bash, they will be automatically sourced.

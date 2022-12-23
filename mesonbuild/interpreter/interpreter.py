@@ -83,6 +83,7 @@ from .type_checking import (
     REQUIRED_KW,
     SOURCES_KW,
     VARIABLES_KW,
+    TEST_KWS,
     NoneType,
     in_set_validator,
     env_convertor_with_method
@@ -166,11 +167,14 @@ class Summary:
                 elif isinstance(i, (ExternalProgram, Dependency)):
                     FeatureNew.single_use('dependency or external program in summary', '0.57.0', subproject)
                     formatted_values.append(i.summary_value())
+                elif isinstance(i, Disabler):
+                    FeatureNew.single_use('disabler in summary', '0.64.0', subproject)
+                    formatted_values.append(mlog.red('NO'))
                 elif isinstance(i, coredata.UserOption):
                     FeatureNew.single_use('feature option in summary', '0.58.0', subproject)
                     formatted_values.append(i.printable_value())
                 else:
-                    m = 'Summary value in section {!r}, key {!r}, must be string, integer, boolean, dependency or external program'
+                    m = 'Summary value in section {!r}, key {!r}, must be string, integer, boolean, dependency, disabler, or external program'
                     raise InterpreterException(m.format(section, k))
             self.sections[section][k] = (formatted_values, list_sep)
             self.max_key_len = max(self.max_key_len, len(k))
@@ -220,25 +224,6 @@ known_build_target_kwargs = (
     build.known_jar_kwargs |
     {'target_type'}
 )
-
-TEST_KWARGS: T.List[KwargInfo] = [
-    KwargInfo('args', ContainerTypeInfo(list, (str, mesonlib.File, build.BuildTarget, build.CustomTarget, build.CustomTargetIndex)),
-              listify=True, default=[]),
-    KwargInfo('should_fail', bool, default=False),
-    KwargInfo('timeout', int, default=30),
-    KwargInfo('workdir', (str, NoneType), default=None,
-              validator=lambda x: 'must be an absolute path' if not os.path.isabs(x) else None),
-    KwargInfo('protocol', str,
-              default='exitcode',
-              validator=in_set_validator({'exitcode', 'tap', 'gtest', 'rust'}),
-              since_values={'gtest': '0.55.0', 'rust': '0.57.0'}),
-    KwargInfo('priority', int, default=0, since='0.52.0'),
-    # TODO: env needs reworks of the way the environment variable holder itself works probably
-    ENV_KW,
-    DEPENDS_KW.evolve(since='0.46.0'),
-    KwargInfo('suite', ContainerTypeInfo(list, str), listify=True, default=['']),  # yes, a list of empty string
-    KwargInfo('verbose', bool, default=False, since='0.62.0'),
-]
 
 class InterpreterRuleRelaxation(Enum):
     ''' Defines specific relaxations of the Meson rules.
@@ -664,7 +649,7 @@ class Interpreter(InterpreterBase, HoldableObject):
                     raise InvalidArguments(f'Module "{ext_module.INFO.name}" has not been stabilized, and must be imported as unstable-{ext_module.INFO.name}')
                 ext_module = NotFoundExtensionModule(real_modname)
             else:
-                mlog.warning(f'Module {ext_module.INFO.name} has no backwards or forwards compatibility and might not exist in future releases.', location=node)
+                mlog.warning(f'Module {ext_module.INFO.name} has no backwards or forwards compatibility and might not exist in future releases.', location=node, fatal=False)
 
         self.modules[real_modname] = ext_module
         return ext_module
@@ -1395,7 +1380,7 @@ class Interpreter(InterpreterBase, HoldableObject):
     def func_exception(self, node, args, kwargs):
         raise Exception()
 
-    def add_languages(self, args: T.Sequence[str], required: bool, for_machine: MachineChoice) -> bool:
+    def add_languages(self, args: T.List[str], required: bool, for_machine: MachineChoice) -> bool:
         success = self.add_languages_for(args, required, for_machine)
         if not self.coredata.is_cross_build():
             self.coredata.copy_build_options_from_regular_ones()
@@ -1425,6 +1410,8 @@ class Interpreter(InterpreterBase, HoldableObject):
         if 'vala' in langs and 'c' not in langs:
             FeatureNew.single_use('Adding Vala language without C', '0.59.0', self.subproject, location=self.current_node)
             args.append('c')
+        if 'nasm' in langs:
+            FeatureNew.single_use('Adding NASM language', '0.64.0', self.subproject, location=self.current_node)
 
         success = True
         for lang in sorted(args, key=compilers.sort_clink):
@@ -1704,7 +1691,6 @@ class Interpreter(InterpreterBase, HoldableObject):
         assert isinstance(d, Dependency)
         if not d.found() and not_found_message:
             self.message_impl([not_found_message])
-            self.message_impl([not_found_message])
         # Ensure the correct include type
         if 'include_type' in kwargs:
             wanted = kwargs['include_type']
@@ -1870,7 +1856,7 @@ class Interpreter(InterpreterBase, HoldableObject):
         """
         for out in outputs:
             if has_multi_in and ('@PLAINNAME@' in out or '@BASENAME@' in out):
-                raise InvalidArguments(f'{name}: output cannot containe "@PLAINNAME@" or "@BASENAME@" '
+                raise InvalidArguments(f'{name}: output cannot contain "@PLAINNAME@" or "@BASENAME@" '
                                        'when there is more than one input (we can\'t know which to use)')
 
     @typed_pos_args('custom_target', optargs=[str])
@@ -2007,9 +1993,6 @@ class Interpreter(InterpreterBase, HoldableObject):
         tg = build.RunTarget(name, all_args, kwargs['depends'], self.subdir, self.subproject, self.environment,
                              kwargs['env'])
         self.add_target(name, tg)
-        full_name = (self.subproject, name)
-        assert full_name not in self.build.run_target_names
-        self.build.run_target_names.add(full_name)
         return tg
 
     @FeatureNew('alias_target', '0.52.0')
@@ -2049,14 +2032,14 @@ class Interpreter(InterpreterBase, HoldableObject):
         return gen
 
     @typed_pos_args('benchmark', str, (build.Executable, build.Jar, ExternalProgram, mesonlib.File))
-    @typed_kwargs('benchmark', *TEST_KWARGS)
+    @typed_kwargs('benchmark', *TEST_KWS)
     def func_benchmark(self, node: mparser.BaseNode,
                        args: T.Tuple[str, T.Union[build.Executable, build.Jar, ExternalProgram, mesonlib.File]],
                        kwargs: 'kwtypes.FuncBenchmark') -> None:
         self.add_test(node, args, kwargs, False)
 
     @typed_pos_args('test', str, (build.Executable, build.Jar, ExternalProgram, mesonlib.File))
-    @typed_kwargs('test', *TEST_KWARGS, KwargInfo('is_parallel', bool, default=True))
+    @typed_kwargs('test', *TEST_KWS, KwargInfo('is_parallel', bool, default=True))
     def func_test(self, node: mparser.BaseNode,
                   args: T.Tuple[str, T.Union[build.Executable, build.Jar, ExternalProgram, mesonlib.File]],
                   kwargs: 'kwtypes.FuncTest') -> None:
@@ -2457,7 +2440,7 @@ class Interpreter(InterpreterBase, HoldableObject):
         ),
         KwargInfo(
             'copy', bool, default=False, since='0.47.0',
-            deprecated='0.64.0', deprecated_message='Use fs.copy instead',
+            deprecated='0.64.0', deprecated_message='Use fs.copyfile instead',
         ),
         KwargInfo('encoding', str, default='utf-8', since='0.47.0'),
         KwargInfo('format', str, default='meson', since='0.46.0',
@@ -2478,7 +2461,7 @@ class Interpreter(InterpreterBase, HoldableObject):
     )
     def func_configure_file(self, node: mparser.BaseNode, args: T.List[TYPE_var],
                             kwargs: kwtypes.ConfigureFile):
-        actions = sorted(x for x in {'configuration', 'command', 'copy'}
+        actions = sorted(x for x in ['configuration', 'command', 'copy']
                          if kwargs[x] not in [None, False])
         num_actions = len(actions)
         if num_actions == 0:
@@ -2553,7 +2536,7 @@ class Interpreter(InterpreterBase, HoldableObject):
                     mesonlib.do_conf_file(inputs_abs[0], ofile_abs, conf,
                                           fmt, file_encoding)
                 if missing_variables:
-                    var_list = ", ".join(map(repr, sorted(missing_variables)))
+                    var_list = ", ".join(repr(m) for m in sorted(missing_variables))
                     mlog.warning(
                         f"The variable(s) {var_list} in the input file '{inputs[0]}' are not "
                         "present in the given configuration data.", location=node)
@@ -2631,6 +2614,13 @@ class Interpreter(InterpreterBase, HoldableObject):
 
     def extract_incdirs(self, kwargs, key: str = 'include_directories'):
         prospectives = extract_as_list(kwargs, key)
+        if key == 'include_directories':
+            for i in prospectives:
+                if isinstance(i, str):
+                    FeatureNew.single_use('include_directories kwarg of type string', '0.50.0', self.subproject,
+                                          f'Use include_directories({i!r}) instead', location=self.current_node)
+                    break
+
         result = []
         for p in prospectives:
             if isinstance(p, build.IncludeDirs):
@@ -3053,6 +3043,7 @@ Try setting b_lundef to false instead.'''.format(self.coredata.options[OptionKey
     @FeatureNew('both_libraries', '0.46.0')
     def build_both_libraries(self, node, args, kwargs):
         shared_lib = self.build_target(node, args, kwargs, build.SharedLibrary)
+        static_lib = self.build_target(node, args, kwargs, build.StaticLibrary)
 
         # Check if user forces non-PIC static library.
         pic = True
@@ -3074,16 +3065,16 @@ Try setting b_lundef to false instead.'''.format(self.coredata.options[OptionKey
             reuse_object_files = pic
 
         if reuse_object_files:
-            # Exclude sources from args and kwargs to avoid building them twice
-            static_args = [args[0]]
-            static_kwargs = kwargs.copy()
-            static_kwargs['sources'] = []
-            static_kwargs['objects'] = shared_lib.extract_all_objects()
-        else:
-            static_args = args
-            static_kwargs = kwargs
-
-        static_lib = self.build_target(node, static_args, static_kwargs, build.StaticLibrary)
+            # Replace sources with objects from the shared library to avoid
+            # building them twice. We post-process the static library instead of
+            # removing sources from args because sources could also come from
+            # any InternalDependency, see BuildTarget.add_deps().
+            static_lib.objects.append(build.ExtractedObjects(shared_lib, shared_lib.sources, shared_lib.generated, []))
+            static_lib.sources = []
+            static_lib.generated = []
+            # Compilers with no corresponding sources confuses the backend.
+            # Keep only compilers used for linking
+            static_lib.compilers = {k: v for k, v in static_lib.compilers.items() if k in compilers.clink_langs}
 
         return build.BothLibraries(shared_lib, static_lib)
 
@@ -3101,7 +3092,7 @@ Try setting b_lundef to false instead.'''.format(self.coredata.options[OptionKey
     def build_target(self, node: mparser.BaseNode, args, kwargs, targetclass):
         @FeatureNewKwargs('build target', '0.42.0', ['rust_crate_type', 'build_rpath', 'implicit_include_directories'])
         @FeatureNewKwargs('build target', '0.41.0', ['rust_args'])
-        @FeatureNewKwargs('build target', '0.40.0', ['build_by_default'])
+        @FeatureNewKwargs('build target', '0.38.0', ['build_by_default'])
         @FeatureNewKwargs('build target', '0.48.0', ['gnu_symbol_visibility'])
         def build_target_decorator_caller(self, node, args, kwargs):
             return True

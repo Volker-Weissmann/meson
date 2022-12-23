@@ -63,6 +63,7 @@ kwargs:
 
   build_rpath:
     type: str
+    since: 0.42.0
     description: |
       A string to add to target's rpath definition in the build dir,
       but which will be removed on install
@@ -145,7 +146,7 @@ kwargs:
     type: bool
     since: 0.42.0
     default: true
-    description: Controlls whether Meson adds the current source and build directories to the include path
+    description: Controls whether Meson adds the current source and build directories to the include path
 
   include_directories:
     type: list[inc | str]
@@ -190,11 +191,11 @@ kwargs:
       (but *not* before that). On Windows, this argument has no effect.
 
   objects:
-    type: list[extracted_obj]
+    type: list[extracted_obj | file | str]
     description: |
-      List of prebuilt object files (usually for third party
-      products you don't have source to) that should be linked in this
-      target, **never** use this for object files that you build yourself.
+      List of object files that should be linked in this target.
+      These can include third party products you don't have source to,
+      or object files produced by other build targets.
 
   name_prefix:
     type: str | list[void]
@@ -281,7 +282,7 @@ kwargs:
 
   rust_crate_type:
     type: str
-    since: 0.41.0
+    since: 0.42.0
     description: |
       Set the specific type of rust crate to compile (when compiling rust).
 

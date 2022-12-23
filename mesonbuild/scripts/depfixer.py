@@ -21,7 +21,7 @@ import shutil
 import subprocess
 import typing as T
 
-from ..mesonlib import OrderedSet, generate_list
+from ..mesonlib import OrderedSet, generate_list, Popen_safe
 
 SHT_STRTAB = 3
 DT_NEEDED = 1
@@ -83,10 +83,8 @@ class DynamicEntry(DataSizes):
 class SectionHeader(DataSizes):
     def __init__(self, ifile: T.BinaryIO, ptrsize: int, is_le: bool) -> None:
         super().__init__(ptrsize, is_le)
-        if ptrsize == 64:
-            is_64 = True
-        else:
-            is_64 = False
+        is_64 = ptrsize == 64
+
 # Elf64_Word
         self.sh_name = struct.unpack(self.Word, ifile.read(self.WordSize))[0]
 # Elf64_Word
@@ -306,7 +304,7 @@ class Elf(DataSizes):
             self.bf.seek(offset)
             name = self.read_str()
             if name.startswith(prefix):
-                basename = name.split(b'/')[-1]
+                basename = name.rsplit(b'/', maxsplit=1)[-1]
                 padding = b'\0' * (len(name) - len(basename))
                 newname = basename + padding
                 assert len(newname) == len(name)
@@ -391,9 +389,9 @@ def fix_elf(fname: str, rpath_dirs_to_remove: T.Set[bytes], new_rpath: T.Optiona
             e.fix_rpath(fname, rpath_dirs_to_remove, new_rpath)
 
 def get_darwin_rpaths_to_remove(fname: str) -> T.List[str]:
-    out = subprocess.check_output(['otool', '-l', fname],
-                                  universal_newlines=True,
-                                  stderr=subprocess.DEVNULL)
+    p, out, _ = Popen_safe(['otool', '-l', fname], stderr=subprocess.DEVNULL)
+    if p.returncode != 0:
+        raise subprocess.CalledProcessError(p.returncode, p.args, out)
     result = []
     current_cmd = 'FOOBAR'
     for line in out.split('\n'):
@@ -459,7 +457,7 @@ def fix_darwin(fname: str, new_rpath: str, final_path: str, install_name_mapping
         raise SystemExit(err)
 
 def fix_jar(fname: str) -> None:
-    subprocess.check_call(['jar', 'xfv', fname, 'META-INF/MANIFEST.MF'])
+    subprocess.check_call(['jar', 'xf', fname, 'META-INF/MANIFEST.MF'])
     with open('META-INF/MANIFEST.MF', 'r+', encoding='utf-8') as f:
         lines = f.readlines()
         f.seek(0)
@@ -467,10 +465,15 @@ def fix_jar(fname: str) -> None:
             if not line.startswith('Class-Path:'):
                 f.write(line)
         f.truncate()
-    subprocess.check_call(['jar', 'ufm', fname, 'META-INF/MANIFEST.MF'])
+    # jar -um doesn't allow removing existing attributes.  Use -uM instead,
+    # which a) removes the existing manifest from the jar and b) disables
+    # special-casing for the manifest file, so we can re-add it as a normal
+    # archive member.  This puts the manifest at the end of the jar rather
+    # than the beginning, but the spec doesn't forbid that.
+    subprocess.check_call(['jar', 'ufM', fname, 'META-INF/MANIFEST.MF'])
 
 def fix_rpath(fname: str, rpath_dirs_to_remove: T.Set[bytes], new_rpath: T.Union[str, bytes], final_path: str, install_name_mappings: T.Dict[str, str], verbose: bool = True) -> None:
-    global INSTALL_NAME_TOOL
+    global INSTALL_NAME_TOOL  # pylint: disable=global-statement
     # Static libraries, import libraries, debug information, headers, etc
     # never have rpaths
     # DLLs and EXE currently do not need runtime path fixing

@@ -62,6 +62,7 @@ vs64_instruction_set_args = {
 }  # T.Dicst[str, T.Optional[T.List[str]]]
 
 msvc_optimization_args = {
+    'plain': [],
     '0': ['/Od'],
     'g': [], # No specific flag to optimize debugging, /Zi or /ZI will create debug information
     '1': ['/O1'],
@@ -109,6 +110,7 @@ class VisualStudioLikeCompiler(Compiler, metaclass=abc.ABCMeta):
         '1': ['/W2'],
         '2': ['/W3'],
         '3': ['/W4'],
+        'everything': ['/Wall'],
     }  # type: T.Dict[str, T.List[str]]
 
     INVOKES_LINKER = False
@@ -158,6 +160,9 @@ class VisualStudioLikeCompiler(Compiler, metaclass=abc.ABCMeta):
     def get_preprocess_only_args(self) -> T.List[str]:
         return ['/EP']
 
+    def get_preprocess_to_file_args(self) -> T.List[str]:
+        return ['/EP', '/P']
+
     def get_compile_only_args(self) -> T.List[str]:
         return ['/c']
 
@@ -172,6 +177,8 @@ class VisualStudioLikeCompiler(Compiler, metaclass=abc.ABCMeta):
         return ['/fsanitize=address']
 
     def get_output_args(self, target: str) -> T.List[str]:
+        if self.mode == 'PREPROCESSOR':
+            return ['/Fi' + target]
         if target.endswith('.exe'):
             return ['/Fe' + target]
         return ['/Fo' + target]
@@ -221,7 +228,7 @@ class VisualStudioLikeCompiler(Compiler, metaclass=abc.ABCMeta):
         for i in args:
             # -mms-bitfields is specific to MinGW-GCC
             # -pthread is only valid for GCC
-            if i in ('-mms-bitfields', '-pthread'):
+            if i in {'-mms-bitfields', '-pthread'}:
                 continue
             if i.startswith('-LIBPATH:'):
                 i = '/LIBPATH:' + i[9:]
@@ -354,7 +361,7 @@ class VisualStudioLikeCompiler(Compiler, metaclass=abc.ABCMeta):
     def get_crt_compile_args(self, crt_val: str, buildtype: str) -> T.List[str]:
         if crt_val in self.crt_args:
             return self.crt_args[crt_val]
-        assert crt_val in ['from_buildtype', 'static_from_buildtype']
+        assert crt_val in {'from_buildtype', 'static_from_buildtype'}
         dbg = 'mdd'
         rel = 'md'
         if crt_val == 'static_from_buildtype':
@@ -378,7 +385,7 @@ class VisualStudioLikeCompiler(Compiler, metaclass=abc.ABCMeta):
     def has_func_attribute(self, name: str, env: 'Environment') -> T.Tuple[bool, bool]:
         # MSVC doesn't have __attribute__ like Clang and GCC do, so just return
         # false without compiling anything
-        return name in ['dllimport', 'dllexport'], False
+        return name in {'dllimport', 'dllexport'}, False
 
     def get_argument_syntax(self) -> str:
         return 'msvc'

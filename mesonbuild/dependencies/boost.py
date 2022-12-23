@@ -152,9 +152,9 @@ class BoostLibraryFile():
             self.version_lib = '{}_{}'.format(self.vers_raw[0], self.vers_raw[1])
 
         # Detecting library type
-        if self.nvsuffix in ['so', 'dll', 'dll.a', 'dll.lib', 'dylib']:
+        if self.nvsuffix in {'so', 'dll', 'dll.a', 'dll.lib', 'dylib'}:
             self.static = False
-        elif self.nvsuffix in ['a', 'lib']:
+        elif self.nvsuffix in {'a', 'lib'}:
             self.static = True
         else:
             raise UnknownFileException(self.path)
@@ -177,7 +177,7 @@ class BoostLibraryFile():
         for i in tags:
             if i == 'mt':
                 self.mt = True
-            elif len(i) == 3 and i[1:] in ['32', '64']:
+            elif len(i) == 3 and i[1:] in {'32', '64'}:
                 self.arch = i
             elif BoostLibraryFile.reg_abi_tag.match(i):
                 self.runtime_static = 's' in i
@@ -237,10 +237,10 @@ class BoostLibraryFile():
         return abitag
 
     def is_boost(self) -> bool:
-        return any([self.name.startswith(x) for x in ['libboost_', 'boost_']])
+        return any(self.name.startswith(x) for x in ['libboost_', 'boost_'])
 
     def is_python_lib(self) -> bool:
-        return any([self.mod_name.startswith(x) for x in BoostLibraryFile.boost_python_libs])
+        return any(self.mod_name.startswith(x) for x in BoostLibraryFile.boost_python_libs)
 
     def fix_python_name(self, tags: T.List[str]) -> T.List[str]:
         # Handle the boost_python naming madeness.
@@ -316,13 +316,13 @@ class BoostLibraryFile():
         # If no vscrt tag present, assume that it fits  ['/MD', '/MDd', '/MT', '/MTd']
         if not vscrt:
             return True
-        if vscrt in ['/MD', '-MD']:
+        if vscrt in {'/MD', '-MD'}:
             return not self.runtime_static and not self.runtime_debug
-        elif vscrt in ['/MDd', '-MDd']:
+        elif vscrt in {'/MDd', '-MDd'}:
             return not self.runtime_static and self.runtime_debug
-        elif vscrt in ['/MT', '-MT']:
+        elif vscrt in {'/MT', '-MT'}:
             return (self.runtime_static or not self.static) and not self.runtime_debug
-        elif vscrt in ['/MTd', '-MTd']:
+        elif vscrt in {'/MTd', '-MTd'}:
             return (self.runtime_static or not self.static) and self.runtime_debug
 
         mlog.warning(f'Boost: unknown vscrt tag {vscrt}. This may cause the compilation to fail. Please consider reporting this as a bug.', once=True)
@@ -438,7 +438,7 @@ class BoostDependency(SystemDependency):
 
         raw_paths = mesonlib.stringlistify(rootdir)
         paths = [Path(x) for x in raw_paths]
-        if paths and any([not x.is_absolute() for x in paths]):
+        if paths and any(not x.is_absolute() for x in paths):
             raise DependencyException('boost_root path given in machine file must be absolute')
 
         self.check_and_set_roots(paths, use_system=False)
@@ -574,13 +574,13 @@ class BoostDependency(SystemDependency):
         arch_list_64 = ['64']
 
         raw_list = dirs + subdirs
-        no_arch = [x for x in raw_list if not any([y in x.name for y in arch_list_32 + arch_list_64])]
+        no_arch = [x for x in raw_list if not any(y in x.name for y in arch_list_32 + arch_list_64)]
 
         matching_arch = []  # type: T.List[Path]
         if '32' in self.arch:
-            matching_arch = [x for x in raw_list if any([y in x.name for y in arch_list_32])]
+            matching_arch = [x for x in raw_list if any(y in x.name for y in arch_list_32)]
         elif '64' in self.arch:
-            matching_arch = [x for x in raw_list if any([y in x.name for y in arch_list_64])]
+            matching_arch = [x for x in raw_list if any(y in x.name for y in arch_list_64)]
 
         return sorted(matching_arch) + sorted(no_arch)
 
@@ -626,7 +626,7 @@ class BoostDependency(SystemDependency):
         for i in libdir.iterdir():
             if not i.is_file():
                 continue
-            if not any([i.name.startswith(x) for x in ['libboost_', 'boost_']]):
+            if not any(i.name.startswith(x) for x in ['libboost_', 'boost_']):
                 continue
             # Windows binaries from SourceForge ship with PDB files alongside
             # DLLs (#8325).  Ignore them.

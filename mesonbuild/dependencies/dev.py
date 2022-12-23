@@ -22,15 +22,15 @@ import os
 import re
 import pathlib
 import shutil
+import subprocess
 import typing as T
 
 from mesonbuild.interpreterbase.decorators import FeatureDeprecated
 
 from .. import mesonlib, mlog
-from ..compilers import AppleClangCCompiler, AppleClangCPPCompiler, detect_compiler_for
 from ..environment import get_llvm_tool_names
 from ..mesonlib import version_compare, stringlistify, extract_as_list
-from .base import DependencyException, DependencyMethods, strip_system_libdirs, SystemDependency, ExternalDependency, DependencyTypeName
+from .base import DependencyException, DependencyMethods, detect_compiler, strip_system_libdirs, SystemDependency, ExternalDependency, DependencyTypeName
 from .cmake import CMakeDependency
 from .configtool import ConfigToolDependency
 from .factory import DependencyFactory
@@ -484,6 +484,8 @@ class ZlibSystemDependency(SystemDependency):
 
     def __init__(self, name: str, environment: 'Environment', kwargs: T.Dict[str, T.Any]):
         super().__init__(name, environment, kwargs)
+        from ..compilers.c import AppleClangCCompiler
+        from ..compilers.cpp import AppleClangCPPCompiler
 
         m = self.env.machines[self.for_machine]
 
@@ -498,13 +500,8 @@ class ZlibSystemDependency(SystemDependency):
             self.is_found = True
             self.link_args = ['-lz']
         else:
-            # Without a clib_compiler we can't find zlib, so just give up.
-            if self.clib_compiler is None:
-                self.is_found = False
-                return
-
             if self.clib_compiler.get_argument_syntax() == 'msvc':
-                libs = ['zlib1' 'zlib']
+                libs = ['zlib1', 'zlib']
             else:
                 libs = ['z']
             for lib in libs:
@@ -530,7 +527,7 @@ class JNISystemDependency(SystemDependency):
         m = self.env.machines[self.for_machine]
 
         if 'java' not in environment.coredata.compilers[self.for_machine]:
-            detect_compiler_for(environment, 'java', self.for_machine)
+            detect_compiler(self.name, environment, self.for_machine, 'java')
         self.javac = environment.coredata.compilers[self.for_machine]['java']
         self.version = self.javac.version
 
@@ -550,6 +547,17 @@ class JNISystemDependency(SystemDependency):
         self.java_home = environment.properties[self.for_machine].get_java_home()
         if not self.java_home:
             self.java_home = pathlib.Path(shutil.which(self.javac.exelist[0])).resolve().parents[1]
+            if m.is_darwin():
+                problem_java_prefix = pathlib.Path('/System/Library/Frameworks/JavaVM.framework/Versions')
+                if problem_java_prefix in self.java_home.parents:
+                    res = subprocess.run(['/usr/libexec/java_home', '--failfast', '--arch', m.cpu_family],
+                                         stdout=subprocess.PIPE)
+                    if res.returncode != 0:
+                        log = mlog.error if self.required else mlog.debug
+                        log('JAVA_HOME could not be discovered on the system. Please set it explicitly.')
+                        self.is_found = False
+                        return
+                    self.java_home = pathlib.Path(res.stdout.decode().strip())
 
         platform_include_dir = self.__machine_info_to_platform_include_dir(m)
         if platform_include_dir is None:
@@ -567,21 +575,11 @@ class JNISystemDependency(SystemDependency):
                 java_home_lib_server = java_home_lib
             else:
                 if version_compare(self.version, '<= 1.8.0'):
-                    # The JDK and Meson have a disagreement here, so translate it
-                    # over. In the event more translation needs to be done, add to
-                    # following dict.
-                    def cpu_translate(cpu: str) -> str:
-                        java_cpus = {
-                            'x86_64': 'amd64',
-                        }
-
-                        return java_cpus.get(cpu, cpu)
-
-                    java_home_lib = self.java_home / 'jre' / 'lib' / cpu_translate(m.cpu_family)
-                    java_home_lib_server = java_home_lib / "server"
+                    java_home_lib = self.java_home / 'jre' / 'lib' / self.__cpu_translate(m.cpu_family)
                 else:
                     java_home_lib = self.java_home / 'lib'
-                    java_home_lib_server = java_home_lib / "server"
+
+                java_home_lib_server = java_home_lib / 'server'
 
             if 'jvm' in modules:
                 jvm = self.clib_compiler.find_library('jvm', environment, extra_dirs=[str(java_home_lib_server)])
@@ -601,13 +599,25 @@ class JNISystemDependency(SystemDependency):
         self.is_found = True
 
     @staticmethod
+    def __cpu_translate(cpu: str) -> str:
+        '''
+        The JDK and Meson have a disagreement here, so translate it over. In the event more
+        translation needs to be done, add to following dict.
+        '''
+        java_cpus = {
+            'x86_64': 'amd64',
+        }
+
+        return java_cpus.get(cpu, cpu)
+
+    @staticmethod
     def __machine_info_to_platform_include_dir(m: 'MachineInfo') -> T.Optional[str]:
-        """Translates the machine information to the platform-dependent include directory
+        '''Translates the machine information to the platform-dependent include directory
 
         When inspecting a JDK release tarball or $JAVA_HOME, inside the `include/` directory is a
-        platform dependent folder that must be on the target's include path in addition to the
+        platform-dependent directory that must be on the target's include path in addition to the
         parent `include/` directory.
-        """
+        '''
         if m.is_linux():
             return 'linux'
         elif m.is_windows():
@@ -616,6 +626,14 @@ class JNISystemDependency(SystemDependency):
             return 'darwin'
         elif m.is_sunos():
             return 'solaris'
+        elif m.is_freebsd():
+            return 'freebsd'
+        elif m.is_netbsd():
+            return 'netbsd'
+        elif m.is_openbsd():
+            return 'openbsd'
+        elif m.is_dragonflybsd():
+            return 'dragonfly'
 
         return None
 

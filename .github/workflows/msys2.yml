@@ -1,7 +1,7 @@
 name: msys2
 
 concurrency:
-  group: msys2-${{ github.head_ref }}
+  group: msys2-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 on:
@@ -51,13 +51,16 @@ jobs:
             TOOLCHAIN: clang
     env:
       MESON_CI_JOBNAME: msys2-${{ matrix.NAME }}
+      # XXX: For some reason enabling jit debugging "fixes" random python crashes
+      # see https://github.com/msys2/MINGW-packages/issues/11864
+      MSYS: "winjitdebug"
 
     defaults:
       run:
         shell: msys2 {0}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: msys2/setup-msys2@v2
         with:
@@ -106,7 +109,6 @@ jobs:
             # Make sure it is on the PATH
             pypy3 -c "import sys; print(sys.version)"
           fi
-          export BOOST_ROOT=
           export PATHEXT="$PATHEXT;.py"
 
           if [[ '${{ matrix.COMPILER }}' == 'clang' ]]; then
@@ -122,7 +124,7 @@ jobs:
 
           MSYSTEM= python3 ./tools/run_with_cov.py run_tests.py --backend=ninja
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.NAME }}
           path: meson-test-run.*

@@ -31,6 +31,13 @@ from functools import wraps
 from .mparser import Token, ArrayNode, ArgumentNode, AssignmentNode, BooleanNode, ElementaryNode, IdNode, FunctionNode, StringNode
 import json, os, re, sys
 import typing as T
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
+from typing import Callable
+from argparse import ArgumentParser
 
 if T.TYPE_CHECKING:
     from .mparser import BaseNode
@@ -38,7 +45,7 @@ if T.TYPE_CHECKING:
 class RewriterException(MesonException):
     pass
 
-def add_arguments(parser, formatter=None):
+def add_arguments(parser: ArgumentParser, formatter: Callable = None) -> None:
     parser.add_argument('-s', '--sourcedir', type=str, default='.', metavar='SRCDIR', help='Path to source directory.')
     parser.add_argument('-V', '--verbose', action='store_true', default=False, help='Enable verbose output')
     parser.add_argument('-S', '--skip-errors', dest='skip', action='store_true', default=False, help='Skip errors instead of aborting')
@@ -74,10 +81,10 @@ def add_arguments(parser, formatter=None):
     cmd_parser.add_argument('json', help='JSON string or file to execute')
 
 class RequiredKeys:
-    def __init__(self, keys):
+    def __init__(self, keys: Union[Dict[str, Tuple[type, Optional[Dict], Optional[List[str]]]], Dict[str, Tuple[type, Union[List, None, str], Optional[List[str]]]]]) -> None:
         self.keys = keys
 
-    def __call__(self, f):
+    def __call__(self, f: Callable) -> Callable:
         @wraps(f)
         def wrapped(*wrapped_args, **wrapped_kwargs):
             assert len(wrapped_args) >= 2

@@ -44,6 +44,12 @@ from .compilers import (
     is_known_suffix, detect_static_linker
 )
 from .interpreterbase import FeatureNew, FeatureDeprecated
+from typing import Any
+from typing import Dict
+from typing import Set
+from typing import List
+from typing import Optional
+from mesonbuild.utils.universal import File
 
 if T.TYPE_CHECKING:
     from typing_extensions import Literal
@@ -306,7 +312,7 @@ class Build:
         if self.static_linker[compiler.for_machine] is None and compiler.needs_static_linker():
             self.static_linker[compiler.for_machine] = detect_static_linker(self.environment, compiler)
 
-    def get_project(self):
+    def get_project(self) -> str:
         return self.projects['']
 
     def get_subproject_dir(self):
@@ -774,19 +780,19 @@ class BuildTarget(Target):
         unity_opt = self.get_option(OptionKey('unity'))
         return unity_opt == 'on' or (unity_opt == 'subprojects' and self.subproject != '')
 
-    def validate_install(self):
+    def validate_install(self) -> None:
         if self.for_machine is MachineChoice.BUILD and self.need_install:
             if self.environment.is_cross_build():
                 raise InvalidArguments('Tried to install a target for the build machine in a cross build.')
             else:
                 mlog.warning('Installing target build for the build machine. This will fail in a cross build.')
 
-    def check_unknown_kwargs(self, kwargs):
+    def check_unknown_kwargs(self, kwargs: Dict[str, Any]) -> None:
         # Override this method in derived classes that have more
         # keywords.
         self.check_unknown_kwargs_int(kwargs, self.known_kwargs)
 
-    def check_unknown_kwargs_int(self, kwargs, known_kwargs):
+    def check_unknown_kwargs_int(self, kwargs: Dict[str, Any], known_kwargs: Set[str]) -> None:
         unknowns = []
         for k in kwargs:
             if k not in known_kwargs:
@@ -794,7 +800,7 @@ class BuildTarget(Target):
         if len(unknowns) > 0:
             mlog.warning('Unknown keyword argument(s) in target {}: {}.'.format(self.name, ', '.join(unknowns)))
 
-    def process_objectlist(self, objects):
+    def process_objectlist(self, objects: List) -> None:
         assert isinstance(objects, list)
         for s in objects:
             if isinstance(s, (str, File, ExtractedObjects)):
@@ -959,12 +965,12 @@ class BuildTarget(Target):
 
         return missing_languages
 
-    def validate_sources(self):
+    def validate_sources(self) -> None:
         if len(self.compilers) > 1 and any(lang in self.compilers for lang in ['cs', 'java']):
             langs = ', '.join(self.compilers.keys())
             raise InvalidArguments(f'Cannot mix those languages into a target: {langs}')
 
-    def process_link_depends(self, sources):
+    def process_link_depends(self, sources: List) -> None:
         """Process the link_depends keyword argument.
 
         This is designed to handle strings, Files, and the output of Custom
@@ -990,7 +996,7 @@ class BuildTarget(Target):
     def get_original_kwargs(self):
         return self.kwargs
 
-    def copy_kwargs(self, kwargs):
+    def copy_kwargs(self, kwargs: Dict[str, Any]) -> None:
         self.kwargs = copy.copy(kwargs)
         for k, v in self.kwargs.items():
             if isinstance(v, list):
@@ -1070,7 +1076,7 @@ class BuildTarget(Target):
     def get_custom_install_mode(self) -> T.Optional['FileMode']:
         return self.install_mode
 
-    def process_kwargs(self, kwargs):
+    def process_kwargs(self, kwargs: Dict[str, Any]) -> None:
         self.process_kwargs_base(kwargs)
         self.copy_kwargs(kwargs)
         kwargs.get('modules', [])
@@ -1267,10 +1273,10 @@ class BuildTarget(Target):
     def get_outputs(self) -> T.List[str]:
         return self.outputs
 
-    def get_extra_args(self, language):
+    def get_extra_args(self, language: str) -> List:
         return self.extra_args.get(language, [])
 
-    def get_dependencies(self, exclude=None):
+    def get_dependencies(self, exclude: Optional[Any] = None) -> List:
         transitive_deps = []
         if exclude is None:
             exclude = []
@@ -1285,7 +1291,7 @@ class BuildTarget(Target):
     def get_source_subdir(self):
         return self.subdir
 
-    def get_sources(self):
+    def get_sources(self) -> List[File]:
         return self.sources
 
     def get_objects(self) -> T.List[T.Union[str, 'File', 'ExtractedObjects']]:
@@ -1306,7 +1312,7 @@ class BuildTarget(Target):
     def get_include_dirs(self) -> T.List['IncludeDirs']:
         return self.include_dirs
 
-    def add_deps(self, deps):
+    def add_deps(self, deps: List) -> None:
         deps = listify(deps)
         for dep in deps:
             if dep in self.added_deps:
@@ -1633,7 +1639,7 @@ You probably should put it in link_with instead.''')
         # Mixing many languages with MSVC is not supported yet so ignore stdlibs.
         return compiler and compiler.get_linker_id() in {'link', 'lld-link', 'xilink', 'optlink'}
 
-    def check_module_linking(self):
+    def check_module_linking(self) -> None:
         '''
         Warn if shared modules are linked with target: (link_with) #2865
         '''
@@ -1909,7 +1915,7 @@ class Executable(BuildTarget):
         '''Human friendly description of the executable'''
         return self.name
 
-    def type_suffix(self):
+    def type_suffix(self) -> str:
         return "@exe"
 
     def get_import_filename(self) -> T.Optional[str]:

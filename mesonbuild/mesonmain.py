@@ -17,6 +17,11 @@ from __future__ import annotations
 
 from . import _pathlib
 import sys
+from typing import Any
+from typing import Callable
+from typing import Optional
+from argparse import ArgumentParser
+from typing import List
 sys.modules['pathlib'] = _pathlib
 
 # This file is an entry point for all commands, including scripts. Include the
@@ -68,7 +73,7 @@ def errorhandler(e, command):
 # Note: when adding arguments, please also add them to the completion
 # scripts in $MESONSRC/data/shell-completions/
 class CommandLineParser:
-    def __init__(self):
+    def __init__(self) -> None:
         # only import these once we do full argparse processing
         from . import mconf, mdist, minit, minstall, mintro, msetup, mtest, rewriter, msubprojects, munstable_coredata, mcompile, mdevenv
         from .scripts import env2mfile
@@ -119,7 +124,7 @@ class CommandLineParser:
         self.add_command('unstable-coredata', munstable_coredata.add_arguments, munstable_coredata.run,
                          help_msg=argparse.SUPPRESS)
 
-    def add_command(self, name, add_arguments_func, run_func, help_msg, aliases=None):
+    def add_command(self, name: str, add_arguments_func: Callable, run_func: Callable, help_msg: str, aliases: Optional[Any] = None) -> None:
         aliases = aliases or []
         # FIXME: Cannot have hidden subparser:
         # https://bugs.python.org/issue22848
@@ -149,7 +154,7 @@ class CommandLineParser:
             runpy.run_path(options.script_file, run_name='__main__')
         return 0
 
-    def add_help_arguments(self, parser):
+    def add_help_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument('command', nargs='?', choices=list(self.commands.keys()))
 
     def run_help_command(self, options):
@@ -159,7 +164,7 @@ class CommandLineParser:
             self.parser.print_help()
         return 0
 
-    def run(self, args):
+    def run(self, args: List[str]) -> int:
         implicit_setup_command_notice = False
         # If first arg is not a known command, assume user wants to run the setup
         # command.
@@ -226,16 +231,16 @@ def run_script_command(script_name, script_args):
         mlog.exception(e)
         return 1
 
-def ensure_stdout_accepts_unicode():
+def ensure_stdout_accepts_unicode() -> None:
     if sys.stdout.encoding and not sys.stdout.encoding.upper().startswith('UTF-'):
         sys.stdout.reconfigure(errors='surrogateescape')
 
-def set_meson_command(mainfile):
+def set_meson_command(mainfile: str) -> None:
     # Set the meson command that will be used to run scripts and so on
     from . import mesonlib
     mesonlib.set_meson_command(mainfile)
 
-def run(original_args, mainfile):
+def run(original_args: List[str], mainfile: str) -> int:
     if os.environ.get('MESON_SHOW_DEPRECATIONS'):
         # workaround for https://bugs.python.org/issue34624
         import warnings
@@ -284,7 +289,7 @@ def run(original_args, mainfile):
     set_meson_command(mainfile)
     return CommandLineParser().run(args)
 
-def main():
+def main() -> int:
     # Always resolve the command path so Ninja can find it for regen, tests, etc.
     if 'meson.exe' in sys.executable:
         assert os.path.isabs(sys.executable)

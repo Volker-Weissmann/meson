@@ -20,8 +20,9 @@ from .mesonlib import MachineChoice, OptionKey
 import os.path
 import pprint
 import textwrap
+from argparse import ArgumentParser
 
-def add_arguments(parser):
+def add_arguments(parser: ArgumentParser) -> None:
     parser.add_argument('--all', action='store_true', dest='all', default=False,
                         help='Show data not used by current backend.')
 

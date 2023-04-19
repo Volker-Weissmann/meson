@@ -35,6 +35,7 @@ from mesonbuild.msetup import add_arguments as msetup_argparse
 from mesonbuild.wrap import wrap
 from mesonbuild import mlog, build, coredata
 from .scripts.meson_exe import run_exe
+from argparse import ArgumentParser
 
 archive_choices = ['gztar', 'xztar', 'zip']
 
@@ -42,7 +43,7 @@ archive_extension = {'gztar': '.tar.gz',
                      'xztar': '.tar.xz',
                      'zip': '.zip'}
 
-def add_arguments(parser):
+def add_arguments(parser: ArgumentParser) -> None:
     parser.add_argument('-C', dest='wd', action=RealPathAction,
                         help='directory to cd into before running')
     parser.add_argument('--allow-dirty', action='store_true',

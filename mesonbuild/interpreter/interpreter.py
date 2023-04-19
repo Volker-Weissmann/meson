@@ -103,6 +103,14 @@ import typing as T
 import textwrap
 import importlib
 import copy
+from mesonbuild.mparser import FunctionNode
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
+from typing import Optional
+from mesonbuild.build import Executable
+from mesonbuild.utils.universal import File
 
 if T.TYPE_CHECKING:
     import argparse
@@ -181,7 +189,7 @@ class Summary:
             self.sections[section][k] = (formatted_values, list_sep)
             self.max_key_len = max(self.max_key_len, len(k))
 
-    def dump(self):
+    def dump(self) -> None:
         mlog.log(self.project_name, mlog.normal_cyan(self.project_version))
         for section, values in self.sections.items():
             mlog.log('')  # newline
@@ -196,7 +204,7 @@ class Summary:
                 self.dump_value(v, list_sep, indent)
         mlog.log('')  # newline
 
-    def dump_value(self, arr, list_sep, indent):
+    def dump_value(self, arr: List[str], list_sep: Optional[Any], indent: int) -> None:
         lines_sep = '\n' + ' ' * indent
         if list_sep is None:
             mlog.log(*arr, sep=lines_sep)
@@ -3007,7 +3015,7 @@ class Interpreter(InterpreterBase, HoldableObject):
     # object is generated. The result can be used in a different
     # subproject than it is defined in (due to e.g. a
     # declare_dependency).
-    def validate_within_subproject(self, subdir, fname):
+    def validate_within_subproject(self, subdir: str, fname: str) -> None:
         srcdir = Path(self.environment.source_dir)
         builddir = Path(self.environment.build_dir)
         if isinstance(fname, P_OBJ.DependencyVariableString):
@@ -3185,7 +3193,7 @@ class Interpreter(InterpreterBase, HoldableObject):
         @FeatureNewKwargs('build target', '0.41.0', ['rust_args'])
         @FeatureNewKwargs('build target', '0.38.0', ['build_by_default'])
         @FeatureNewKwargs('build target', '0.48.0', ['gnu_symbol_visibility'])
-        def build_target_decorator_caller(self, node, args, kwargs):
+        def build_target_decorator_caller(self: Any, node: FunctionNode, args: Tuple[str, List], kwargs: Dict[str, str]) -> bool:
             return True
 
         build_target_decorator_caller(self, node, args, kwargs)
@@ -3263,7 +3271,7 @@ class Interpreter(InterpreterBase, HoldableObject):
         self.project_args_frozen = True
         return target
 
-    def kwarg_strings_to_includedirs(self, kwargs):
+    def kwarg_strings_to_includedirs(self, kwargs: Dict[str, Any]) -> None:
         if 'd_import_dirs' in kwargs:
             items = mesonlib.extract_as_list(kwargs, 'd_import_dirs')
             cleaned_items = []
@@ -3280,13 +3288,13 @@ This will become a hard error in the future.''', location=self.current_node)
                 cleaned_items.append(i)
             kwargs['d_import_dirs'] = cleaned_items
 
-    def add_stdlib_info(self, target):
+    def add_stdlib_info(self, target: Executable) -> None:
         for l in target.compilers.keys():
             dep = self.build.stdlibs[target.for_machine].get(l, None)
             if dep:
                 target.add_deps(dep)
 
-    def check_sources_exist(self, subdir, sources):
+    def check_sources_exist(self, subdir: str, sources: List[File]) -> None:
         for s in sources:
             if not isinstance(s, str):
                 continue # This means a generated source and they always exist.

@@ -36,6 +36,8 @@ import configparser
 import enum
 import shlex
 import typing as T
+from typing import Dict
+from typing import List
 
 if T.TYPE_CHECKING:
     from . import dependencies
@@ -547,7 +549,7 @@ class CoreData:
             raise MesonException(f'Cannot find specified {ftype} file: {f}')
         return real
 
-    def builtin_options_libdir_cross_fixup(self):
+    def builtin_options_libdir_cross_fixup(self) -> None:
         # By default set libdir to "lib" when cross compiling since
         # getting the "system default" is always wrong on multiarch
         # platforms as it gets a value like lib/x86_64-linux-gnu.
@@ -1009,7 +1011,7 @@ class MachineFileParser():
                     return os.path.join(l, r)
         raise EnvironmentException('Unsupported node type')
 
-def parse_machine_files(filenames):
+def parse_machine_files(filenames: List) -> Dict:
     parser = MachineFileParser(filenames)
     return parser.sections
 

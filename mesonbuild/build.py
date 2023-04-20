@@ -45,10 +45,6 @@ from .compilers import (
 )
 from .interpreterbase import FeatureNew, FeatureDeprecated
 from typing import Any
-from typing import Dict
-from typing import Set
-from typing import List
-from typing import Optional
 from mesonbuild.utils.universal import File
 
 if T.TYPE_CHECKING:
@@ -787,12 +783,12 @@ class BuildTarget(Target):
             else:
                 mlog.warning('Installing target build for the build machine. This will fail in a cross build.')
 
-    def check_unknown_kwargs(self, kwargs: Dict[str, Any]) -> None:
+    def check_unknown_kwargs(self, kwargs: T.Dict[str, Any]) -> None:
         # Override this method in derived classes that have more
         # keywords.
         self.check_unknown_kwargs_int(kwargs, self.known_kwargs)
 
-    def check_unknown_kwargs_int(self, kwargs: Dict[str, Any], known_kwargs: Set[str]) -> None:
+    def check_unknown_kwargs_int(self, kwargs: T.Dict[str, Any], known_kwargs: T.Set[str]) -> None:
         unknowns = []
         for k in kwargs:
             if k not in known_kwargs:
@@ -800,7 +796,7 @@ class BuildTarget(Target):
         if len(unknowns) > 0:
             mlog.warning('Unknown keyword argument(s) in target {}: {}.'.format(self.name, ', '.join(unknowns)))
 
-    def process_objectlist(self, objects: List) -> None:
+    def process_objectlist(self, objects: T.List) -> None:
         assert isinstance(objects, list)
         for s in objects:
             if isinstance(s, (str, File, ExtractedObjects)):
@@ -970,7 +966,7 @@ class BuildTarget(Target):
             langs = ', '.join(self.compilers.keys())
             raise InvalidArguments(f'Cannot mix those languages into a target: {langs}')
 
-    def process_link_depends(self, sources: List) -> None:
+    def process_link_depends(self, sources: T.List) -> None:
         """Process the link_depends keyword argument.
 
         This is designed to handle strings, Files, and the output of Custom
@@ -996,7 +992,7 @@ class BuildTarget(Target):
     def get_original_kwargs(self):
         return self.kwargs
 
-    def copy_kwargs(self, kwargs: Dict[str, Any]) -> None:
+    def copy_kwargs(self, kwargs: T.Dict[str, Any]) -> None:
         self.kwargs = copy.copy(kwargs)
         for k, v in self.kwargs.items():
             if isinstance(v, list):
@@ -1076,7 +1072,7 @@ class BuildTarget(Target):
     def get_custom_install_mode(self) -> T.Optional['FileMode']:
         return self.install_mode
 
-    def process_kwargs(self, kwargs: Dict[str, Any]) -> None:
+    def process_kwargs(self, kwargs: T.Dict[str, Any]) -> None:
         self.process_kwargs_base(kwargs)
         self.copy_kwargs(kwargs)
         kwargs.get('modules', [])
@@ -1273,10 +1269,10 @@ class BuildTarget(Target):
     def get_outputs(self) -> T.List[str]:
         return self.outputs
 
-    def get_extra_args(self, language: str) -> List:
+    def get_extra_args(self, language: str) -> T.List:
         return self.extra_args.get(language, [])
 
-    def get_dependencies(self, exclude: Optional[Any] = None) -> List:
+    def get_dependencies(self, exclude: T.Optional[T.List[BuildTarget]] = None) -> T.List:
         transitive_deps = []
         if exclude is None:
             exclude = []
@@ -1291,7 +1287,7 @@ class BuildTarget(Target):
     def get_source_subdir(self):
         return self.subdir
 
-    def get_sources(self) -> List[File]:
+    def get_sources(self) -> T.List[File]:
         return self.sources
 
     def get_objects(self) -> T.List[T.Union[str, 'File', 'ExtractedObjects']]:
@@ -1312,7 +1308,7 @@ class BuildTarget(Target):
     def get_include_dirs(self) -> T.List['IncludeDirs']:
         return self.include_dirs
 
-    def add_deps(self, deps: List) -> None:
+    def add_deps(self, deps: T.List) -> None:
         deps = listify(deps)
         for dep in deps:
             if dep in self.added_deps:
@@ -1531,7 +1527,7 @@ You probably should put it in link_with instead.''')
 
         return langs
 
-    def get_prelinker(self):
+    def get_prelinker(self) -> Compiler:
         if self.link_language:
             comp = self.all_compilers[self.link_language]
             return comp

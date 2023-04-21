@@ -1490,7 +1490,8 @@ You probably should put it in link_with instead.''')
         args = listify(args)
         for a in args:
             if not isinstance(a, (str, File)):
-                raise InvalidArguments('A non-string passed to compiler args.')
+                raise ValueError
+                raise InvalidArguments('A non-string, non-File passed to compiler args.')
         if language in self.extra_args:
             self.extra_args[language] += args
         else:
@@ -2802,7 +2803,8 @@ class Jar(BuildTarget):
             raise InvalidArguments('structured sources are not supported in Java targets.')
         self.filename = self.name + '.jar'
         self.outputs = [self.filename]
-        self.java_args = kwargs.get('java_args', [])
+        abc = kwargs.get('java_args', [])
+        assert(abc == self.extra_args['java'])
         self.java_resources: T.Optional[StructuredSources] = kwargs.get('java_resources', None)
 
     def get_main_class(self):
@@ -2812,19 +2814,20 @@ class Jar(BuildTarget):
         return "@jar"
 
     def get_java_args(self):
-        return self.java_args
+        return self.extra_args['java']
+        #return self.java_args
 
     def get_java_resources(self) -> T.Optional[StructuredSources]:
         return self.java_resources
 
-    def validate_install(self):
+    def validate_install(self) -> None:
         # All jar targets are installable.
         pass
 
-    def is_linkable_target(self):
+    def is_linkable_target(self) -> bool:
         return True
 
-    def get_classpath_args(self):
+    def get_classpath_args(self) -> T.List[str]:
         cp_paths = [os.path.join(l.get_subdir(), l.get_filename()) for l in self.link_targets]
         cp_string = os.pathsep.join(cp_paths)
         if cp_string:
@@ -2855,7 +2858,7 @@ class CustomTargetIndex(HoldableObject):
     def name(self) -> str:
         return f'{self.target.name}[{self.output}]'
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<CustomTargetIndex: {!r}[{}]>'.format(self.target, self.output)
 
     def get_outputs(self) -> T.List[str]:
@@ -2870,7 +2873,7 @@ class CustomTargetIndex(HoldableObject):
     def get_id(self) -> str:
         return self.target.get_id()
 
-    def get_all_link_deps(self):
+    def get_all_link_deps(self): # returns []
         return self.target.get_all_link_deps()
 
     def get_link_deps_mapping(self, prefix: str) -> T.Mapping[str, str]:
@@ -2880,6 +2883,7 @@ class CustomTargetIndex(HoldableObject):
         return self.target.get_link_dep_subdirs()
 
     def is_linkable_target(self) -> bool:
+        assert(isinstance(self.target, CustomTarget))
         return self.target.is_linkable_output(self.output)
 
     def links_dynamically(self) -> bool:
@@ -2930,7 +2934,7 @@ class ConfigurationData(HoldableObject):
     def get(self, name: str) -> T.Tuple[T.Union[str, int, bool], T.Optional[str]]:
         return self.values[name] # (val, desc)
 
-    def keys(self) -> T.Iterator[str]:
+    def keys(self) -> T.Iterable[str]:
         return self.values.keys()
 
 # A bit poorly named, but this represents plain data files to copy

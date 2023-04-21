@@ -10,6 +10,7 @@ import typing as T
 from mesonbuild.mesonlib import version_compare
 
 modules = [
+    'mesonbuild/build.py',
     # fully typed submodules
     # 'mesonbuild/ast/',
     'mesonbuild/cmake/',

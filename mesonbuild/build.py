@@ -2971,7 +2971,7 @@ class TestSetup:
     env: EnvironmentVariables
     exclude_suites: T.List[str]
 
-def get_sources_string_names(sources, backend):
+def get_sources_string_names(sources: T.List[T.Union[str, BuildTarget, CustomTarget, CustomTargetIndex, GeneratedList, ExtractedObjects, File]], backend: Backend) -> T.List[str]:
     '''
     For the specified list of @sources which can be strings, Files, or targets,
     get all the output basenames.

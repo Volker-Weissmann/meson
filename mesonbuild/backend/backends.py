@@ -41,7 +41,7 @@ from ..mesonlib import (
 )
 
 if T.TYPE_CHECKING:
-    from .._typing import ImmutableListProtocol
+    from .._typing import ImmutableListProtocol,ImmutableDictProtocol
     from ..arglist import CompilerArgs
     from ..compilers import Compiler
     from ..environment import Environment
@@ -141,7 +141,7 @@ class TargetInstallData:
     outdir: str
     outdir_name: InitVar[T.Optional[str]]
     strip: bool
-    install_name_mappings: T.Mapping[str, str]
+    install_name_mappings: ImmutableDictProtocol[str, str]
     rpath_dirs_to_remove: T.Set[bytes]
     install_rpath: str
     # TODO: install_mode should just always be a FileMode object
@@ -1233,14 +1233,14 @@ class Backend:
     def write_test_serialisation(self, tests: T.List['Test'], datafile: T.BinaryIO) -> None:
         pickle.dump(self.create_test_serialisation(tests), datafile)
 
-    def construct_target_rel_paths(self, t: T.Union[build.Target, build.CustomTargetIndex], workdir: T.Optional[str]) -> T.List[str]:
+    def construct_target_rel_paths(self, t: T.Union[build.Target, build.CustomTargetIndex], workdir: T.Optional[str]) -> T.Sequence[str]:
         target_dir = self.get_target_dir(t)
         # ensure that test executables can be run when passed as arguments
         if isinstance(t, build.Executable) and workdir is None:
             target_dir = target_dir or '.'
 
         if isinstance(t, build.BuildTarget):
-            outputs = [t.get_filename()]
+            outputs: T.Sequence[str] = [t.get_filename()]
         else:
             assert isinstance(t, (build.CustomTarget, build.CustomTargetIndex))
             outputs = t.get_outputs()

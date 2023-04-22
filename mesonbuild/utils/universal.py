@@ -158,6 +158,7 @@ __all__ = [
     'substring_is_in_list',
     'typeslistify',
     'verbose_git',
+    'verify_types',
     'version_compare',
     'version_compare_condition_with_min',
     'version_compare_many',
@@ -1377,6 +1378,7 @@ def replace_if_different(dst: str, dst_tmp: str) -> None:
         os.unlink(dst_tmp)
 
 
+# todo: this is stupid because it disables the typechecker
 def listify(item: T.Any, flatten: bool = True) -> T.List[T.Any]:
     '''
     Returns a list with all args embedded in a list if they are not a list.
@@ -1406,7 +1408,7 @@ def extract_as_list(dict_object: T.Dict[_T, _U], key: _T, pop: bool = False) -> 
 
 
 def typeslistify(item: 'T.Union[_T, T.Sequence[_T]]',
-                 types: 'T.Union[T.Type[_T], T.Tuple[T.Type[_T]]]') -> T.List[_T]:
+                 types: 'T.Union[T.Type, T.Tuple[T.Type, ...]]') -> T.List[_T]:
     '''
     Ensure that type(@item) is one of @types or a
     list of items all of which are of type @types
@@ -1419,6 +1421,17 @@ def typeslistify(item: 'T.Union[_T, T.Sequence[_T]]',
         if i is not None and not isinstance(i, types):
             raise MesonException('List item must be one of {!r}, not {!r}'.format(types, type(i)))
     return item
+
+def verify_types(values: 'T.List[_T]', types: 'T.Sequence[T.Type]') -> 'T.List[_T]':
+    '''
+    Ensure that type(@values) is list of items all of which are of type @types or None
+    '''
+    if not isinstance(values, list):
+        raise MesonException('Item must be a list, not {!r}'.format(type(values)))
+    for x in values:
+        if x is not None and not isinstance(x, *types):
+            raise MesonException('List item must be one of {!r}, not {!r}'.format(types, type(x)))
+    return values
 
 
 def stringlistify(item: T.Union[T.Any, T.Sequence[T.Any]]) -> T.List[str]:
@@ -1528,7 +1541,7 @@ def iter_regexin_iter(regexiter: T.Iterable[str], initer: T.Iterable[str]) -> T.
     return None
 
 
-def _substitute_values_check_errors(command: T.List[str], values: T.Dict[str, T.Union[str, T.List[str]]]) -> None:
+def _substitute_values_check_errors(command: T.Sequence[str], values: T.Dict[str, T.Union[str, T.List[str]]]) -> None:
     # Error checking
     inregex = ['@INPUT([0-9]+)?@', '@PLAINNAME@', '@BASENAME@']  # type: T.List[str]
     outregex = ['@OUTPUT([0-9]+)?@', '@OUTDIR@']                 # type: T.List[str]
@@ -1568,7 +1581,7 @@ def _substitute_values_check_errors(command: T.List[str], values: T.Dict[str, T.
                 raise MesonException(m.format(match2.group(), len(values['@OUTPUT@'])))
 
 
-def substitute_values(command: T.List[str], values: T.Dict[str, T.Union[str, T.List[str]]]) -> T.List[str]:
+def substitute_values(command: T.Sequence[str], values: T.Dict[str, T.Union[str, T.List[str]]]) -> T.List[str]:
     '''
     Substitute the template strings in the @values dict into the list of
     strings @command and return a new list. For a full list of the templates,

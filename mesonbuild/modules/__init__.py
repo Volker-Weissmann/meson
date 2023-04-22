@@ -18,7 +18,7 @@ from __future__ import annotations
 import dataclasses
 import typing as T
 
-from .. import mesonlib
+from .. import mesonlib, environment
 from ..build import IncludeDirs
 from ..interpreterbase.decorators import noKwargs, noPosargs
 from ..mesonlib import relpath, HoldableObject, MachineChoice
@@ -40,6 +40,9 @@ class ModuleState:
     This is a WIP API provided to modules, it should be extended to have everything
     needed so modules does not touch any other part of Meson internal APIs.
     """
+
+    environment: environment.Environment
+    subdir: 'str'
 
     def __init__(self, interpreter: 'Interpreter') -> None:
         # Keep it private, it should be accessed only through methods.

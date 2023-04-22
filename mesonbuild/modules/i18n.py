@@ -38,7 +38,7 @@ if T.TYPE_CHECKING:
 
         input: T.List[T.Union[
             str, build.BuildTarget, build.CustomTarget, build.CustomTargetIndex,
-            build.ExtractedObjects, build.GeneratedList, ExternalProgram,
+            build.ExtractedObjects, build.GeneratedList,
             mesonlib.File]]
         output: str
         build_by_default: bool
@@ -63,7 +63,7 @@ if T.TYPE_CHECKING:
 
         input: T.List[T.Union[
             str, build.BuildTarget, build.CustomTarget, build.CustomTargetIndex,
-            build.ExtractedObjects, build.GeneratedList, ExternalProgram,
+            build.ExtractedObjects, build.GeneratedList,
             mesonlib.File]]
         output: str
         build_by_default: bool
@@ -246,7 +246,7 @@ class I18nModule(ExtensionModule):
 
         extra_args = kwargs['args']
         targets: T.List['Target'] = []
-        gmotargets: T.List['build.CustomTarget'] = []
+        gmotargets: T.List['build.Target'] = []
 
         preset = kwargs['preset']
         if preset:

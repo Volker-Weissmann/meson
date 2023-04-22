@@ -21,7 +21,8 @@ Holds typing helper classes, such as the ImmutableProtocol classes
 
 __all__ = [
     'Protocol',
-    'ImmutableListProtocol'
+    'ImmutableListProtocol',
+    'ImmutableDictProtocol'
 ]
 
 import typing
@@ -31,13 +32,19 @@ from typing_extensions import Protocol
 
 
 T = typing.TypeVar('T')
+U = typing.TypeVar('U')
+
+ListOrSingle = typing.Union[T, typing.List[T]]
+
+SequenceOrSingle = typing.Union[T, typing.Sequence[T]]
 
 
 class StringProtocol(Protocol):
     def __str__(self) -> str: ...
 
-class SizedStringProtocol(Protocol, StringProtocol, typing.Sized):
-    pass
+if typing.TYPE_CHECKING:
+    class SizedStringProtocol(Protocol, StringProtocol, typing.Sized):
+        pass
 
 class ImmutableListProtocol(Protocol[T]):
 
@@ -79,3 +86,32 @@ class ImmutableListProtocol(Protocol[T]):
     def index(self, item: T) -> int: ...
 
     def copy(self) -> typing.List[T]: ...
+
+class ImmutableDictProtocol(Protocol[T, U]):
+
+    """A protocol used in cases where a dict is returned, but should not be
+    mutated.
+
+    This provides all of the methods of a Mapping (except the ones I forgot), as
+    well as copy(). copy() returns a dict, which allows mutation as it's a copy
+    and that's (hopefully) safe.
+
+    One particular case this is important is for cached values, since python is
+    a pass-by-reference language.
+    """
+
+    def __iter__(self) -> typing.Iterator[T]: ...
+
+    def __getitem__(self, index: T) -> U: ...
+
+    def __contains__(self, item: T) -> bool: ...
+
+    def __reversed__(self) -> typing.Iterator[T]: ...
+
+    def __len__(self) -> int: ...
+
+    def copy(self) -> typing.Dict[T, U]: ...
+
+# same as lhs + rhs, but makes mypy happy
+def add_lists(lhs: typing.List[T], rhs: ImmutableListProtocol[T]) -> typing.List[T]:
+    return lhs + typing.cast(typing.List[T], rhs)

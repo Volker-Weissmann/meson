@@ -5,6 +5,7 @@
 #include <QLocale>
 #include <QLibraryInfo>
 #include <QDebug>
+#include <cstdio>
 
 int main(int argc, char **argv) {
   QCoreApplication app(argc, argv);
@@ -15,8 +16,10 @@ int main(int argc, char **argv) {
   app.installTranslator(&qtTranslator);
 
   QTranslator myappTranslator;
-  if(!myappTranslator.load(QT "core_fr") )
+  if(!myappTranslator.load(QT "core_fr") ){
+    printf("unable to load QT core_fr");
     return 1;
+  }
 
   app.installTranslator(&myappTranslator);
 

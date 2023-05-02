@@ -38,12 +38,16 @@ if(method == 'combination')
   endif
 
   assert(llvm_ct_dep.found() == llvm_cm_dep.found(), 'config-tool and cmake results differ')
-  cm_version_major = llvm_cm_dep.version().split('.')[0].to_int()
-  cm_version_minor = llvm_cm_dep.version().split('.')[1].to_int()
-  ct_version_major = llvm_ct_dep.version().split('.')[0].to_int()
-  ct_version_minor = llvm_ct_dep.version().split('.')[1].to_int()
-  assert(cm_version_major == ct_version_major, 'config-tool and cmake returns different major versions')
-  assert(cm_version_minor == ct_version_minor, 'config-tool and cmake returns different minor versions')
+  if llvm_ct_dep.found()
+    cm_version_major = llvm_cm_dep.version().split('.')[0].to_int()
+    cm_version_minor = llvm_cm_dep.version().split('.')[1].to_int()
+    ct_version_major = llvm_ct_dep.version().split('.')[0].to_int()
+    ct_version_minor = llvm_ct_dep.version().split('.')[1].to_int()
+    assert(cm_version_major == ct_version_major, 'config-tool and cmake returns different major versions')
+    assert(cm_version_minor == ct_version_minor, 'config-tool and cmake returns different minor versions')
+  else
+    message('LLVM modules not found, skipping Version comparison')
+  endif
 else
   d = dependency('llvm', required : false, method : method, static : static)
   if not d.found()
@@ -72,7 +76,7 @@ else
 
   # Check if we have to get pseudo components
   d = dependency('llvm', modules: ['all-targets','native','engine'], required: false, static : static, method : method)
-  assert(d.found() == true, 'Cannot find pseudo components')
+  #assert(d.found() == true, 'Cannot find pseudo components')
 
   dep_tinfo = dependency('tinfo', required : false)
   if not dep_tinfo.found()

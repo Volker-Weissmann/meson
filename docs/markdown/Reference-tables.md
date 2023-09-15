@@ -30,6 +30,7 @@ These are return values of the `get_id` (Compiler family) and
 | msvc      | Microsoft Visual Studio          | msvc            |
 | nagfor    | The NAG Fortran compiler         |                 |
 | nvidia_hpc| NVidia HPC SDK compilers         |                 |
+| nvcc      | NVidia CUDA compiler             |                 |
 | open64    | The Open64 Fortran Compiler      |                 |
 | pathscale | The Pathscale Fortran compiler   |                 |
 | pgi       | Portland PGI C/C++/Fortran compilers |             |
@@ -163,15 +164,52 @@ These are provided by the `.system()` method call.
 Any string not listed above is not guaranteed to remain stable in
 future releases.
 
+## Kernel names (since 1.2.0)
+
+Native names as returned by the `.kernel()` method.
+
+| Value               | Comment                         |
+| -----               | -------                         |
+| linux   | |
+| freebsd | |
+| openbsd | |
+| netbsd  | |
+| nt      | |
+| xnu                 | Kernel of various Apple OSes    |
+| illumos             | Kernel derived from OpenSolaris by community efforts |
+| solaris             | Kernel derived from OpenSolaris by Oracle |
+| dragonfly | |
+| haiku| |
+| none                 | For e.g. bare metal embedded    |
+
+
+## Subsystem names (since 1.2.0)
+
+A more specific description of the system in question. Most values are
+meant to be used in cross files only, as those platforms can not run
+Meson natively.
+
+| Value               | Comment                         |
+| -----               | -------                         |
+| macos               | Apple macOS (formerly OSX)      |
+| ios                 | Apple iOS                       |
+| ios-simulator       |                                 |
+| tvos                | Apple tvOS                      |
+| tvos-simulator      |                                 |
+| watchos             | Apple watchOS                   |
+| watchos-simulator   |                                 |
+
 ## Language arguments parameter names
 
-These are the parameter names for passing language specific arguments to your build target.
+These are the parameter names for passing language specific arguments
+to your build target.
 
 | Language      | compiler name | linker name       |
 | ------------- | ------------- | ----------------- |
 | C             | c_args        | c_link_args       |
 | C++           | cpp_args      | cpp_link_args     |
 | C#            | cs_args       | cs_link_args      |
+| CUDA          | cuda_args     | cuda_link_args    |
 | D             | d_args        | d_link_args       |
 | Fortran       | fortran_args  | fortran_link_args |
 | Java          | java_args     | java_link_args    |
@@ -203,6 +241,7 @@ arguments](#language-arguments-parameter-names) instead.
 | -----       | -------                                  |
 | CFLAGS      | Flags for the C compiler                 |
 | CXXFLAGS    | Flags for the C++ compiler               |
+| CUFLAGS     | Flags for the CUDA compiler              |
 | OBJCFLAGS   | Flags for the Objective C compiler       |
 | FFLAGS      | Flags for the Fortran compiler           |
 | DFLAGS      | Flags for the D compiler                 |
@@ -337,6 +376,26 @@ machine](#Environment-variables-per-machine) section for details.
 
 *The old environment variables are still supported, but are deprecated
 and will be removed in a future version of Meson.*
+
+*changed in 1.3.0* Paths with spaces were split unconditionally to extract
+components such as the [path to Ccache](Feature-autodetection.md#ccache),
+intrinsic compiler flags like `-m32` or `--target`, etc. This broke passing
+a hardcoded compiler path to CMake subprojects. To work around this, paths
+must be wrapped with double quotes:
+
+```bash
+export CC='"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe"'
+```
+
+You can also set the values through [machine files](Machine-files.md#binaries).
+
+*New in 1.3.0* Paths that point to an existing executable no longer need
+wrapping:
+
+```bash
+export CC='C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe'
+```
+
 
 ## Environment variables per machine
 

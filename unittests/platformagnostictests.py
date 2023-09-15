@@ -14,15 +14,17 @@
 
 import json
 import os
+import pickle
 import tempfile
 import subprocess
 import textwrap
+import shutil
 from unittest import skipIf, SkipTest
 from pathlib import Path
 
 from .baseplatformtests import BasePlatformTests
 from .helpers import is_ci
-from mesonbuild.mesonlib import is_linux
+from mesonbuild.mesonlib import EnvironmentVariables, ExecutableSerialisation, is_linux, python_command
 from mesonbuild.optinterpreter import OptionInterpreter, OptionException
 from run_tests import Backend
 
@@ -182,6 +184,13 @@ class PlatformAgnosticTests(BasePlatformTests):
         Path(self.builddir, 'dummy').touch()
         self.init(testdir, extra_args=['--reconfigure'])
 
+        # Setup a valid builddir should update options but not reconfigure
+        self.assertEqual(self.getconf('buildtype'), 'debug')
+        o = self.init(testdir, extra_args=['-Dbuildtype=release'])
+        self.assertIn('Directory already configured', o)
+        self.assertNotIn('The Meson build system', o)
+        self.assertEqual(self.getconf('buildtype'), 'release')
+
         # Wipe of empty builddir should work
         self.new_builddir()
         self.init(testdir, extra_args=['--wipe'])
@@ -198,3 +207,74 @@ class PlatformAgnosticTests(BasePlatformTests):
         with self.assertRaises(subprocess.CalledProcessError) as cm:
             self.init(testdir, extra_args=['--wipe'])
         self.assertIn('Directory is not empty', cm.exception.stdout)
+
+    def test_scripts_loaded_modules(self):
+        '''
+        Simulate a wrapped command, as done for custom_target() that capture
+        output. The script will print all python modules loaded and we verify
+        that it contains only an acceptable subset. Loading too many modules
+        slows down the build when many custom targets get wrapped.
+
+        This list must not be edited without a clear rationale for why it is
+        acceptable to do so!
+        '''
+        es = ExecutableSerialisation(python_command + ['-c', 'exit(0)'], env=EnvironmentVariables())
+        p = Path(self.builddir, 'exe.dat')
+        with p.open('wb') as f:
+            pickle.dump(es, f)
+        cmd = self.meson_command + ['--internal', 'test_loaded_modules', '--unpickle', str(p)]
+        p = subprocess.run(cmd, stdout=subprocess.PIPE)
+        all_modules = json.loads(p.stdout.splitlines()[0])
+        meson_modules = [m for m in all_modules if m.startswith('mesonbuild')]
+        expected_meson_modules = [
+            'mesonbuild',
+            'mesonbuild._pathlib',
+            'mesonbuild.utils',
+            'mesonbuild.utils.core',
+            'mesonbuild.mesonmain',
+            'mesonbuild.mlog',
+            'mesonbuild.scripts',
+            'mesonbuild.scripts.meson_exe',
+            'mesonbuild.scripts.test_loaded_modules'
+        ]
+        self.assertEqual(sorted(expected_meson_modules), sorted(meson_modules))
+
+    def test_setup_loaded_modules(self):
+        '''
+        Execute a very basic meson.build and capture a list of all python
+        modules loaded. We verify that it contains only an acceptable subset.
+        Loading too many modules slows down `meson setup` startup time and
+        gives a perception that meson is slow.
+
+        Adding more modules to the default startup flow is not an unreasonable
+        thing to do as new features are added, but keeping track of them is
+        good.
+        '''
+        testdir = os.path.join(self.unit_test_dir, '114 empty project')
+
+        self.init(testdir)
+        self._run(self.meson_command + ['--internal', 'regenerate', '--profile-self', testdir, self.builddir])
+        with open(os.path.join(self.builddir, 'meson-logs', 'profile-startup-modules.json'), encoding='utf-8') as f:
+                data = json.load(f)['meson']
+
+        with open(os.path.join(testdir, 'expected_mods.json'), encoding='utf-8') as f:
+            expected = json.load(f)['meson']['modules']
+
+        self.assertEqual(data['modules'], expected)
+        self.assertEqual(data['count'], 68)
+
+    def test_meson_package_cache_dir(self):
+        # Copy testdir into temporary directory to not pollute meson source tree.
+        testdir = os.path.join(self.unit_test_dir, '116 meson package cache dir')
+        srcdir = os.path.join(self.builddir, 'srctree')
+        shutil.copytree(testdir, srcdir)
+        builddir = os.path.join(srcdir, '_build')
+        self.change_builddir(builddir)
+        self.init(srcdir, override_envvars={'MESON_PACKAGE_CACHE_DIR': os.path.join(srcdir, 'cache_dir')})
+
+    def test_cmake_openssl_not_found_bug(self):
+        """Issue #12098"""
+        testdir = os.path.join(self.unit_test_dir, '117 openssl cmake bug')
+        self.meson_native_files.append(os.path.join(testdir, 'nativefile.ini'))
+        out = self.init(testdir, allow_fail=True)
+        self.assertNotIn('Unhandled python exception', out)

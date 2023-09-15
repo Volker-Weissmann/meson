@@ -188,7 +188,7 @@ class CMakeSubproject(ModuleObject):
 class CMakeSubprojectOptions(ModuleObject):
     def __init__(self) -> None:
         super().__init__()
-        self.cmake_options = []  # type: T.List[str]
+        self.cmake_options: T.List[str] = []
         self.target_options = TargetOptions()
 
         self.methods.update(
@@ -391,7 +391,8 @@ class CmakeModule(ExtensionModule):
         if not os.path.isabs(abs_install_dir):
             abs_install_dir = os.path.join(prefix, install_dir)
 
-        PACKAGE_RELATIVE_PATH = os.path.relpath(prefix, abs_install_dir)
+        # path used in cmake scripts are POSIX even on Windows
+        PACKAGE_RELATIVE_PATH = pathlib.PurePath(os.path.relpath(prefix, abs_install_dir)).as_posix()
         extra = ''
         if re.match('^(/usr)?/lib(64)?/.+', abs_install_dir):
             extra = PACKAGE_INIT_EXT.replace('@absInstallDir@', abs_install_dir)
@@ -431,7 +432,7 @@ class CmakeModule(ExtensionModule):
             'required': kwargs_['required'],
             'options': kwargs_['options'],
             'cmake_options': kwargs_['cmake_options'],
-            'default_options': [],
+            'default_options': {},
             'version': [],
         }
         subp = self.interpreter.do_subproject(dirname, 'cmake', kw)

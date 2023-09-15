@@ -7,8 +7,8 @@ import shutil
 import itertools
 
 from pathlib import Path
-from . import build, minstall, dependencies
-from .mesonlib import (MesonException, is_windows, setup_vsenv, OptionKey,
+from . import build, minstall
+from .mesonlib import (EnvironmentVariables, MesonException, is_windows, setup_vsenv, OptionKey,
                        get_wine_shortpath, MachineChoice)
 from . import mlog
 
@@ -55,7 +55,7 @@ def reduce_winepath(env: T.Dict[str, str]) -> None:
     mlog.log('Meson detected wine and has set WINEPATH accordingly')
 
 def get_env(b: build.Build, dump_fmt: T.Optional[str]) -> T.Tuple[T.Dict[str, str], T.Set[str]]:
-    extra_env = build.EnvironmentVariables()
+    extra_env = EnvironmentVariables()
     extra_env.set('MESON_DEVENV', ['1'])
     extra_env.set('MESON_PROJECT_NAME', [b.project_name])
 
@@ -75,9 +75,10 @@ def get_env(b: build.Build, dump_fmt: T.Optional[str]) -> T.Tuple[T.Dict[str, st
     return env, varnames
 
 def bash_completion_files(b: build.Build, install_data: 'InstallData') -> T.List[str]:
+    from .dependencies.pkgconfig import PkgConfigDependency
     result = []
-    dep = dependencies.PkgConfigDependency('bash-completion', b.environment,
-                                           {'required': False, 'silent': True, 'version': '>=2.10'})
+    dep = PkgConfigDependency('bash-completion', b.environment,
+                              {'required': False, 'silent': True, 'version': '>=2.10'})
     if dep.found():
         prefix = b.environment.coredata.get_option(OptionKey('prefix'))
         assert isinstance(prefix, str), 'for mypy'

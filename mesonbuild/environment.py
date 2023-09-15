@@ -33,7 +33,6 @@ from .envconfig import (
 )
 from . import compilers
 from .compilers import (
-    Compiler,
     is_assembly,
     is_header,
     is_library,
@@ -49,6 +48,7 @@ if T.TYPE_CHECKING:
     import argparse
     from configparser import ConfigParser
 
+    from .compilers import Compiler
     from .wrap.wrap import Resolver
 
     CompilersDict = T.Dict[str, Compiler]
@@ -82,7 +82,7 @@ def _get_env_var(for_machine: MachineChoice, is_cross: bool, var_name: str) -> T
     return value
 
 
-def detect_gcovr(min_version='3.3', log=False):
+def detect_gcovr(min_version: str = '3.3', log: bool = False):
     gcovr_exe = 'gcovr'
     try:
         p, found = Popen_safe([gcovr_exe, '--version'])[0:2]
@@ -178,7 +178,7 @@ def get_llvm_tool_names(tool: str) -> T.List[str]:
         '-15',    # Debian development snapshot
         '-devel', # FreeBSD development snapshot
     ]
-    names = []
+    names: T.List[str] = []
     for suffix in suffixes:
         names.append(tool + suffix)
     return names
@@ -197,15 +197,16 @@ def detect_scanbuild() -> T.List[str]:
     Return: a single-element list of the found scan-build binary ready to be
         passed to Popen()
     """
-    exelist = []
+    exelist: T.List[str] = []
     if 'SCANBUILD' in os.environ:
         exelist = split_args(os.environ['SCANBUILD'])
 
     else:
         tools = get_llvm_tool_names('scan-build')
         for tool in tools:
-            if shutil.which(tool) is not None:
-                exelist = [shutil.which(tool)]
+            which = shutil.which(tool)
+            if which is not None:
+                exelist = [which]
                 break
 
     if exelist:
@@ -270,7 +271,7 @@ def detect_windows_arch(compilers: CompilersDict) -> str:
             return 'x86'
     return os_arch
 
-def any_compiler_has_define(compilers: CompilersDict, define):
+def any_compiler_has_define(compilers: CompilersDict, define: str) -> bool:
     for c in compilers.values():
         try:
             if c.has_builtin_define(define):
@@ -342,7 +343,7 @@ def detect_cpu_family(compilers: CompilersDict) -> str:
     # MIPS64 is able to run MIPS32 code natively, so there is a chance that
     # such mixture mentioned above exists.
     elif trial == 'mips64':
-        if not any_compiler_has_define(compilers, '__mips64'):
+        if compilers and not any_compiler_has_define(compilers, '__mips64'):
             trial = 'mips'
 
     if trial not in known_cpu_families:
@@ -382,7 +383,7 @@ def detect_cpu(compilers: CompilersDict) -> str:
         if '64' not in trial:
             trial = 'mips'
         else:
-            if not any_compiler_has_define(compilers, '__mips64'):
+            if compilers and not any_compiler_has_define(compilers, '__mips64'):
                 trial = 'mips'
             else:
                 trial = 'mips64'
@@ -394,6 +395,38 @@ def detect_cpu(compilers: CompilersDict) -> str:
     # Add more quirks here as bugs are reported. Keep in sync with
     # detect_cpu_family() above.
     return trial
+
+KERNEL_MAPPINGS: T.Mapping[str, str] = {'freebsd': 'freebsd',
+                                        'openbsd': 'openbsd',
+                                        'netbsd': 'netbsd',
+                                        'windows': 'nt',
+                                        'android': 'linux',
+                                        'linux': 'linux',
+                                        'cygwin': 'nt',
+                                        'darwin': 'xnu',
+                                        'dragonfly': 'dragonfly',
+                                        'haiku': 'haiku',
+                                        }
+
+def detect_kernel(system: str) -> T.Optional[str]:
+    if system == 'sunos':
+        # This needs to be /usr/bin/uname because gnu-uname could be installed and
+        # won't provide the necessary information
+        p, out, _ = Popen_safe(['/usr/bin/uname', '-o'])
+        if p.returncode != 0:
+            raise MesonException('Failed to run "/usr/bin/uname -o"')
+        out = out.lower().strip()
+        if out not in {'illumos', 'solaris'}:
+            mlog.warning(f'Got an unexpected value for kernel on a SunOS derived platform, expcted either "illumos" or "solaris", but got "{out}".'
+                         "Please open a Meson issue with the OS you're running and the value detected for your kernel.")
+            return None
+        return out
+    return KERNEL_MAPPINGS.get(system, None)
+
+def detect_subsystem(system: str) -> T.Optional[str]:
+    if system == 'darwin':
+        return 'macos'
+    return system
 
 def detect_system() -> str:
     if sys.platform == 'cygwin':
@@ -411,11 +444,14 @@ def detect_machine_info(compilers: T.Optional[CompilersDict] = None) -> MachineI
     underlying ''detect_*'' method can be called to explicitly use the
     partial information.
     """
+    system = detect_system()
     return MachineInfo(
-        detect_system(),
+        system,
         detect_cpu_family(compilers) if compilers is not None else None,
         detect_cpu(compilers) if compilers is not None else None,
-        sys.byteorder)
+        sys.byteorder,
+        detect_kernel(system),
+        detect_subsystem(system))
 
 # TODO make this compare two `MachineInfo`s purely. How important is the
 # `detect_cpu_family({})` distinction? It is the one impediment to that.
@@ -433,6 +469,7 @@ def machine_info_can_run(machine_info: MachineInfo):
     return \
         (machine_info.cpu_family == true_build_cpu_family) or \
         ((true_build_cpu_family == 'x86_64') and (machine_info.cpu_family == 'x86')) or \
+        ((true_build_cpu_family == 'mips64') and (machine_info.cpu_family == 'mips')) or \
         ((true_build_cpu_family == 'aarch64') and (machine_info.cpu_family == 'arm'))
 
 class Environment:
@@ -440,7 +477,7 @@ class Environment:
     log_dir = 'meson-logs'
     info_dir = 'meson-info'
 
-    def __init__(self, source_dir: T.Optional[str], build_dir: T.Optional[str], options: 'argparse.Namespace') -> None:
+    def __init__(self, source_dir: str, build_dir: str, options: 'argparse.Namespace') -> None:
         self.source_dir = source_dir
         self.build_dir = build_dir
         # Do not try to create build directories when build_dir is none.
@@ -453,7 +490,7 @@ class Environment:
             os.makedirs(self.log_dir, exist_ok=True)
             os.makedirs(self.info_dir, exist_ok=True)
             try:
-                self.coredata = coredata.load(self.get_build_dir())  # type: coredata.CoreData
+                self.coredata: coredata.CoreData = coredata.load(self.get_build_dir(), suggest_reconfigure=False)
                 self.first_invocation = False
             except FileNotFoundError:
                 self.create_new_coredata(options)
@@ -471,7 +508,7 @@ class Environment:
                     coredata.read_cmd_line_file(self.build_dir, options)
                     self.create_new_coredata(options)
                 else:
-                    raise e
+                    raise MesonException(f'{str(e)} Try regenerating using "meson setup --wipe".')
         else:
             # Just create a fresh coredata in this case
             self.scratch_dir = ''
@@ -486,13 +523,13 @@ class Environment:
 
         # Similar to coredata.compilers, but lower level in that there is no
         # meta data, only names/paths.
-        binaries = PerMachineDefaultable()  # type: PerMachineDefaultable[BinaryTable]
+        binaries: PerMachineDefaultable[BinaryTable] = PerMachineDefaultable()
 
         # Misc other properties about each machine.
-        properties = PerMachineDefaultable()  # type: PerMachineDefaultable[Properties]
+        properties: PerMachineDefaultable[Properties] = PerMachineDefaultable()
 
         # CMake toolchain variables
-        cmakevars = PerMachineDefaultable()  # type: PerMachineDefaultable[CMakeVariables]
+        cmakevars: PerMachineDefaultable[CMakeVariables] = PerMachineDefaultable()
 
         ## Setup build machine defaults
 
@@ -513,7 +550,7 @@ class Environment:
         ## Read in native file(s) to override build machine configuration
 
         if self.coredata.config_files is not None:
-            config = coredata.parse_machine_files(self.coredata.config_files)
+            config = coredata.parse_machine_files(self.coredata.config_files, self.source_dir)
             binaries.build = BinaryTable(config.get('binaries', {}))
             properties.build = Properties(config.get('properties', {}))
             cmakevars.build = CMakeVariables(config.get('cmake', {}))
@@ -524,7 +561,7 @@ class Environment:
         ## Read in cross file(s) to override host machine configuration
 
         if self.coredata.cross_files:
-            config = coredata.parse_machine_files(self.coredata.cross_files)
+            config = coredata.parse_machine_files(self.coredata.cross_files, self.source_dir)
             properties.host = Properties(config.get('properties', {}))
             binaries.host = BinaryTable(config.get('binaries', {}))
             cmakevars.host = CMakeVariables(config.get('cmake', {}))
@@ -710,7 +747,10 @@ class Environment:
         for (name, evar), for_machine in itertools.product(opts, MachineChoice):
             p_env = _get_env_var(for_machine, self.is_cross_build(), evar)
             if p_env is not None:
-                self.binaries[for_machine].binaries.setdefault(name, mesonlib.split_args(p_env))
+                if os.path.exists(p_env):
+                    self.binaries[for_machine].binaries.setdefault(name, [p_env])
+                else:
+                    self.binaries[for_machine].binaries.setdefault(name, mesonlib.split_args(p_env))
 
     def _set_default_properties_from_env(self) -> None:
         """Properties which can also be set from the environment."""
@@ -778,7 +818,7 @@ class Environment:
         return is_object(fname)
 
     @lru_cache(maxsize=None)
-    def is_library(self, fname):
+    def is_library(self, fname: mesonlib.FileOrString):
         return is_library(fname)
 
     def lookup_binary_entry(self, for_machine: MachineChoice, name: str) -> T.Optional[T.List[str]]:
@@ -838,7 +878,7 @@ class Environment:
     def get_datadir(self) -> str:
         return self.coredata.get_option(OptionKey('datadir'))
 
-    def get_compiler_system_dirs(self, for_machine: MachineChoice):
+    def get_compiler_system_lib_dirs(self, for_machine: MachineChoice) -> T.List[str]:
         for comp in self.coredata.compilers[for_machine].values():
             if comp.id == 'clang':
                 index = 1
@@ -856,6 +896,18 @@ class Environment:
             raise mesonlib.MesonException('Could not calculate system search dirs')
         out = out.split('\n')[index].lstrip('libraries: =').split(':')
         return [os.path.normpath(p) for p in out]
+
+    def get_compiler_system_include_dirs(self, for_machine: MachineChoice) -> T.List[str]:
+        for comp in self.coredata.compilers[for_machine].values():
+            if comp.id == 'clang':
+                break
+            elif comp.id == 'gcc':
+                break
+        else:
+            # This option is only supported by gcc and clang. If we don't get a
+            # GCC or Clang compiler return and empty list.
+            return []
+        return comp.get_default_include_dirs()
 
     def need_exe_wrapper(self, for_machine: MachineChoice = MachineChoice.HOST):
         value = self.properties[for_machine].get('needs_exe_wrapper', None)

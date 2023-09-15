@@ -27,7 +27,7 @@ from ..build import Executable, Jar, SharedLibrary, SharedModule, StaticLibrary
 from ..compilers import detect_compiler_for
 from ..interpreterbase import InvalidArguments, UnknownValue
 from ..mesonlib import MachineChoice, OptionKey
-from ..mparser import BaseNode, ElementaryNode, IdNode, StringNode, FunctionNode
+from ..mparser import BaseNode, ElementaryNode, IdNode, BaseStringNode, FunctionNode
 from .interpreter import AstInterpreter, MockBuildTarget, MockDependency
 
 if T.TYPE_CHECKING:
@@ -40,9 +40,9 @@ class IntrospectionHelper(argparse.Namespace):
     # mimic an argparse namespace
     def __init__(self, cross_file: str):
         super().__init__()
-        self.cross_file = cross_file  # type: str
-        self.native_file = None       # type: str
-        self.cmd_line_options = {}    # type: T.Dict[str, str]
+        self.cross_file = cross_file
+        self.native_file: str = None
+        self.cmd_line_options: T.Dict[str, str] = {}
 
     def __eq__(self, other: object) -> bool:
         return NotImplemented
@@ -75,10 +75,10 @@ class IntrospectionInterpreter(AstInterpreter):
         self.coredata = self.environment.get_coredata()
         self.backend = backend
         self.default_options = {OptionKey('backend'): self.backend}
-        self.project_data = {}    # type: T.Dict[str, T.Any]
-        self.targets = []         # type: T.List[T.Dict[str, T.Any]]
-        self.dependencies = []    # type: T.List[T.Dict[str, T.Any]]
-        self.project_node = None  # type: BaseNode
+        self.project_data: T.Dict[str, T.Any] = {}
+        self.targets: T.List[T.Dict[str, T.Any]] = []
+        self.dependencies: T.List[T.Dict[str, T.Any]] = []
+        self.project_node: BaseNode = None
 
         self.funcs.update({
             'add_languages': self.func_add_languages,
@@ -168,11 +168,11 @@ class IntrospectionInterpreter(AstInterpreter):
         return UnknownValue()
 
     def _add_languages(self, raw_langs: T.List[TYPE_var], required: bool, for_machine: MachineChoice) -> None:
-        langs = []  # type: T.List[str]
+        langs: T.List[str] = []
         for l in self.flatten_args(raw_langs):
             if isinstance(l, str):
                 langs.append(l)
-            elif isinstance(l, StringNode):
+            elif isinstance(l, BaseStringNode):
                 langs.append(l.value)
 
         for lang in sorted(langs, key=compilers.sort_clink):
@@ -260,14 +260,13 @@ class IntrospectionInterpreter(AstInterpreter):
         kwargs_reduced = {k: v.value if isinstance(v, ElementaryNode) else v for k, v in kwargs_reduced.items()}
         kwargs_reduced = {k: v for k, v in kwargs_reduced.items() if not isinstance(v, BaseNode)}
         for_machine = MachineChoice.HOST
-        objects = []        # type: T.List[T.Any]
-        empty_sources = []  # type: T.List[T.Any]
+        objects: T.List[T.Any] = []
+        empty_sources: T.List[T.Any] = []
         # Passing the unresolved sources list causes errors
         kwargs_reduced['_allow_no_sources'] = True
         target = targetclass(name, self.subdir, self.subproject, for_machine, empty_sources, None, objects,
                              self.environment, self.coredata.compilers[for_machine], kwargs_reduced)
-        target.process_compilers()
-        target.process_compilers_late([])
+        target.process_compilers_late()
 
         new_target = {
             'name': target.get_basename(),
@@ -346,3 +345,22 @@ class IntrospectionInterpreter(AstInterpreter):
         self.sanity_check_ast()
         self.parse_project()
         self.run()
+
+    def extract_subproject_dir(self) -> T.Optional[str]:
+        '''Fast path to extract subproject_dir kwarg.
+           This is faster than self.parse_project() which also initialize options
+           and also calls parse_project() on every subproject.
+        '''
+        if not self.ast.lines:
+            return
+        project = self.ast.lines[0]
+        # first line is always project()
+        if not isinstance(project, FunctionNode):
+            return
+        for kw, val in project.args.kwargs.items():
+            assert isinstance(kw, IdNode), 'for mypy'
+            if kw.value == 'subproject_dir':
+                # mypy does not understand "and isinstance"
+                if isinstance(val, BaseStringNode):
+                    return val.value
+        return None

@@ -21,7 +21,7 @@ import typing as T
 from .. import coredata
 from .. import mlog
 from ..mesonlib import (
-    EnvironmentException, Popen_safe, OptionOverrideProxy,
+    EnvironmentException, Popen_safe,
     is_windows, LibType, OptionKey, version_compare,
 )
 from .compilers import (Compiler, cuda_buildtype_args, cuda_optimization_args,
@@ -34,7 +34,7 @@ if T.TYPE_CHECKING:
     from ..dependencies import Dependency
     from ..environment import Environment  # noqa: F401
     from ..envconfig import MachineInfo
-    from ..linkers import DynamicLinker
+    from ..linkers.linkers import DynamicLinker
     from ..mesonlib import MachineChoice
     from ..programs import ExternalProgram
 
@@ -650,7 +650,7 @@ class CudaCompiler(Compiler):
         host_options = {key: options.get(key, opt) for key, opt in self.host_compiler.get_options().items()}
         std_key = OptionKey('std', machine=self.for_machine, lang=self.host_compiler.language)
         overrides = {std_key: 'none'}
-        return OptionOverrideProxy(overrides, host_options)
+        return coredata.OptionsView(host_options, overrides=overrides)
 
     def get_option_compile_args(self, options: 'KeyedOptionDictType') -> T.List[str]:
         args = self.get_ccbin_args(options)

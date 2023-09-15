@@ -161,7 +161,7 @@ class Properties:
             self,
             properties: T.Optional[T.Dict[str, T.Optional[T.Union[str, bool, int, T.List[str]]]]] = None,
     ):
-        self.properties = properties or {}  # type: T.Dict[str, T.Optional[T.Union[str, bool, int, T.List[str]]]]
+        self.properties = properties or {}
 
     def has_stdlib(self, language: str) -> bool:
         return language + '_stdlib' in self.properties
@@ -237,6 +237,12 @@ class Properties:
         value = T.cast('T.Optional[str]', self.properties.get('java_home'))
         return Path(value) if value else None
 
+    def get_bindgen_clang_args(self) -> T.List[str]:
+        value = mesonlib.listify(self.properties.get('bindgen_clang_arguments', []))
+        if not all(isinstance(v, str) for v in value):
+            raise EnvironmentException('bindgen_clang_arguments must be a string or an array of strings')
+        return T.cast('T.List[str]', value)
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, type(self)):
             return self.properties == other.properties
@@ -260,6 +266,8 @@ class MachineInfo(HoldableObject):
     cpu_family: str
     cpu: str
     endian: str
+    kernel: T.Optional[str]
+    subsystem: T.Optional[str]
 
     def __post_init__(self) -> None:
         self.is_64_bit: bool = self.cpu_family in CPU_FAMILIES_64_BIT
@@ -283,7 +291,11 @@ class MachineInfo(HoldableObject):
         if endian not in ('little', 'big'):
             mlog.warning(f'Unknown endian {endian}')
 
-        return cls(literal['system'], cpu_family, literal['cpu'], endian)
+        system = literal['system']
+        kernel = literal.get('kernel', None)
+        subsystem = literal.get('subsystem', None)
+
+        return cls(system, cpu_family, literal['cpu'], endian, kernel, subsystem)
 
     def is_windows(self) -> bool:
         """
@@ -350,6 +362,12 @@ class MachineInfo(HoldableObject):
         Machine is GNU/Hurd?
         """
         return self.system == 'gnu'
+
+    def is_aix(self) -> bool:
+        """
+        Machine is aix?
+        """
+        return self.system == 'aix'
 
     def is_irix(self) -> bool:
         """Machine is IRIX?"""
@@ -442,7 +460,7 @@ class BinaryTable:
 class CMakeVariables:
     def __init__(self, variables: T.Optional[T.Dict[str, T.Any]] = None) -> None:
         variables = variables or {}
-        self.variables = {}  # type: T.Dict[str, T.List[str]]
+        self.variables: T.Dict[str, T.List[str]] = {}
 
         for key, value in variables.items():
             value = mesonlib.listify(value)

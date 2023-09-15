@@ -35,6 +35,7 @@ from ..interpreterbase import (
     InvalidArguments,
     BreakRequest,
     ContinueRequest,
+    Disabler,
     default_resolve_key,
     Disabler,
     is_disabled,
@@ -66,6 +67,7 @@ from ..mparser import (
     NotNode,
     PlusAssignmentNode,
     TernaryNode,
+    TestCaseClauseNode,
 )
 
 if T.TYPE_CHECKING:
@@ -193,7 +195,7 @@ class AstInterpreter(InterpreterBase):
     def __init__(self, source_root: str, subdir: str, subproject: 'SubProject', visitors: T.Optional[T.List[AstVisitor]] = None):
         super().__init__(source_root, subdir, subproject)
         self.visitors = visitors if visitors is not None else []
-        self.processed_buildfiles = set() # type: T.Set[str]
+        self.processed_buildfiles: T.Set[str] = set()
         self.nesting: T.List[int] = []
         self.cur_assignments: T.DefaultDict[str, T.List[T.Tuple[T.List[int], T.Union[BaseNode, UnknownValue]]]] = defaultdict(list)
         self.all_assignment_nodes: T.DefaultDict[str, T.List[BaseNode]] = defaultdict(list)
@@ -211,8 +213,8 @@ class AstInterpreter(InterpreterBase):
         self.dataflow_dag = DataflowDAG()
         self.funcvals: T.Dict[BaseNode, T.Union[BaseNode, InterpreterObject]] = {}
         self.tainted = False
-        self.assign_vals = {}             # type: T.Dict[str, T.Any]
-        self.reverse_assignment = {}      # type: T.Dict[str, BaseNode]
+        self.assign_vals: T.Dict[str, T.Any] = {}
+        self.reverse_assignment: T.Dict[str, BaseNode] = {}
         self.build_func_dict()
         self.build_holder_map()
 
@@ -264,14 +266,12 @@ class AstInterpreter(InterpreterBase):
                            'is_disabler': self.func_do_nothing,
                            'is_variable': self.func_do_nothing,
                            'disabler': self.func_do_nothing,
-                           'gettext': self.func_do_nothing,
                            'jar': self.func_do_nothing,
                            'warning': self.func_do_nothing,
                            'shared_module': self.func_do_nothing,
                            'option': self.func_do_nothing,
                            'both_libraries': self.func_do_nothing,
                            'add_test_setup': self.func_do_nothing,
-                           'find_library': self.func_do_nothing,
                            'subdir_done': self.func_do_nothing,
                            'alias_target': self.func_do_nothing,
                            'summary': self.func_do_nothing,
@@ -414,7 +414,7 @@ class AstInterpreter(InterpreterBase):
         for value in args.kwargs.values():
             self.evaluate_statement(value)
         if isinstance(args, ArgumentNode):
-            kwargs = {}  # type: T.Dict[str, TYPE_nvar]
+            kwargs: T.Dict[str, TYPE_nvar] = {}
             for key, val in args.kwargs.items():
                 kwargs[key_resolver(key)] = val
             if args.incorrect_order():
@@ -528,7 +528,7 @@ class AstInterpreter(InterpreterBase):
             self.evaluate_codeblock(i.block)
             self.nesting[-1] += 1
         if not isinstance(node.elseblock, EmptyNode):
-            self.evaluate_codeblock(node.elseblock)
+            self.evaluate_codeblock(node.elseblock.block)
         self.nesting.pop()
         for var_name in self.cur_assignments:
             flag = False
@@ -713,8 +713,8 @@ class AstInterpreter(InterpreterBase):
     def assignment(self, node: AssignmentNode) -> None:
         assert isinstance(node, AssignmentNode)
         self.evaluate_statement(node.value)
-        self.cur_assignments[node.var_name].append((self.nesting.copy(), node.value))
-        self.all_assignment_nodes[node.var_name].append(node)
+        self.cur_assignments[node.var_name.value].append((self.nesting.copy(), node.value))
+        self.all_assignment_nodes[node.var_name.value].append(node)
 
     def evaluate_plusassign(self, node: PlusAssignmentNode) -> None:
         assert isinstance(node, PlusAssignmentNode)
@@ -813,6 +813,9 @@ class AstInterpreter(InterpreterBase):
             elif isinstance(val, (str, bool, int, float)) or include_unknown_args:
                 flattened_kwargs[key] = val
         return flattened_kwargs
+
+    def evaluate_testcase(self, node: TestCaseClauseNode) -> Disabler | None:
+        return Disabler(subproject=self.subproject)
 
     def evaluate_statement(self, cur: mparser.BaseNode) -> None:
         if hasattr(cur, 'args'):

@@ -36,7 +36,7 @@ import typing as T
 
 from mesonbuild.compilers.c import CCompiler
 from mesonbuild.compilers.detect import detect_c_compiler
-from mesonbuild import dependencies
+from mesonbuild.dependencies.pkgconfig import PkgConfigCLI
 from mesonbuild import mesonlib
 from mesonbuild import mesonmain
 from mesonbuild import mtest
@@ -187,6 +187,15 @@ if mesonlib.is_windows() or mesonlib.is_cygwin():
 else:
     exe_suffix = ''
 
+def handle_meson_skip_test(out: str) -> T.Tuple[bool, str]:
+    for line in out.splitlines():
+        for prefix in {'Problem encountered', 'Assert failed', 'Failed to configure the CMake subproject'}:
+            if f'{prefix}: MESON_SKIP_TEST' in line:
+                offset = line.index('MESON_SKIP_TEST') + 16
+                reason = line[offset:].strip()
+                return (True, reason)
+    return (False, '')
+
 def get_meson_script() -> str:
     '''
     Guess the meson that corresponds to the `mesonbuild` that has been imported
@@ -302,8 +311,8 @@ def run_mtest_inprocess(commandlist: T.List[str]) -> T.Tuple[int, str, str]:
 def clear_meson_configure_class_caches() -> None:
     CCompiler.find_library_cache = {}
     CCompiler.find_framework_cache = {}
-    dependencies.PkgConfigDependency.pkgbin_cache = {}
-    dependencies.PkgConfigDependency.class_pkgbin = mesonlib.PerMachine(None, None)
+    PkgConfigCLI.pkgbin_cache = {}
+    PkgConfigCLI.class_pkgbin = mesonlib.PerMachine(None, None)
     mesonlib.project_meson_versions = collections.defaultdict(str)
 
 def run_configure_inprocess(commandlist: T.List[str], env: T.Optional[T.Dict[str, str]] = None, catch_exception: bool = False) -> T.Tuple[int, str, str]:

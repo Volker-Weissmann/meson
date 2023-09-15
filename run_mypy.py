@@ -12,6 +12,7 @@ from mesonbuild.mesonlib import version_compare
 modules = [
     # fully typed submodules
     'mesonbuild/ast/',
+    'mesonbuild/cargo/',
     'mesonbuild/cmake/',
     'mesonbuild/compilers/',
     'mesonbuild/dependencies/',
@@ -19,6 +20,7 @@ modules = [
     'mesonbuild/interpreterbase/',
     'mesonbuild/linkers/',
     'mesonbuild/scripts/',
+    'mesonbuild/templates/',
     'mesonbuild/wrap/',
 
     # specific files
@@ -36,6 +38,8 @@ modules = [
     'mesonbuild/utils/core.py',
     'mesonbuild/utils/platform.py',
     'mesonbuild/utils/universal.py',
+    'mesonbuild/mconf.py',
+    'mesonbuild/mdist.py',
     'mesonbuild/minit.py',
     'mesonbuild/minstall.py',
     'mesonbuild/mintro.py',
@@ -100,6 +104,7 @@ def main() -> int:
     parser.add_argument('-q', '--quiet', action='store_true', help='do not print informational messages')
     parser.add_argument('-p', '--pretty', action='store_true', help='pretty print mypy errors')
     parser.add_argument('-C', '--clear', action='store_true', help='clear the terminal before running mypy')
+    parser.add_argument('--allver', action='store_true', help='Check all supported versions of python')
 
     opts, args = parser.parse_known_args()
     if opts.pretty:
@@ -125,8 +130,15 @@ def main() -> int:
         command = [opts.mypy] if opts.mypy else [sys.executable, '-m', 'mypy']
         if not opts.quiet:
             print('Running mypy (this can take some time) ...')
-        p = subprocess.run(command + args + to_check, cwd=root)
-        return p.returncode
+        retcode = subprocess.run(command + args + to_check, cwd=root).returncode
+        if opts.allver and retcode == 0:
+            for minor in range(7, sys.version_info[1]):
+                if not opts.quiet:
+                    print(f'Checking mypy with python version: 3.{minor}')
+                p = subprocess.run(command + args + to_check + [f'--python-version=3.{minor}'], cwd=root)
+                if p.returncode != 0:
+                    retcode = p.returncode
+        return retcode
     else:
         if not opts.quiet:
             print('nothing to do...')

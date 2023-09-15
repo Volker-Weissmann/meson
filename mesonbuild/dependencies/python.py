@@ -20,6 +20,7 @@ import typing as T
 from .. import mesonlib, mlog
 from .base import process_method_kw, DependencyMethods, DependencyTypeName, ExternalDependency, SystemDependency
 from .configtool import ConfigToolDependency
+from .detect import packages
 from .factory import DependencyFactory
 from .framework import ExtraFrameworkDependency
 from .pkgconfig import PkgConfigDependency
@@ -43,6 +44,7 @@ if T.TYPE_CHECKING:
         paths: T.Dict[str, str]
         platform: str
         suffix: str
+        limited_api_suffix: str
         variables: T.Dict[str, str]
         version: str
 
@@ -93,6 +95,7 @@ class BasicPythonExternalProgram(ExternalProgram):
             'paths': {},
             'platform': 'sentinel',
             'suffix': 'sentinel',
+            'limited_api_suffix': 'sentinel',
             'variables': {},
             'version': '0.0',
         }
@@ -196,7 +199,7 @@ class PythonSystemDependency(SystemDependency, _PythonDependencyBase):
         if self.link_libpython:
             # link args
             if mesonlib.is_windows():
-                self.find_libpy_windows(environment)
+                self.find_libpy_windows(environment, limited_api=False)
             else:
                 self.find_libpy(environment)
         else:
@@ -258,7 +261,7 @@ class PythonSystemDependency(SystemDependency, _PythonDependencyBase):
         mlog.log(f'Unknown Windows Python platform {self.platform!r}')
         return None
 
-    def get_windows_link_args(self) -> T.Optional[T.List[str]]:
+    def get_windows_link_args(self, limited_api: bool) -> T.Optional[T.List[str]]:
         if self.platform.startswith('win'):
             vernum = self.variables.get('py_version_nodot')
             verdot = self.variables.get('py_version_short')
@@ -276,6 +279,8 @@ class PythonSystemDependency(SystemDependency, _PythonDependencyBase):
                     else:
                         libpath = Path(f'python{vernum}.dll')
                 else:
+                    if limited_api:
+                        vernum = vernum[0]
                     libpath = Path('libs') / f'python{vernum}.lib'
                     # For a debug build, pyconfig.h may force linking with
                     # pythonX_d.lib (see meson#10776). This cannot be avoided
@@ -316,7 +321,7 @@ class PythonSystemDependency(SystemDependency, _PythonDependencyBase):
             return None
         return [str(lib)]
 
-    def find_libpy_windows(self, env: 'Environment') -> None:
+    def find_libpy_windows(self, env: 'Environment', limited_api: bool = False) -> None:
         '''
         Find python3 libraries on Windows and also verify that the arch matches
         what we are building for.
@@ -331,7 +336,7 @@ class PythonSystemDependency(SystemDependency, _PythonDependencyBase):
             self.is_found = False
             return
         # This can fail if the library is not found
-        largs = self.get_windows_link_args()
+        largs = self.get_windows_link_args(limited_api)
         if largs is None:
             self.is_found = False
             return
@@ -407,7 +412,9 @@ def python_factory(env: 'Environment', for_machine: 'MachineChoice',
 
     return candidates
 
-pybind11_factory = DependencyFactory(
+packages['python3'] = python_factory
+
+packages['pybind11'] = pybind11_factory = DependencyFactory(
     'pybind11',
     [DependencyMethods.PKGCONFIG, DependencyMethods.CONFIG_TOOL, DependencyMethods.CMAKE],
     configtool_class=Pybind11ConfigToolDependency,

@@ -29,8 +29,7 @@ if T.TYPE_CHECKING:
     from typing_extensions import Protocol
 
     from .. import mparser
-    from .baseobjects import InterpreterObject, TV_func, TYPE_var, TYPE_kwargs
-    from .interpreterbase import SubProject
+    from .baseobjects import InterpreterObject, SubProject, TV_func, TYPE_var, TYPE_kwargs
     from .operator import MesonOperator
 
     _TV_IntegerObject = T.TypeVar('_TV_IntegerObject', bound=InterpreterObject, contravariant=True)
@@ -271,7 +270,7 @@ def typed_pos_args(name: str, *types: T.Union[T.Type, T.Tuple[T.Type, ...]],
                     diff = num_types + len(optargs) - num_args
                     nargs[i] = tuple(list(args) + [None] * diff)
                 else:
-                    nargs[i] = args
+                    nargs[i] = tuple(args)
             else:
                 nargs[i] = tuple(args)
             return f(*nargs, **wrapped_kwargs)
@@ -604,11 +603,12 @@ class FeatureCheckBase(metaclass=abc.ABCMeta):
 
     feature_registry: T.ClassVar[T.Dict[str, T.Dict[str, T.Set[T.Tuple[str, T.Optional['mparser.BaseNode']]]]]]
     emit_notice = False
+    unconditional = False
 
     def __init__(self, feature_name: str, feature_version: str, extra_message: str = ''):
-        self.feature_name = feature_name  # type: str
-        self.feature_version = feature_version    # type: str
-        self.extra_message = extra_message  # type: str
+        self.feature_name = feature_name
+        self.feature_version = feature_version
+        self.extra_message = extra_message
 
     @staticmethod
     def get_target_version(subproject: str) -> str:
@@ -625,7 +625,7 @@ class FeatureCheckBase(metaclass=abc.ABCMeta):
     def use(self, subproject: 'SubProject', location: T.Optional['mparser.BaseNode'] = None) -> None:
         tv = self.get_target_version(subproject)
         # No target version
-        if tv == '':
+        if tv == '' and not self.unconditional:
             return
         # Target version is new enough, don't warn
         if self.check_version(tv, self.feature_version) and not self.emit_notice:
@@ -702,7 +702,7 @@ class FeatureNew(FeatureCheckBase):
     # Class variable, shared across all instances
     #
     # Format: {subproject: {feature_version: set(feature_names)}}
-    feature_registry = {}  # type: T.ClassVar[T.Dict[str, T.Dict[str, T.Set[T.Tuple[str, T.Optional[mparser.BaseNode]]]]]]
+    feature_registry = {}
 
     @staticmethod
     def check_version(target_version: str, feature_version: str) -> bool:
@@ -733,7 +733,7 @@ class FeatureDeprecated(FeatureCheckBase):
     # Class variable, shared across all instances
     #
     # Format: {subproject: {feature_version: set(feature_names)}}
-    feature_registry = {}  # type: T.ClassVar[T.Dict[str, T.Dict[str, T.Set[T.Tuple[str, T.Optional[mparser.BaseNode]]]]]]
+    feature_registry = {}
     emit_notice = True
 
     @staticmethod
@@ -759,6 +759,40 @@ class FeatureDeprecated(FeatureCheckBase):
         if self.extra_message:
             args.append(self.extra_message)
         mlog.warning(*args, location=location)
+
+
+class FeatureBroken(FeatureCheckBase):
+    """Checks for broken features"""
+
+    # Class variable, shared across all instances
+    #
+    # Format: {subproject: {feature_version: set(feature_names)}}
+    feature_registry = {}
+    unconditional = True
+
+    @staticmethod
+    def check_version(target_version: str, feature_version: str) -> bool:
+        # always warn for broken stuff
+        return False
+
+    @staticmethod
+    def get_warning_str_prefix(tv: str) -> str:
+        return 'Broken features used:'
+
+    @staticmethod
+    def get_notice_str_prefix(tv: str) -> str:
+        return ''
+
+    def log_usage_warning(self, tv: str, location: T.Optional['mparser.BaseNode']) -> None:
+        args = [
+            'Project uses feature that was always broken,',
+            'and is now deprecated since',
+            f"'{self.feature_version}':",
+            f'{self.feature_name}.',
+        ]
+        if self.extra_message:
+            args.append(self.extra_message)
+        mlog.deprecation(*args, location=location)
 
 
 # This cannot be a dataclass due to https://github.com/python/mypy/issues/5374

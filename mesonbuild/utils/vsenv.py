@@ -6,9 +6,11 @@ import json
 import pathlib
 import shutil
 import tempfile
+import locale
 
 from .. import mlog
-from .universal import MesonException, is_windows, windows_detect_native_arch
+from .core import MesonException
+from .universal import is_windows, windows_detect_native_arch
 
 
 __all__ = [
@@ -92,7 +94,8 @@ def _setup_vsenv(force: bool) -> bool:
     bat_file.write(bat_contents)
     bat_file.flush()
     bat_file.close()
-    bat_output = subprocess.check_output(bat_file.name, universal_newlines=True)
+    bat_output = subprocess.check_output(bat_file.name, universal_newlines=True,
+                                         encoding=locale.getpreferredencoding(False))
     os.unlink(bat_file.name)
     bat_lines = bat_output.split('\n')
     bat_separator_seen = False

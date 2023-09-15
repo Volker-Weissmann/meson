@@ -197,7 +197,7 @@ class IntrospectionInterpreter(AstInterpreter):
 
     def func_dependency(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> None:
         args = self.flatten_args(args)
-        kwargs = self.flatten_kwargs(kwargs)
+        kwargs = self.flatten_kwargs(kwargs, True)
         if not args:
             return
         name = args[0]

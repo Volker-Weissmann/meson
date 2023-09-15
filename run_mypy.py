@@ -11,7 +11,7 @@ from mesonbuild.mesonlib import version_compare
 
 modules = [
     # fully typed submodules
-    # 'mesonbuild/ast/',
+    'mesonbuild/ast/',
     'mesonbuild/cmake/',
     'mesonbuild/compilers/',
     'mesonbuild/dependencies/',

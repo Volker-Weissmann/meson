@@ -25,22 +25,16 @@ from .. import compilers, environment, mesonlib, optinterpreter
 from .. import coredata as cdata
 from ..build import Executable, Jar, SharedLibrary, SharedModule, StaticLibrary
 from ..compilers import detect_compiler_for
-from ..interpreterbase import InvalidArguments
+from ..interpreterbase import InvalidArguments, UnknownValue
 from ..mesonlib import MachineChoice, OptionKey
-from ..mparser import BaseNode, ArithmeticNode, ArrayNode, ElementaryNode, IdNode, FunctionNode, StringNode
-from .interpreter import AstInterpreter
+from ..mparser import BaseNode, ElementaryNode, IdNode, StringNode, FunctionNode
+from .interpreter import AstInterpreter, MockBuildTarget, MockDependency
 
 if T.TYPE_CHECKING:
     from ..build import BuildTarget
-    from ..interpreterbase import TYPE_nvar
+    from ..interpreterbase import TYPE_nvar, TYPE_var
     from .visitor import AstVisitor
 
-
-# TODO: it would be nice to not have to duplicate this
-BUILD_TARGET_FUNCTIONS = [
-    'executable', 'jar', 'library', 'shared_library', 'shared_module',
-    'static_library', 'both_libraries'
-]
 
 class IntrospectionHelper(argparse.Namespace):
     # mimic an argparse namespace
@@ -54,8 +48,11 @@ class IntrospectionHelper(argparse.Namespace):
         return NotImplemented
 
 class IntrospectionInterpreter(AstInterpreter):
-    # Interpreter to detect the options without a build directory
-    # Most of the code is stolen from interpreter.Interpreter
+    # If you run `meson setup ...` the `Interpreter`-class walks over the AST.
+    # If you run `meson rewrite ...` and `meson introspect meson.build ...`,
+    # the `AstInterpreter`-class walks over the AST.
+    # Works without a build directory.
+    # Most of the code is stolen from interpreter.Interpreter.
     def __init__(self,
                  source_root: str,
                  subdir: str,
@@ -96,7 +93,7 @@ class IntrospectionInterpreter(AstInterpreter):
             'both_libraries': self.func_both_lib,
         })
 
-    def func_project(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs: T.Dict[str, TYPE_nvar]) -> None:
+    def func_project(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> None:
         if self.project_node:
             raise InvalidArguments('Second call to project()')
         self.project_node = node
@@ -157,19 +154,21 @@ class IntrospectionInterpreter(AstInterpreter):
         except (mesonlib.MesonException, RuntimeError):
             return
 
-    def func_add_languages(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs: T.Dict[str, TYPE_nvar]) -> None:
+    def func_add_languages(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> UnknownValue:
         kwargs = self.flatten_kwargs(kwargs)
         required = kwargs.get('required', True)
         if isinstance(required, cdata.UserFeatureOption):
             required = required.is_enabled()
+        assert isinstance(required, bool)
         if 'native' in kwargs:
             native = kwargs.get('native', False)
             self._add_languages(args, required, MachineChoice.BUILD if native else MachineChoice.HOST)
         else:
             for for_machine in [MachineChoice.BUILD, MachineChoice.HOST]:
                 self._add_languages(args, required, for_machine)
+        return UnknownValue()
 
-    def _add_languages(self, raw_langs: T.List[TYPE_nvar], required: bool, for_machine: MachineChoice) -> None:
+    def _add_languages(self, raw_langs: T.List[TYPE_var], required: bool, for_machine: MachineChoice) -> None:
         langs = []  # type: T.List[str]
         for l in self.flatten_args(raw_langs):
             if isinstance(l, str):
@@ -196,35 +195,39 @@ class IntrospectionInterpreter(AstInterpreter):
                         options[k] = v
                     self.coredata.add_compiler_options(options, lang, for_machine, self.environment)
 
-    def func_dependency(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs: T.Dict[str, TYPE_nvar]) -> None:
+    def func_dependency(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> None:
         args = self.flatten_args(args)
         kwargs = self.flatten_kwargs(kwargs)
         if not args:
             return
         name = args[0]
+        assert isinstance(name, str)
         has_fallback = 'fallback' in kwargs
         required = kwargs.get('required', True)
         version = kwargs.get('version', [])
         if not isinstance(version, list):
             version = [version]
-        if isinstance(required, ElementaryNode):
-            required = required.value
-        if not isinstance(required, bool):
-            required = False
-        self.dependencies += [{
+        assert isinstance(required, (bool, UnknownValue))
+        newdep = {
             'name': name,
             'required': required,
             'version': version,
             'has_fallback': has_fallback,
             'conditional': node.condition_level > 0,
             'node': node
-        }]
+        }
+        self.dependencies += [newdep]
+        self.funcvals[node] = MockDependency(name=name, required=required, version=version, has_fallback=has_fallback, conditional=node.condition_level > 0, node=node)
 
-    def build_target(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs_raw: T.Dict[str, TYPE_nvar], targetclass: T.Type[BuildTarget]) -> T.Optional[T.Dict[str, T.Any]]:
+    def build_target(self, node: BaseNode, args: T.List[TYPE_var], kwargs_raw: T.Dict[str, TYPE_var], targetclass: T.Type[BuildTarget]) -> None:
+        assert isinstance(node, FunctionNode)
         args = self.flatten_args(args)
-        if not args or not isinstance(args[0], str):
-            return None
-        name = args[0]
+        if isinstance(args[0], UnknownValue):
+            name = 'unknown'
+        else:
+            assert isinstance(args[0], str)
+            name = args[0]
+
         srcqueue = [node]
         extra_queue = []
 
@@ -237,43 +240,24 @@ class IntrospectionInterpreter(AstInterpreter):
 
         kwargs = self.flatten_kwargs(kwargs_raw, True)
 
-        def traverse_nodes(inqueue: T.List[BaseNode]) -> T.List[BaseNode]:
-            res = []  # type: T.List[BaseNode]
-            while inqueue:
-                curr = inqueue.pop(0)
-                arg_node = None
-                assert isinstance(curr, BaseNode)
-                if isinstance(curr, FunctionNode):
-                    arg_node = curr.args
-                elif isinstance(curr, ArrayNode):
-                    arg_node = curr.args
-                elif isinstance(curr, IdNode):
-                    # Try to resolve the ID and append the node to the queue
-                    assert isinstance(curr.value, str)
-                    var_name = curr.value
-                    if var_name in self.assignments:
-                        tmp_node = self.assignments[var_name]
-                        if isinstance(tmp_node, (ArrayNode, IdNode, FunctionNode)):
-                            inqueue += [tmp_node]
-                elif isinstance(curr, ArithmeticNode):
-                    inqueue += [curr.left, curr.right]
-                if arg_node is None:
-                    continue
-                arg_nodes = arg_node.arguments.copy()
-                # Pop the first element if the function is a build target function
-                if isinstance(curr, FunctionNode) and curr.func_name in BUILD_TARGET_FUNCTIONS:
-                    arg_nodes.pop(0)
-                elementary_nodes = [x for x in arg_nodes if isinstance(x, (str, StringNode))]
-                inqueue += [x for x in arg_nodes if isinstance(x, (FunctionNode, ArrayNode, IdNode, ArithmeticNode))]
-                if elementary_nodes:
-                    res += [curr]
-            return res
+        oldlen = len(node.args.arguments)
+        source_nodes = node.args.arguments[1:]
+        for k, v in node.args.kwargs.items():
+            assert isinstance(k, IdNode)
+            if k.value == 'sources':
+                source_nodes.append(v)
+        assert oldlen == len(node.args.arguments)
 
-        source_nodes = traverse_nodes(srcqueue)
-        extraf_nodes = traverse_nodes(extra_queue)
+        extraf_nodes = None
+        for k, v in node.args.kwargs.items():
+            assert isinstance(k, IdNode)
+            if k.value == 'extra_files':
+                assert extraf_nodes is None
+                extraf_nodes = v
+
 
         # Make sure nothing can crash when creating the build class
-        kwargs_reduced = {k: v for k, v in kwargs.items() if k in targetclass.known_kwargs and k in {'install', 'build_by_default', 'build_always'}}
+        kwargs_reduced = {k: v for k, v in kwargs.items() if k in targetclass.known_kwargs and k in {'install', 'build_by_default', 'build_always', 'name_prefix'}}
         kwargs_reduced = {k: v.value if isinstance(v, ElementaryNode) else v for k, v in kwargs_reduced.items()}
         kwargs_reduced = {k: v for k, v in kwargs_reduced.items() if not isinstance(v, BaseNode)}
         for_machine = MachineChoice.HOST
@@ -281,7 +265,7 @@ class IntrospectionInterpreter(AstInterpreter):
         empty_sources = []  # type: T.List[T.Any]
         # Passing the unresolved sources list causes errors
         kwargs_reduced['_allow_no_sources'] = True
-        target = targetclass(name, self.subdir, self.subproject, for_machine, empty_sources, [], objects,
+        target = targetclass(name, self.subdir, self.subproject, for_machine, empty_sources, None, objects,
                              self.environment, self.coredata.compilers[for_machine], kwargs_reduced)
         target.process_compilers()
         target.process_compilers_late([])
@@ -295,16 +279,16 @@ class IntrospectionInterpreter(AstInterpreter):
             'build_by_default': target.build_by_default,
             'installed': target.should_install(),
             'outputs': target.get_outputs(),
-            'sources': source_nodes,
+            'source_nodes': source_nodes,
             'extra_files': extraf_nodes,
             'kwargs': kwargs,
             'node': node,
         }
 
         self.targets += [new_target]
-        return new_target
+        return MockBuildTarget(new_target)
 
-    def build_library(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs: T.Dict[str, TYPE_nvar]) -> T.Optional[T.Dict[str, T.Any]]:
+    def build_library(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
         default_library = self.coredata.get_option(OptionKey('default_library'))
         if default_library == 'shared':
             return self.build_target(node, args, kwargs, SharedLibrary)
@@ -314,28 +298,28 @@ class IntrospectionInterpreter(AstInterpreter):
             return self.build_target(node, args, kwargs, SharedLibrary)
         return None
 
-    def func_executable(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs: T.Dict[str, TYPE_nvar]) -> T.Optional[T.Dict[str, T.Any]]:
+    def func_executable(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
         return self.build_target(node, args, kwargs, Executable)
 
-    def func_static_lib(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs: T.Dict[str, TYPE_nvar]) -> T.Optional[T.Dict[str, T.Any]]:
+    def func_static_lib(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
         return self.build_target(node, args, kwargs, StaticLibrary)
 
-    def func_shared_lib(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs: T.Dict[str, TYPE_nvar]) -> T.Optional[T.Dict[str, T.Any]]:
+    def func_shared_lib(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
         return self.build_target(node, args, kwargs, SharedLibrary)
 
-    def func_both_lib(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs: T.Dict[str, TYPE_nvar]) -> T.Optional[T.Dict[str, T.Any]]:
+    def func_both_lib(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
         return self.build_target(node, args, kwargs, SharedLibrary)
 
-    def func_shared_module(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs: T.Dict[str, TYPE_nvar]) -> T.Optional[T.Dict[str, T.Any]]:
+    def func_shared_module(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
         return self.build_target(node, args, kwargs, SharedModule)
 
-    def func_library(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs: T.Dict[str, TYPE_nvar]) -> T.Optional[T.Dict[str, T.Any]]:
+    def func_library(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
         return self.build_library(node, args, kwargs)
 
-    def func_jar(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs: T.Dict[str, TYPE_nvar]) -> T.Optional[T.Dict[str, T.Any]]:
+    def func_jar(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
         return self.build_target(node, args, kwargs, Jar)
 
-    def func_build_target(self, node: BaseNode, args: T.List[TYPE_nvar], kwargs: T.Dict[str, TYPE_nvar]) -> T.Optional[T.Dict[str, T.Any]]:
+    def func_build_target(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
         if 'target_type' not in kwargs:
             return None
         target_type = kwargs.pop('target_type')

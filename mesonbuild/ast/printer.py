@@ -29,7 +29,35 @@ arithmic_map = {
     'div': '/'
 }
 
+# Also known as "order of operations" or "binding_power"
+# This is the counterpart to Parser.e1, Parser.e2, Parser.e3, Parser.e4, Parser.e5, Parser.e6, Parser.e7, Parser.e8, Parser.e9
+def precedence_level(node: mparser.BaseNode) -> float:
+    if isinstance(node, (mparser.PlusAssignmentNode, mparser.AssignmentNode, mparser.TernaryNode)):
+        return 1.0
+    elif isinstance(node, mparser.OrNode):
+        return 2.0
+    elif isinstance(node, mparser.AndNode):
+        return 3.0
+    elif isinstance(node, mparser.ComparisonNode):
+        return 4.0
+    elif isinstance(node, mparser.ArithmeticNode):
+        if node.operation in set(['add', 'sub']):
+            return 5.1
+        elif node.operation in set(['mod', 'mul', 'div']):
+            return 5.2
+    elif isinstance(node, (mparser.NotNode, mparser.UMinusNode)):
+        return 6.0
+    elif isinstance(node, mparser.FunctionNode):
+        return 7.0
+    elif isinstance(node, (mparser.ArrayNode, mparser.DictNode)):
+        return 8.0
+    elif isinstance(node, (mparser.BooleanNode, mparser.IdNode, mparser.NumberNode, mparser.StringNode, mparser.FormatStringNode, mparser.MultilineFormatStringNode, mparser.EmptyNode)):
+        return 9.0
+    raise TypeError
+
 class AstPrinter(AstVisitor):
+    escape_trans: T.Dict[int, str] = str.maketrans({'\'': '\\\'', '\\': '\\\\'})
+
     def __init__(self, indent: int = 2, arg_newline_cutoff: int = 5, update_ast_line_nos: bool = False):
         self.result = ''
         self.indent = indent
@@ -74,12 +102,14 @@ class AstPrinter(AstVisitor):
         node.lineno = self.curr_line or node.lineno
 
     def escape(self, val: str) -> str:
-        return val.translate(str.maketrans({'\'': '\\\'',
-                                            '\\': '\\\\'}))
+        return val.translate(self.escape_trans)
 
     def visit_StringNode(self, node: mparser.StringNode) -> None:
         assert isinstance(node.value, str)
-        self.append("'" + self.escape(node.value) + "'", node)
+        if '\n' in node.value:
+            self.append("'''" + self.escape(node.value) + "'''", node)
+        else:
+            self.append("'" + self.escape(node.value) + "'", node)
         node.lineno = self.curr_line or node.lineno
 
     def visit_FormatStringNode(self, node: mparser.FormatStringNode) -> None:
@@ -125,11 +155,23 @@ class AstPrinter(AstVisitor):
         node.lineno = self.curr_line or node.lineno
         node.right.accept(self)
 
+    def maybe_parentheses(self, outer: mparser.BaseNode, inner: mparser.BaseNode, parens: bool) -> None:
+        prec_outer = precedence_level(outer)
+        prec_inner = precedence_level(inner)
+        if parens:
+            self.append('(', inner)
+        inner.accept(self)
+        if parens:
+            self.append(')', inner)
+
     def visit_ArithmeticNode(self, node: mparser.ArithmeticNode) -> None:
-        node.left.accept(self)
+        prec = precedence_level(node)
+        prec_left = precedence_level(node.left)
+        prec_right = precedence_level(node.right)
+        self.maybe_parentheses(node, node.left, prec > prec_left)
         self.append_padded(arithmic_map[node.operation], node)
         node.lineno = self.curr_line or node.lineno
-        node.right.accept(self)
+        self.maybe_parentheses(node, node.right, prec > prec_right or (prec == prec_right  and node.operation in set(['sub', 'div', 'mod'])))
 
     def visit_NotNode(self, node: mparser.NotNode) -> None:
         node.lineno = self.curr_line or node.lineno

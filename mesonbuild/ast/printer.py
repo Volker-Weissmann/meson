@@ -294,21 +294,21 @@ class AstPrinter(AstVisitor):
 
 class RawPrinter(AstVisitor):
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.result = ''
 
-    def visit_default_func(self, node: mparser.BaseNode):
+    def visit_default_func(self, node: mparser.BaseNode) -> None:
         self.result += node.value
         if node.whitespaces:
             node.whitespaces.accept(self)
 
-    def visit_unary_operator(self, node: mparser.UnaryOperatorNode):
+    def visit_unary_operator(self, node: mparser.UnaryOperatorNode) -> None:
         node.operator.accept(self)
         node.value.accept(self)
         if node.whitespaces:
             node.whitespaces.accept(self)
 
-    def visit_binary_operator(self, node: mparser.BinaryOperatorNode):
+    def visit_binary_operator(self, node: mparser.BinaryOperatorNode) -> None:
         node.left.accept(self)
         node.operator.accept(self)
         node.right.accept(self)

@@ -181,23 +181,23 @@ def get_target_dir(coredata: cdata.CoreData, subdir: str) -> str:
     else:
         return subdir
 
-def list_targets_from_source(intr: IntrospectionInterpreter) -> T.List[T.Dict[str, T.Union[bool, str, T.List[T.Union[str, T.Dict[str, T.Union[str, T.List[str], bool]]]]]]]:
+def list_targets_from_source(intr: IntrospectionInterpreter) -> T.Any:
     tlist = []
     root_dir = Path(intr.source_root).resolve()
 
     for i in intr.targets:
-        sources = intr.nodes_to_pretty_filelist(root_dir, i['subdir'], i['source_nodes'])
-        extra_files = intr.nodes_to_pretty_filelist(root_dir, i['subdir'], [i['extra_files']] if i['extra_files'] else [])
+        sources = intr.nodes_to_pretty_filelist(root_dir, i.subdir, i.source_nodes)
+        extra_files = intr.nodes_to_pretty_filelist(root_dir, i.subdir, [i.extra_files] if i.extra_files else [])
 
-        outdir = get_target_dir(intr.coredata, i['subdir'])
+        outdir = get_target_dir(intr.coredata, i.subdir)
 
         tlist += [{
-            'name': i['name'],
-            'id': i['id'],
-            'type': i['type'],
-            'defined_in': i['defined_in'],
-            'filename': [os.path.join(outdir, x) for x in i['outputs']],
-            'build_by_default': i['build_by_default'],
+            'name': i.name,
+            'id': i.id,
+            'type': i.typename,
+            'defined_in': i.defined_in,
+            'filename': [os.path.join(outdir, x) for x in i.outputs],
+            'build_by_default': i.build_by_default,
             'target_sources': [{
                 'language': 'unknown',
                 'compiler': [],
@@ -208,7 +208,7 @@ def list_targets_from_source(intr: IntrospectionInterpreter) -> T.List[T.Dict[st
             'depends': [],
             'extra_files': extra_files,
             'subproject': None, # Subprojects are not supported
-            'installed': i['installed']
+            'installed': i.installed
         }]
 
     return tlist
@@ -371,7 +371,7 @@ def list_deps_from_source(intr: IntrospectionInterpreter) -> T.List[T.Dict[str, 
             'has_fallback',
             'conditional',
         ]
-        result += [{k: v for k, v in i.items() if k in keys}]
+        result += [{k: v for k, v in i.__dict__.items() if k in keys}]
     return result
 
 def list_deps(coredata: cdata.CoreData, backend: backends.Backend) -> T.List[T.Dict[str, T.Union[str, T.List[str]]]]:

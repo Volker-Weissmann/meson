@@ -25,19 +25,22 @@
 from __future__ import annotations
 
 from .ast import IntrospectionInterpreter, AstConditionLevel, AstIDGenerator, AstIndentationGenerator, AstPrinter
-from .ast.interpreter import MockBuildTarget, flatten_nested_lists
-from .interpreterbase import UnknownValue
+from .ast.interpreter import MockBuildTarget, MockDependency, flatten_nested_lists, create_symbol
+from .interpreterbase import UnknownValue, TV_func
 from mesonbuild.mesonlib import MesonException, setup_vsenv
 from . import mlog, environment
 from functools import wraps
-from .mparser import Token, ArrayNode, ArgumentNode, ArithmeticNode, AssignmentNode, BaseStringNode, BooleanNode, ElementaryNode, IdNode, FunctionNode, PlusAssignmentNode, StringNode, TernaryNode, MethodNode
-from .mintro import IntrospectionEncoder, SymbolNode
+from .mparser import Token, ArrayNode, ArgumentNode, ArithmeticNode, AssignmentNode, BaseStringNode, BooleanNode, ElementaryNode, IdNode, FunctionNode, PlusAssignmentNode, StringNode, TernaryNode, MethodNode, SymbolNode
+from .mintro import IntrospectionEncoder
 import json, os, re, sys
 import typing as T
 from pathlib import Path
+from debug import *
 
 if T.TYPE_CHECKING:
+    import argparse
     from .mparser import BaseNode
+    from .mlog import AnsiDecorator
 
 BUILD_TARGET_FUNCTIONS = [
     'executable', 'jar', 'library', 'shared_library', 'shared_module',
@@ -47,7 +50,7 @@ BUILD_TARGET_FUNCTIONS = [
 class RewriterException(MesonException):
     pass
 
-def add_arguments(parser, formatter=None):
+def add_arguments(parser: argparse.ArgumentParser, formatter: None = None) -> None:
     parser.add_argument('-s', '--sourcedir', type=str, default='.', metavar='SRCDIR', help='Path to source directory.')
     parser.add_argument('-V', '--verbose', action='store_true', default=False, help='Enable verbose output')
     parser.add_argument('-S', '--skip-errors', dest='skip', action='store_true', default=False, help='Skip errors instead of aborting')
@@ -83,12 +86,14 @@ def add_arguments(parser, formatter=None):
     cmd_parser.add_argument('json', help='JSON string or file to execute')
 
 class RequiredKeys:
-    def __init__(self, keys):
+    keys: T.Dict[str, T.Any]
+
+    def __init__(self, keys: T.Dict[str, T.Any]):
         self.keys = keys
 
-    def __call__(self, f):
+    def __call__(self, f: TV_func) -> TV_func:
         @wraps(f)
-        def wrapped(*wrapped_args, **wrapped_kwargs):
+        def wrapped(*wrapped_args: T.Any, **wrapped_kwargs: T.Any) -> T.Any:
             assert len(wrapped_args) >= 2
             cmd = wrapped_args[1]
             for key, val in self.keys.items():
@@ -111,12 +116,11 @@ class RequiredKeys:
                                                 .format(key, choices, cmd[key]))
             return f(*wrapped_args, **wrapped_kwargs)
 
-        return wrapped
-
-def _symbol(val: str) -> SymbolNode:
-    return SymbolNode(Token('', '', 0, 0, 0, (0, 0), val))
+        return T.cast('TV_func', wrapped)
 
 class MTypeBase:
+    node: BaseNode
+
     def __init__(self, node: T.Optional[BaseNode] = None):
         if node is None:
             self.node = self._new_node()  # lgtm [py/init-calls-subclass] (node creation does not depend on base class state)
@@ -127,33 +131,33 @@ class MTypeBase:
             if isinstance(self.node, i):
                 self.node_type = i
 
-    def _new_node(self):
+    def _new_node(self) -> BaseNode:
         # Overwrite in derived class
         raise RewriterException('Internal error: _new_node of MTypeBase was called')
 
-    def can_modify(self):
+    def can_modify(self) -> bool:
         return self.node_type is not None
 
-    def get_node(self):
+    def get_node(self) -> BaseNode:
         return self.node
 
-    def supported_nodes(self):
+    def supported_nodes(self) -> T.List[type]:
         # Overwrite in derived class
         return []
 
-    def set_value(self, value):
+    def set_value(self, value: T.Any) -> None:
         # Overwrite in derived class
         mlog.warning('Cannot set the value of type', mlog.bold(type(self).__name__), '--> skipping')
 
-    def add_value(self, value):
+    def add_value(self, value: T.Any) -> None:
         # Overwrite in derived class
         mlog.warning('Cannot add a value of type', mlog.bold(type(self).__name__), '--> skipping')
 
-    def remove_value(self, value):
+    def remove_value(self, value: T.Any) -> None:
         # Overwrite in derived class
         mlog.warning('Cannot remove a value of type', mlog.bold(type(self).__name__), '--> skipping')
 
-    def remove_regex(self, value):
+    def remove_regex(self, value: T.Any) -> None:
         # Overwrite in derived class
         mlog.warning('Cannot remove a regex in type', mlog.bold(type(self).__name__), '--> skipping')
 
@@ -161,96 +165,107 @@ class MTypeStr(MTypeBase):
     def __init__(self, node: T.Optional[BaseNode] = None):
         super().__init__(node)
 
-    def _new_node(self):
+    def _new_node(self) -> BaseNode:
         return StringNode(Token('', '', 0, 0, 0, None, ''))
 
-    def supported_nodes(self):
+    def supported_nodes(self) -> T.List[type]:
         return [StringNode]
 
-    def set_value(self, value):
+    def set_value(self, value: T.Any) -> None:
+        assert hasattr(self.node, 'value') # For mypy
         self.node.value = str(value)
 
 class MTypeBool(MTypeBase):
     def __init__(self, node: T.Optional[BaseNode] = None):
         super().__init__(node)
 
-    def _new_node(self):
+    def _new_node(self) -> BaseNode:
         return BooleanNode(Token('', '', 0, 0, 0, None, False))
 
-    def supported_nodes(self):
+    def supported_nodes(self) -> T.List[type]:
         return [BooleanNode]
 
-    def set_value(self, value):
+    def set_value(self, value: T.Any) -> None:
+        assert hasattr(self.node, 'value') # For mypy
         self.node.value = bool(value)
 
 class MTypeID(MTypeBase):
     def __init__(self, node: T.Optional[BaseNode] = None):
         super().__init__(node)
 
-    def _new_node(self):
+    def _new_node(self) -> BaseNode:
         return IdNode(Token('', '', 0, 0, 0, None, ''))
 
-    def supported_nodes(self):
+    def supported_nodes(self) -> T.List[type]:
         return [IdNode]
 
-    def set_value(self, value):
+    def set_value(self, value: T.Any) -> None:
+        assert hasattr(self.node, 'value') # For mypy
         self.node.value = str(value)
 
 class MTypeList(MTypeBase):
     def __init__(self, node: T.Optional[BaseNode] = None):
         super().__init__(node)
 
-    def _new_node(self):
-        return ArrayNode(_symbol('['), ArgumentNode(Token('', '', 0, 0, 0, None, '')), _symbol(']'))
+    def _new_node(self) -> BaseNode:
+        return ArrayNode(create_symbol('['), ArgumentNode(Token('', '', 0, 0, 0, None, '')), create_symbol(']'))
 
-    def _new_element_node(self, value):
+    def _new_element_node(self, value: T.Any) -> BaseNode:
         # Overwrite in derived class
         raise RewriterException('Internal error: _new_element_node of MTypeList was called')
 
-    def _ensure_array_node(self):
+    def _ensure_array_node(self) -> None:
         if not isinstance(self.node, ArrayNode):
             tmp = self.node
             self.node = self._new_node()
+            assert hasattr(self.node, 'args') # For mypy
+            assert isinstance(self.node.args, ArgumentNode) # For mypy
             self.node.args.arguments += [tmp]
 
-    def _check_is_equal(self, node, value) -> bool:
+    def _check_is_equal(self, node: BaseNode, value: T.Any) -> bool:
         # Overwrite in derived class
         return False
 
-    def _check_regex_matches(self, node, regex: str) -> bool:
+    def _check_regex_matches(self, node: BaseNode, regex: str) -> bool:
         # Overwrite in derived class
         return False
 
-    def get_node(self):
+    def get_node(self) -> BaseNode:
         if isinstance(self.node, ArrayNode):
+            assert hasattr(self.node, 'args') # For mypy
+            assert isinstance(self.node.args, ArgumentNode) # For mypy
             if len(self.node.args.arguments) == 1:
                 return self.node.args.arguments[0]
         return self.node
 
-    def supported_element_nodes(self):
+    def supported_element_nodes(self) -> T.List[type]:
         # Overwrite in derived class
         return []
 
-    def supported_nodes(self):
+    def supported_nodes(self) -> T.List[type]:
         return [ArrayNode] + self.supported_element_nodes()
 
-    def set_value(self, value):
+    def set_value(self, value: T.Any) -> None:
         if not isinstance(value, list):
             value = [value]
         self._ensure_array_node()
+        assert hasattr(self.node, 'args') # For mypy
+        assert isinstance(self.node.args, ArgumentNode) # For mypy
         self.node.args.arguments = [] # Remove all current nodes
         for i in value:
             self.node.args.arguments += [self._new_element_node(i)]
 
-    def add_value(self, value):
+    def add_value(self, value: T.Any) -> None:
         if not isinstance(value, list):
             value = [value]
         self._ensure_array_node()
         for i in value:
+            assert hasattr(self.node, 'args') # For mypy
+            assert isinstance(self.node.args, ArgumentNode) # For mypy
             self.node.args.arguments += [self._new_element_node(i)]
 
-    def _remove_helper(self, value, equal_func):
-        def check_remove_node(node):
+    def _remove_helper(self, value: T.Any, equal_func: T.Callable[[T.Any, T.Any], bool]) -> None:
+        def check_remove_node(node: BaseNode) -> bool:
             for j in value:
                 if equal_func(i, j):
                     return True
@@ -259,59 +274,61 @@ class MTypeList(MTypeBase):
         if not isinstance(value, list):
             value = [value]
         self._ensure_array_node()
+        assert hasattr(self.node, 'args') # For mypy
+        assert isinstance(self.node.args, ArgumentNode) # For mypy
         removed_list = []
         for i in self.node.args.arguments:
             if not check_remove_node(i):
                 removed_list += [i]
         self.node.args.arguments = removed_list
 
-    def remove_value(self, value):
+    def remove_value(self, value: T.Any) -> None:
         self._remove_helper(value, self._check_is_equal)
 
-    def remove_regex(self, regex: str):
+    def remove_regex(self, regex: str) -> None:
         self._remove_helper(regex, self._check_regex_matches)
 
 class MTypeStrList(MTypeList):
     def __init__(self, node: T.Optional[BaseNode] = None):
         super().__init__(node)
 
-    def _new_element_node(self, value):
+    def _new_element_node(self, value: T.Any) -> BaseNode:
         return StringNode(Token('', '', 0, 0, 0, None, str(value)))
 
-    def _check_is_equal(self, node, value) -> bool:
+    def _check_is_equal(self, node: BaseNode, value: T.Any) -> bool:
         if isinstance(node, BaseStringNode):
-            return node.value == value
+            return bool(node.value == value)
         return False
 
-    def _check_regex_matches(self, node, regex: str) -> bool:
+    def _check_regex_matches(self, node: BaseNode, regex: str) -> bool:
         if isinstance(node, BaseStringNode):
             return re.match(regex, node.value) is not None
         return False
 
-    def supported_element_nodes(self):
+    def supported_element_nodes(self) -> T.List[type]:
         return [StringNode]
 
 class MTypeIDList(MTypeList):
     def __init__(self, node: T.Optional[BaseNode] = None):
         super().__init__(node)
 
-    def _new_element_node(self, value):
+    def _new_element_node(self, value: T.Any) -> BaseNode:
         return IdNode(Token('', '', 0, 0, 0, None, str(value)))
 
-    def _check_is_equal(self, node, value) -> bool:
+    def _check_is_equal(self, node: BaseNode, value: T.Any) -> bool:
         if isinstance(node, IdNode):
-            return node.value == value
+            return bool(node.value == value)
         return False
 
-    def _check_regex_matches(self, node, regex: str) -> bool:
+    def _check_regex_matches(self, node: BaseNode, regex: str) -> bool:
         if isinstance(node, BaseStringNode):
             return re.match(regex, node.value) is not None
         return False
 
-    def supported_element_nodes(self):
+    def supported_element_nodes(self) -> T.List[type]:
         return [IdNode]
 
-rewriter_keys = {
+rewriter_keys: T.Dict[str, T.Dict[str, T.Any]] = {
     'default_options': {
         'operation': (str, None, ['set', 'delete']),
         'options': (dict, {}, None)
@@ -365,13 +382,15 @@ rewriter_func_kwargs = {
 }
 
 class Rewriter:
+    info_dump: T.Optional[T.Dict[str, T.Dict[str, T.Any]]]
+
     def __init__(self, sourcedir: str, generator: str = 'ninja', skip_errors: bool = False):
         self.sourcedir = sourcedir
         self.interpreter = IntrospectionInterpreter(sourcedir, '', generator, visitors = [AstIDGenerator(), AstIndentationGenerator(), AstConditionLevel()])
         self.skip_errors = skip_errors
-        self.modified_nodes = []
-        self.to_remove_nodes = []
-        self.to_add_nodes = []
+        self.modified_nodes: T.List[BaseNode] = []
+        self.to_remove_nodes: T.List[BaseNode] = []
+        self.to_add_nodes: T.List[BaseNode] = []
         self.functions = {
             'default_options': self.process_default_options,
             'kwargs': self.process_kwargs,
@@ -379,30 +398,30 @@ class Rewriter:
         }
         self.info_dump = None
 
-    def analyze_meson(self):
+    def analyze_meson(self) -> None:
         mlog.log('Analyzing meson file:', mlog.bold(os.path.join(self.sourcedir, environment.build_filename)))
         self.interpreter.analyze()
         mlog.log('  -- Project:', mlog.bold(self.interpreter.project_data['descriptive_name']))
         mlog.log('  -- Version:', mlog.cyan(self.interpreter.project_data['version']))
 
-    def add_info(self, cmd_type: str, cmd_id: str, data: dict):
+    def add_info(self, cmd_type: str, cmd_id: str, data: dict) -> None:
         if self.info_dump is None:
             self.info_dump = {}
         if cmd_type not in self.info_dump:
             self.info_dump[cmd_type] = {}
         self.info_dump[cmd_type][cmd_id] = data
 
-    def print_info(self):
+    def print_info(self) -> None:
         if self.info_dump is None:
             return
         sys.stderr.write(json.dumps(self.info_dump, indent=2, cls=IntrospectionEncoder))
 
-    def on_error(self):
+    def on_error(self) -> T.Tuple[AnsiDecorator, AnsiDecorator]:
         if self.skip_errors:
             return mlog.cyan('-->'), mlog.yellow('skipping')
         return mlog.cyan('-->'), mlog.red('aborting')
 
-    def handle_error(self):
+    def handle_error(self) -> None:
         if self.skip_errors:
             return None
         raise MesonException('Rewriting the meson.build failed')
@@ -416,29 +435,21 @@ class Rewriter:
             assigned_values.append(ass.value)
         return assigned_values
 
-    def find_target(self, target: str):
-        def check_list(name: str) -> T.List[BaseNode]:
-            result = []
-            for i in self.interpreter.targets:
-                if name in {i['name'], i['id']}:
-                    result += [i]
-            return result
 
-        targets = check_list(target)
-        if targets:
-            if len(targets) == 1:
-                return targets[0]
-            else:
-                mlog.error('There are multiple targets matching', mlog.bold(target))
-                for i in targets:
-                    mlog.error('  -- Target name', mlog.bold(i['name']), 'with ID', mlog.bold(i['id']))
-                mlog.error('Please try again with the unique ID of the target', *self.on_error())
-                self.handle_error()
-                return None
+    def find_target(self, target: str) -> T.Optional[MockBuildTarget]:
+        for i in self.interpreter.targets:
+            if target == i.id:
+                return i
 
-        potential_tgts = self.all_assignments(target)
-        potential_tgts = [self.interpreter.node_to_runtime_value(el) for el in potential_tgts]
-        potential_tgts = [el.inner for el in potential_tgts if isinstance(el, MockBuildTarget)]
+        potential_tgts = []
+        for i in self.interpreter.targets:
+            if target == i.name:
+                potential_tgts.append(i)
+
+        if len(potential_tgts) == 0:
+            potenial_tgts_1 = self.all_assignments(target)
+            potenial_tgts_1 = [self.interpreter.node_to_runtime_value(el) for el in potenial_tgts_1]
+            potential_tgts = [el for el in potenial_tgts_1 if isinstance(el, MockBuildTarget)]
 
         if len(potential_tgts) == 0:
             return None
@@ -447,42 +458,40 @@ class Rewriter:
         else:
             mlog.error('There are multiple targets matching', mlog.bold(target))
             for i in potential_tgts:
-                mlog.error('  -- Target name', mlog.bold(i['name']), 'with ID', mlog.bold(i['id']))
+                mlog.error('  -- Target name', mlog.bold(i.name), 'with ID', mlog.bold(i.id))
             mlog.error('Please try again with the unique ID of the target', *self.on_error())
             self.handle_error()
             return None
 
-    def find_dependency(self, dependency: str):
-        def check_list(name: str):
-            for i in self.interpreter.dependencies:
-                if name == i['name']:
-                    return i
-            return None
+    def find_dependency(self, dependency: str) -> T.Optional[MockDependency]:
+        potential_deps = []
+        for i in self.interpreter.dependencies:
+            if i.name == dependency:
+                potential_deps.append(i)
 
-        dep = check_list(dependency)
-        if dep is not None:
-            return dep
+        checking_varnames = len(potential_deps) == 0
 
-        potential_deps = self.all_assignments(dependency)
-        potential_deps = [el for el in potential_deps if isinstance(el, FunctionNode) and el.func_name.value == 'dependency']
-        potential_deps = [self.interpreter.node_to_runtime_value(el.args.arguments[0]) for el in potential_deps]
+        if checking_varnames:
+            potential_deps1 = self.all_assignments(dependency)
+            potential_deps = [self.interpreter.node_to_runtime_value(el) for el in potential_deps1 if isinstance(el, FunctionNode) and el.func_name.value == 'dependency']
 
         if len(potential_deps) == 0:
             return None
         elif len(potential_deps) == 1:
-            return check_list(potential_deps[0])
+            return potential_deps[0]
         else:
             mlog.error('There are multiple dependencies matching', mlog.bold(dependency))
             for i in potential_deps:
                 mlog.error('  -- Dependency name', i)
-            mlog.error('Please try again with the unique ID of the dependency', *self.on_error())
+            if checking_varnames:
+                mlog.error('Please try again with the name of the dependency', *self.on_error())
             self.handle_error()
             return None
 
     @RequiredKeys(rewriter_keys['default_options'])
-    def process_default_options(self, cmd):
+    def process_default_options(self, cmd: T.Dict[str, T.Any]) -> None:
         # First, remove the old values
-        kwargs_cmd = {
+        kwargs_cmd: T.Dict[str, T.Any] = {
             'function': 'project',
             'id': "/",
             'operation': 'remove_regex',
@@ -526,7 +535,7 @@ class Rewriter:
         self.process_kwargs(kwargs_cmd)
 
     @RequiredKeys(rewriter_keys['kwargs'])
-    def process_kwargs(self, cmd):
+    def process_kwargs(self, cmd: T.Dict[str, T.Any]) -> None:
         mlog.log('Processing function type', mlog.bold(cmd['function']), 'with id', mlog.cyan("'" + cmd['id'] + "'"))
         if cmd['function'] not in rewriter_func_kwargs:
             mlog.error('Unknown function type', cmd['function'], *self.on_error())
@@ -547,25 +556,25 @@ class Rewriter:
             node = self.interpreter.project_node
             arg_node = node.args
         elif cmd['function'] == 'target':
-            tmp = self.find_target(cmd['id'])
-            if tmp:
-                node = tmp['node']
+            tmp_tgt = self.find_target(cmd['id'])
+            if tmp_tgt:
+                node = tmp_tgt.node
                 arg_node = node.args
         elif cmd['function'] == 'dependency':
-            tmp = self.find_dependency(cmd['id'])
-            if tmp:
-                node = tmp['node']
+            tmp_dep = self.find_dependency(cmd['id'])
+            if tmp_dep:
+                node = tmp_dep.node
                 arg_node = node.args
         if not node:
             mlog.error('Unable to find the function node')
         assert isinstance(node, FunctionNode)
         assert isinstance(arg_node, ArgumentNode)
         # Transform the key nodes to plain strings
-        kwargs = {k.value: v for k, v in arg_node.kwargs.items()}
+        kwargs = {T.cast(IdNode, k).value: v for k, v in arg_node.kwargs.items()}
 
         # Print kwargs info
         if cmd['operation'] == 'info':
-            info_data = {}
+            info_data: T.Dict[str, T.Any] = {}
             for key, val in sorted(kwargs.items()):
                 info_data[key] = None
                 if isinstance(val, ElementaryNode):
@@ -632,45 +641,43 @@ class Rewriter:
         if num_changed > 0 and node not in self.modified_nodes:
             self.modified_nodes += [node]
 
-    def find_assignment_node(self, node: BaseNode) -> AssignmentNode:
-        if node.ast_id and node.ast_id in self.interpreter.reverse_assignment:
-            return self.interpreter.reverse_assignment[node.ast_id]
-        return None
+    def find_assignment_node(self, node: BaseNode) -> T.Optional[AssignmentNode]:
+        return None # todo
 
-    def affects_no_other_targets(self, candidate):
+    def affects_no_other_targets(self, candidate: BaseNode) -> bool:
         affected = self.interpreter.dataflow_dag.reachable(set([candidate]), False)
-        affected_targets = [x for x in affected if isinstance(x, FunctionNode) and x.func_name in BUILD_TARGET_FUNCTIONS]
+        affected_targets = [x for x in affected if isinstance(x, FunctionNode) and x.func_name.value in BUILD_TARGET_FUNCTIONS]
         return len(affected_targets) == 1
 
-    def get_relto(self, target, node):
+    def get_relto(self, target_node: BaseNode, node: BaseNode) -> Path:
         cwd = Path(os.getcwd())
-        all_paths = self.interpreter.dataflow_dag.find_all_paths(node, target['node'])
+        all_paths = self.interpreter.dataflow_dag.find_all_paths(node, target_node)
         # len(all_paths) == 0 would imply that data does not flow from node to
-        # target['node']. This would imply that adding sources to node would
-        # not add the source to the target.
+        # target_node. This would imply that adding sources to node would not
+        # add the source to the target.
         assert len(all_paths) > 0
         if len(all_paths) > 1:
             return None
         return (cwd / next(x for x in all_paths[0] if isinstance(x, FunctionNode)).filename).parent
 
-    def add_src_or_extra(self, op: str, target, newfiles, to_sort_nodes):
+    def add_src_or_extra(self, op: str, target: MockBuildTarget, newfiles: T.List[str], to_sort_nodes: T.List[T.Union[FunctionNode, ArrayNode]]) -> None:
         assert op in set(['src_add', 'extra_files_add'])
 
         if op == 'src_add':
-            old = set(target['source_nodes'])
-        else:
-            if target['extra_files'] is None:
+            old: T.Set[T.Union[BaseNode, UnknownValue]] = set(target.source_nodes)
+        elif op == 'extra_files_add':
+            if target.extra_files is None:
                 old = set()
             else:
-                old = set([target['extra_files']])
-            tgt_function: FunctionNode = target['node']
+                old = set([target.extra_files])
+            tgt_function: FunctionNode = target.node
 
         cwd = Path(os.getcwd())
-        target_dir_abs = cwd / os.path.dirname(target['node'].filename)
+        target_dir_abs = cwd / os.path.dirname(target.node.filename)
         source_root_abs = cwd / self.interpreter.source_root
 
-        candidates = self.interpreter.dataflow_dag.reachable(old, True)
-        # A node is a member of the set `candidates` exactly if data from this node
+        candidates1 = self.interpreter.dataflow_dag.reachable(old, True)
+        # A node is a member of the set `candidates1` exactly if data from this node
         # flow into one of the `dest` nodes. We assume that this implies that if we
         # add `foo.c` to this node, then 'foo.c' will be added to one of these
         # nodes. This assumption is not always true:
@@ -687,8 +694,7 @@ class Rewriter:
         # `srcs = ar[1]` is rare in real-world projects, so I will just leave
         # this for now.
 
-        # Because I'm too lazy to implement what needs to be done for StringNodes
-        candidates = {x for x in candidates if not isinstance(x, (StringNode, IdNode, ArithmeticNode, TernaryNode, MethodNode))}
+        candidates2 = {x for x in candidates1 if isinstance(x, (FunctionNode, ArrayNode))}
 
         # If we have this meson.build file:
         # shared = ['shared.c']
@@ -702,73 +708,74 @@ class Rewriter:
         # shared = ['shared.c', 'new.c']
         # executable('foo', shared + ['foo.c'])
         # executable('bar', shared + ['bar.c'])
-        # We do this by removing the `['shared.c']`-node from `candidates`.
-        candidates = {x for x in candidates if self.affects_no_other_targets(x)}
+        # We do this by removing the `['shared.c']`-node from `candidates2`.
+        candidates2 = {x for x in candidates2 if self.affects_no_other_targets(x)}
 
-        def no_funny_buisness(candidate):
-            all_paths = self.interpreter.dataflow_dag.find_all_paths(candidate, target['node'])
+        def path_contains_unknowns(candidate: BaseNode) -> bool:
+            all_paths = self.interpreter.dataflow_dag.find_all_paths(candidate, target.node)
             for path in all_paths:
                 for el in path:
                     if isinstance(el, UnknownValue):
-                        return False
-            return True
+                        return True
+            return False
 
-        candidates = {x for x in candidates if no_funny_buisness(x)}
+        candidates2 = {x for x in candidates2 if not path_contains_unknowns(x)}
 
-        candidates = {x for x in candidates if self.get_relto(target, x) is not None}
+        candidates2 = {x for x in candidates2 if self.get_relto(target.node, x) is not None}
 
         flag_update_srcnodes = None
-        chosen = None
+        chosen: T.Union[FunctionNode, ArrayNode] = None
         new_kwarg_flag = False
-        if len(candidates) > 0:
+        if len(candidates2) > 0:
             # So that files(['a', 'b']) gets modified to files(['a', 'b', 'c']) instead of files(['a', 'b'], 'c')
-            if len({x for x in candidates if isinstance(x, ArrayNode)}) > 0:
-                candidates = {x for x in candidates if isinstance(x, ArrayNode)}
+            if len({x for x in candidates2 if isinstance(x, ArrayNode)}) > 0:
+                candidates2 = {x for x in candidates2 if isinstance(x, ArrayNode)}
 
-            #chosen = max(candidates, key=lambda x: (x.lineno, x.colno)) # todo: which candidate should we choose
-            chosen = min(candidates, key=lambda x: (x.lineno, x.colno))
+            #chosen = max(candidates2, key=lambda x: (x.lineno, x.colno)) # todo: which candidate should we choose
+            chosen = min(candidates2, key=lambda x: (x.lineno, x.colno))
             flag_update_srcnodes = False
         elif op == 'src_add':
-            chosen = target['node']
+            chosen = target.node
             flag_update_srcnodes = True
         elif op == 'extra_files_add':
-            chosen = ArrayNode(_symbol('['), ArgumentNode(Token('', tgt_function.filename, 0, 0, 0, None, '[]')), tgt_function.end_lineno, tgt_function.end_colno, tgt_function.end_lineno, tgt_function.end_colno, _symbol(']'))
+            chosen = ArrayNode(create_symbol('['), ArgumentNode(Token('', tgt_function.filename, 0, 0, 0, None, '[]')), create_symbol(']'))
 
             # this is fundamentally error prone
-            self.interpreter.dataflow_dag.add_edge(chosen, target['node'])
+            self.interpreter.dataflow_dag.add_edge(chosen, target.node)
 
             extra_files_idnode = IdNode(Token('string', tgt_function.filename, 0, 0, 0, None, 'extra_files'))
             if tgt_function not in self.modified_nodes:
                 self.modified_nodes += [tgt_function]
-            if target['node'].args.get_kwarg_or_default('extra_files', None) is None:
+            new_extra_files_node: BaseNode
+            if target.node.args.get_kwarg_or_default('extra_files', None) is None:
                 # Target has no extra_files kwarg, create one
                 new_kwarg_flag = True
                 new_extra_files_node = chosen
             else:
                 new_kwarg_flag = True
-                old_extra_files = target['node'].args.get_kwarg_or_default('extra_files', None)
-                target['node'].args.kwargs = {k: v for k, v in target['node'].args.kwargs.items() if not (isinstance(k, IdNode) and k.value == 'extra_files')}
-                new_extra_files_node = ArithmeticNode('add', old_extra_files, chosen)
+                old_extra_files = target.node.args.get_kwarg_or_default('extra_files', None)
+                target.node.args.kwargs = {k: v for k, v in target.node.args.kwargs.items() if not (isinstance(k, IdNode) and k.value == 'extra_files')}
+                new_extra_files_node = ArithmeticNode('add', old_extra_files, create_symbol('+'), chosen)
 
             tgt_function.args.kwargs[extra_files_idnode] = new_extra_files_node
 
         if op != 'src_add':
             flag_update_srcnodes = False
 
-        newfiles_relto = self.get_relto(target, chosen)
+        newfiles_relto = self.get_relto(target.node, chosen)
         old_src_list = flatten_nested_lists([self.interpreter.node_to_runtime_value(sn) for sn in old])
 
         if op == 'src_add':
             name = 'Source'
-        else:
+        elif op == 'extra_files_add':
             name = 'Extra file'
         # Generate the new String nodes
         to_append = []
         added = []
 
         old_src_list = [(target_dir_abs / x).resolve() if isinstance(x, str) else x.to_abs_path(source_root_abs) for x in old_src_list if not isinstance(x, UnknownValue)]
-        for newf in sorted(set(newfiles)):
-            newf = Path(newf)
+        for _newf in sorted(set(newfiles)):
+            newf = Path(_newf)
             if os.path.isabs(newf):
                 newf = Path(newf)
             else:
@@ -780,7 +787,9 @@ class Rewriter:
             mlog.log('  -- Adding ', name.lower(), mlog.green(str(newf)), 'at',
                         mlog.yellow(f'{chosen.filename}:{chosen.lineno}'))
             added.append(newf)
-            print("adding ", str(newf), 'to', self.interpreter.funcvals[target['node']].inner['name'])
+            mocktarget = self.interpreter.funcvals[target.node]
+            assert isinstance(mocktarget, MockBuildTarget)
+            print("adding ", str(newf), 'to', mocktarget.name)
 
             token = Token('string', chosen.filename, 0, 0, 0, None, str(os.path.relpath(newf, newfiles_relto)))
             to_append += [StringNode(token)]
@@ -791,48 +800,24 @@ class Rewriter:
         arg_node.arguments += to_append
 
         # Mark the node as modified
-        if arg_node not in to_sort_nodes and not isinstance(chosen, FunctionNode):
-            to_sort_nodes += [arg_node]
+        if chosen not in to_sort_nodes:
+            to_sort_nodes += [chosen]
         # If the extra_files array is newly created, i.e. if new_kwarg_flag is
         # True, don't mark it as its parent function node already is, otherwise
         # this would cause double modification.
         if chosen not in self.modified_nodes and not new_kwarg_flag:
             self.modified_nodes += [chosen]
 
-        # if flag_update_srcnodes:
+        # if flag_update_srcnodes: # todo
         #     target['source_nodes'] += to_append
 
-        # In case we have an info cmd after a src_add/extra_files_add cmd
-        if op == 'src_add':
-            key = 'sources_added'
-        elif op == 'extra_files_add':
-            key = 'extra_files_added'
-        else:
-            raise ValueError
-        if key not in target:
-            target[key] = old_src_list
-        target[key] += added
-
-    @RequiredKeys(rewriter_keys['target'])
-    def process_target(self, cmd):
-        mlog.log('Processing target', mlog.bold(cmd['target']), 'operation', mlog.cyan(cmd['operation']))
-        target = self.find_target(cmd['target'])
-        if target is None and cmd['operation'] != 'target_add':
-            mlog.error('Unknown target', mlog.bold(cmd['target']), *self.on_error())
-            return self.handle_error()
-
-        # Make source paths relative to the current subdir
-        def rel_source(src: str) -> str:
-            subdir = os.path.abspath(os.path.join(self.sourcedir, target['subdir']))
-            if os.path.isabs(src):
-                return os.path.relpath(src, subdir)
-            elif not os.path.exists(src):
-                return src # Trust the user when the source doesn't exist
-            # Make sure that the path is relative to the subdir
-            return os.path.relpath(os.path.abspath(src), subdir)
+    def rm_src_or_extra(self, op: str, target: MockBuildTarget, to_be_removed: T.List[str], to_sort_nodes: T.List[T.Union[FunctionNode, ArrayNode]]) -> None:
+        assert op in set(['src_rm', 'extra_files_rm'])
+        cwd = Path(os.getcwd())
+        source_root_abs = cwd / self.interpreter.source_root
 
         # Utility function to get a list of the sources from a node
-        def arg_list_from_node(n):
+        def arg_list_from_node(n: BaseNode) -> T.List[BaseNode]:
             args = []
             if isinstance(n, FunctionNode):
                 args = list(n.args.arguments)
@@ -844,88 +829,79 @@ class Rewriter:
                 args = n.arguments
             return args
 
-        to_sort_nodes = []
-
-        if cmd['operation'] == 'src_add':
-            self.add_src_or_extra(cmd['operation'], target, cmd['sources'], to_sort_nodes)
-
-        elif cmd['operation'] == 'extra_files_add':
-            self.add_src_or_extra(cmd['operation'], target, cmd['sources'], to_sort_nodes)
-
-        elif cmd['operation'] == 'src_rm':
-            cwd = Path(os.getcwd())
-            source_root_abs = cwd / self.interpreter.source_root
-            # Helper to find the exact string node and its parent
-            def find_node(src):
-                for i in self.interpreter.dataflow_dag.reachable(set(target['source_nodes']), True).union(set([target['node']])):
-                    relto = self.get_relto(target, i)
-                    if relto is not None:
-                        for j in arg_list_from_node(i):
-                            if isinstance(j, BaseStringNode):
-
-                                if os.path.normpath(relto / j.value) == os.path.normpath(source_root_abs / src):
-                                    return i, j
-                return None, None
-
-            for i in cmd['sources']:
-                # Try to find the node with the source string
-                root, string_node = find_node(i)
-                if root is None:
-                    mlog.warning('  -- Unable to find source', mlog.green(i), 'in the target')
+        # Helper to find the exact string node and its parent
+        def find_node(src: str) -> T.Tuple[T.Optional[BaseNode], T.Optional[BaseStringNode]]:
+            if op == 'src_rm':
+                nodes = self.interpreter.dataflow_dag.reachable(set(target.source_nodes), True).union(set([target.node]))
+            elif op == 'extra_files_rm':
+                nodes = self.interpreter.dataflow_dag.reachable(set([target.extra_files]), True)
+            for i in nodes:
+                if isinstance(i, UnknownValue):
                     continue
-                if not self.affects_no_other_targets(string_node):
-                    mlog.warning('  -- Removing the source', mlog.green(i), 'is too compilicated')
-                    continue
-
-                # Remove the found string node from the argument list
-                arg_node = None
-                if isinstance(root, (FunctionNode, ArrayNode)):
-                    arg_node = root.args
-                elif isinstance(root, ArgumentNode):
-                    arg_node = root
-                assert arg_node is not None
-                mlog.log('  -- Removing source', mlog.green(i), 'from',
-                         mlog.yellow(f'{string_node.filename}:{string_node.lineno}'))
-                arg_node.arguments.remove(string_node)
-
-                # Mark the node as modified
-                if arg_node not in to_sort_nodes and not isinstance(root, FunctionNode):
-                    to_sort_nodes += [arg_node]
-                if root not in self.modified_nodes:
-                    self.modified_nodes += [root]
-
-        elif cmd['operation'] == 'extra_files_rm':
-            # Helper to find the exact string node and its parent
-            def find_node(src):
-                for i in self.interpreter.dataflow_dag.reachable(set([target['extra_files']]), True):
+                relto = self.get_relto(target.node, i)
+                if relto is not None:
                     for j in arg_list_from_node(i):
                         if isinstance(j, BaseStringNode):
-                            if j.value == src:
+                            if os.path.normpath(relto / j.value) == os.path.normpath(source_root_abs / src):
                                 return i, j
-                return None, None
+            return None, None
 
-            for i in cmd['sources']:
-                # Try to find the node with the source string
-                root, string_node = find_node(i)
-                if root is None:
-                    mlog.warning('  -- Unable to find extra file', mlog.green(i), 'in the target')
-                    continue
+        if op == 'src_rm':
+            name = 'source'
+        elif op == 'extra_files_rm':
+            name = 'extra file'
 
-                if not self.affects_no_other_targets(string_node):
-                    mlog.warning('  -- Removing the extra_file', mlog.green(i), 'is too compilicated')
-                    continue
+        for i in to_be_removed:
+            # Try to find the node with the source string
+            root, string_node = find_node(i)
+            if root is None:
+                mlog.warning('  -- Unable to find', name, mlog.green(i), 'in the target')
+                continue
+            if not self.affects_no_other_targets(string_node):
+                mlog.warning('  -- Removing the', name, mlog.green(i), 'is too compilicated')
+                continue
 
-                # Remove the found string node from the argument list
-                arg_node = root.args
-                mlog.log('  -- Removing extra file', mlog.green(i), 'from',
-                         mlog.yellow(f'{string_node.filename}:{string_node.lineno}'))
-                arg_node.arguments.remove(string_node)
+            if not isinstance(root, (FunctionNode, ArrayNode)):
+                raise NotImplementedError # I'm lazy
 
-                # Mark the node as modified
-                if arg_node not in to_sort_nodes and not isinstance(root, FunctionNode):
-                    to_sort_nodes += [arg_node]
-                if root not in self.modified_nodes:
-                    self.modified_nodes += [root]
+            # Remove the found string node from the argument list
+            arg_node = root.args
+            mlog.log('  -- Removing', name, mlog.green(i), 'from',
+                        mlog.yellow(f'{string_node.filename}:{string_node.lineno}'))
+            arg_node.arguments.remove(string_node)
+
+            # Mark the node as modified
+            if root not in to_sort_nodes:
+                to_sort_nodes += [root]
+            if root not in self.modified_nodes:
+                self.modified_nodes += [root]
+
+
+    @RequiredKeys(rewriter_keys['target'])
+    def process_target(self, cmd: T.Dict[str, T.Any]) -> None:
+        mlog.log('Processing target', mlog.bold(cmd['target']), 'operation', mlog.cyan(cmd['operation']))
+        target = self.find_target(cmd['target'])
+        if target is None and cmd['operation'] != 'target_add':
+            mlog.error('Unknown target', mlog.bold(cmd['target']), *self.on_error())
+            return self.handle_error()
+
+        # Make source paths relative to the current subdir
+        def rel_source(src: str) -> str:
+            subdir = os.path.abspath(os.path.join(self.sourcedir, target.subdir))
+            if os.path.isabs(src):
+                return os.path.relpath(src, subdir)
+            elif not os.path.exists(src):
+                return src # Trust the user when the source doesn't exist
+            # Make sure that the path is relative to the subdir
+            return os.path.relpath(os.path.abspath(src), subdir)
+
+        to_sort_nodes: T.List[T.Union[FunctionNode, ArrayNode]] = []
+
+        if cmd['operation'] in ['src_add', 'extra_files_add']:
+            self.add_src_or_extra(cmd['operation'], target, cmd['sources'], to_sort_nodes)
+
+        elif cmd['operation'] in ['src_rm', 'extra_files_rm']:
+            self.rm_src_or_extra(cmd['operation'], target, cmd['sources'], to_sort_nodes)
 
         elif cmd['operation'] == 'target_add':
             if target is not None:
@@ -939,17 +915,17 @@ class Rewriter:
 
             # Build src list
             src_arg_node = ArgumentNode(Token('string', filename, 0, 0, 0, None, ''))
-            src_arr_node = ArrayNode(_symbol('['), src_arg_node, _symbol(']'))
+            src_arr_node = ArrayNode(create_symbol('['), src_arg_node, create_symbol(']'))
             src_far_node = ArgumentNode(Token('string', filename, 0, 0, 0, None, ''))
-            src_fun_node = FunctionNode(IdNode(Token('id', filename, 0, 0, 0, (0, 0), 'files')), _symbol('('), src_far_node, _symbol(')'))
-            src_ass_node = AssignmentNode(IdNode(Token('id', filename, 0, 0, 0, (0, 0), source_id)), _symbol('='), src_fun_node)
+            src_fun_node = FunctionNode(IdNode(Token('id', filename, 0, 0, 0, (0, 0), 'files')), create_symbol('('), src_far_node, create_symbol(')'))
+            src_ass_node = AssignmentNode(IdNode(Token('id', filename, 0, 0, 0, (0, 0), source_id)), create_symbol('='), src_fun_node)
             src_arg_node.arguments = [StringNode(Token('string', filename, 0, 0, 0, None, x)) for x in cmd['sources']]
             src_far_node.arguments = [src_arr_node]
 
             # Build target
             tgt_arg_node = ArgumentNode(Token('string', filename, 0, 0, 0, None, ''))
-            tgt_fun_node = FunctionNode(IdNode(Token('id', filename, 0, 0, 0, (0, 0), cmd['target_type'])), _symbol('('), tgt_arg_node, _symbol(')'))
-            tgt_ass_node = AssignmentNode(IdNode(Token('id', filename, 0, 0, 0, (0, 0), target_id)), _symbol('='), tgt_fun_node)
+            tgt_fun_node = FunctionNode(IdNode(Token('id', filename, 0, 0, 0, (0, 0), cmd['target_type'])), create_symbol('('), tgt_arg_node, create_symbol(')'))
+            tgt_ass_node = AssignmentNode(IdNode(Token('id', filename, 0, 0, 0, (0, 0), target_id)), create_symbol('='), tgt_fun_node)
             tgt_arg_node.arguments = [
                 StringNode(Token('string', filename, 0, 0, 0, None, cmd['target'])),
                 IdNode(Token('string', filename, 0, 0, 0, None, source_id))
@@ -960,9 +936,9 @@ class Rewriter:
             self.to_add_nodes += [src_ass_node, tgt_ass_node]
 
         elif cmd['operation'] == 'target_rm':
-            to_remove = self.find_assignment_node(target['node'])
+            to_remove: T.Optional[T.Union[AssignmentNode, FunctionNode]] = self.find_assignment_node(target.node)
             if to_remove is None:
-                to_remove = target['node']
+                to_remove = target.node
             self.to_remove_nodes += [to_remove]
             mlog.log('  -- Removing target', mlog.green(cmd['target']), 'at',
                      mlog.yellow(f'{to_remove.filename}:{to_remove.lineno}'))
@@ -973,31 +949,40 @@ class Rewriter:
             cwd = Path(os.getcwd())
             source_root_abs = cwd / self.interpreter.source_root
 
-            src_list = self.interpreter.nodes_to_pretty_filelist(source_root_abs, target['subdir'], target['source_nodes'])
-            extra_files_list = self.interpreter.nodes_to_pretty_filelist(source_root_abs, target['subdir'], [target['extra_files']] if target['extra_files'] else [])
+            src_list = self.interpreter.nodes_to_pretty_filelist(source_root_abs, target.subdir, target.source_nodes)
+            extra_files_list = self.interpreter.nodes_to_pretty_filelist(source_root_abs, target.subdir, [target.extra_files] if target.extra_files else [])
 
             src_list = ['unknown' if isinstance(x, UnknownValue) else os.path.relpath(x, source_root_abs) for x in src_list]
-            extra_files_list = [os.path.relpath(x, source_root_abs) for x in extra_files_list]
+            extra_files_list = ['unknown' if isinstance(x, UnknownValue) else os.path.relpath(x, source_root_abs) for x in extra_files_list]
 
             test_data = {
-                'name': target['name'],
+                'name': target.name,
                 'sources': src_list,
                 'extra_files': extra_files_list
             }
-            self.add_info('target', target['id'], test_data)
+            self.add_info('target', target.id, test_data)
 
         # Sort files
         for i in to_sort_nodes:
-            convert = lambda text: int(text) if text.isdigit() else text.lower()
-            alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
-            path_sorter = lambda key: ([(key.count('/') <= idx, alphanum_key(x)) for idx, x in enumerate(key.split('/'))])
+            def convert(text: str) -> T.Union[int, str]:
+                return int(text) if text.isdigit() else text.lower()
+            def alphanum_key(key: str) -> T.List[T.Union[int, str]]:
+                return [convert(c) for c in re.split('([0-9]+)', key)]
+            def path_sorter(key: str) -> T.List[T.Tuple[bool, T.List[T.Union[int, str]]]]:
+                return [(key.count('/') <= idx, alphanum_key(x)) for idx, x in enumerate(key.split('/'))]
 
-            unknown = [x for x in i.arguments if not isinstance(x, BaseStringNode)]
-            sources = [x for x in i.arguments if isinstance(x, BaseStringNode)]
+            if isinstance(i, FunctionNode) and i.func_name.value in BUILD_TARGET_FUNCTIONS:
+                src_args = i.args.arguments[1:]
+                target_name = [i.args.arguments[0]]
+            else:
+                src_args = i.args.arguments
+                target_name = []
+            unknown: T.List[BaseNode] = [x for x in src_args if not isinstance(x, BaseStringNode)]
+            sources: T.List[BaseStringNode] = [x for x in src_args if isinstance(x, BaseStringNode)]
             sources = sorted(sources, key=lambda x: path_sorter(x.value))
-            i.arguments = unknown + sources
+            i.args.arguments = target_name + unknown + T.cast(T.List[BaseNode], sources)
 
-    def process(self, cmd):
+    def process(self, cmd: T.Dict[str, T.Any]) -> None:
         if 'type' not in cmd:
             raise RewriterException('Command has no key "type"')
         if cmd['type'] not in self.functions:
@@ -1005,7 +990,7 @@ class Rewriter:
                                     .format(cmd['type'], list(self.functions.keys())))
         self.functions[cmd['type']](cmd)
 
-    def apply_changes(self):
+    def apply_changes(self) -> None:
         assert all(hasattr(x, 'lineno') and hasattr(x, 'colno') and hasattr(x, 'filename') for x in self.modified_nodes)
         assert all(hasattr(x, 'lineno') and hasattr(x, 'colno') and hasattr(x, 'filename') for x in self.to_remove_nodes)
         assert all(isinstance(x, (ArrayNode, FunctionNode)) for x in self.modified_nodes)
@@ -1013,7 +998,7 @@ class Rewriter:
         # Sort based on line and column in reversed order
         work_nodes = [{'node': x, 'action': 'modify'} for x in self.modified_nodes]
         work_nodes += [{'node': x, 'action': 'rm'} for x in self.to_remove_nodes]
-        work_nodes = sorted(work_nodes, key=lambda x: (x['node'].lineno, x['node'].colno), reverse=True)
+        work_nodes = sorted(work_nodes, key=lambda x: (T.cast(BaseNode, x['node']).lineno, T.cast(BaseNode, x['node']).colno), reverse=True)
         work_nodes += [{'node': x, 'action': 'add'} for x in self.to_add_nodes]
 
         # Generating the new replacement string
@@ -1022,11 +1007,11 @@ class Rewriter:
             new_data = ''
             if i['action'] == 'modify' or i['action'] == 'add':
                 printer = AstPrinter()
-                i['node'].accept(printer)
+                T.cast(BaseNode, i['node']).accept(printer)
                 printer.post_process()
                 new_data = printer.result.strip()
             data = {
-                'file': i['node'].filename,
+                'file': T.cast(BaseNode, i['node']).filename,
                 'str': new_data,
                 'node': i['node'],
                 'action': i['action']
@@ -1034,11 +1019,11 @@ class Rewriter:
             str_list += [data]
 
         # Load build files
-        files = {}
+        files: T.Dict[str, T.Any] = {}
         for i in str_list:
             if i['file'] in files:
                 continue
-            fpath = os.path.realpath(i['file'])
+            fpath = os.path.realpath(T.cast(str, i['file']))
             fdata = ''
             # Create an empty file if it does not exist
             if not os.path.exists(fpath):
@@ -1055,14 +1040,14 @@ class Rewriter:
                 line_offsets += [offset]
                 offset += len(j)
 
-            files[i['file']] = {
+            files[T.cast(str, i['file'])] = {
                 'path': fpath,
                 'raw': fdata,
                 'offsets': line_offsets
             }
 
         # Replace in source code
-        def remove_node(i):
+        def remove_node(i: T.Dict[str, T.Any]) -> None:
             offsets = files[i['file']]['offsets']
             raw = files[i['file']]['raw']
             node = i['node']
@@ -1090,7 +1075,7 @@ class Rewriter:
             if i['action'] in {'modify', 'rm'}:
                 remove_node(i)
             elif i['action'] == 'add':
-                files[i['file']]['raw'] += i['str'] + '\n'
+                files[T.cast(str, i['file'])]['raw'] += T.cast(str, i['str']) + '\n'
 
         # Write the files back
         for key, val in files.items():
@@ -1121,7 +1106,7 @@ def list_to_dict(in_list: T.List[str]) -> T.Dict[str, str]:
         raise TypeError('in_list parameter of list_to_dict must have an even length.')
     return result
 
-def generate_target(options) -> T.List[dict]:
+def generate_target(options: argparse.Namespace) -> T.List[T.Dict[str, T.Any]]:
     return [{
         'type': 'target',
         'target': options.target,
@@ -1131,7 +1116,7 @@ def generate_target(options) -> T.List[dict]:
         'target_type': options.tgt_type,
     }]
 
-def generate_kwargs(options) -> T.List[dict]:
+def generate_kwargs(options: argparse.Namespace) -> T.List[T.Dict[str, T.Any]]:
     return [{
         'type': 'kwargs',
         'function': options.function,
@@ -1140,19 +1125,19 @@ def generate_kwargs(options) -> T.List[dict]:
         'kwargs': list_to_dict(options.kwargs),
     }]
 
-def generate_def_opts(options) -> T.List[dict]:
+def generate_def_opts(options: argparse.Namespace) -> T.List[T.Dict[str, T.Any]]:
     return [{
         'type': 'default_options',
         'operation': options.operation,
         'options': list_to_dict(options.options),
     }]
 
-def generate_cmd(options) -> T.List[dict]:
+def generate_cmd(options: argparse.Namespace) -> T.List[T.Dict[str, T.Any]]:
     if os.path.exists(options.json):
         with open(options.json, encoding='utf-8') as fp:
-            return json.load(fp)
+            return T.cast(T.List[T.Dict[str, T.Any]], json.load(fp))
     else:
-        return json.loads(options.json)
+        return T.cast(T.List[T.Dict[str, T.Any]], json.loads(options.json))
 
 # Map options.type to the actual type name
 cli_type_map = {
@@ -1165,7 +1150,7 @@ cli_type_map = {
     'cmd': generate_cmd,
 }
 
-def run(options):
+def run(options: argparse.Namespace) -> int:
     if not options.verbose:
         mlog.set_quiet()
 

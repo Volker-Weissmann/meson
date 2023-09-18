@@ -76,9 +76,9 @@ class IntrospectionInterpreter(AstInterpreter):
         self.backend = backend
         self.default_options = {OptionKey('backend'): self.backend}
         self.project_data: T.Dict[str, T.Any] = {}
-        self.targets: T.List[T.Dict[str, T.Any]] = []
-        self.dependencies: T.List[T.Dict[str, T.Any]] = []
-        self.project_node: BaseNode = None
+        self.targets: T.List[MockBuildTarget] = []
+        self.dependencies: T.List[MockDependency] = []
+        self.project_node: FunctionNode = None
 
         self.funcs.update({
             'add_languages': self.func_add_languages,
@@ -96,6 +96,7 @@ class IntrospectionInterpreter(AstInterpreter):
     def func_project(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> None:
         if self.project_node:
             raise InvalidArguments('Second call to project()')
+        assert isinstance(node, FunctionNode)
         self.project_node = node
         if len(args) < 1:
             raise InvalidArguments('Not enough arguments to project(). Needs at least the project name.')
@@ -195,6 +196,7 @@ class IntrospectionInterpreter(AstInterpreter):
                     self.coredata.add_compiler_options(options, lang, for_machine, self.environment)
 
     def func_dependency(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> None:
+        assert isinstance(node, FunctionNode)
         args = self.flatten_args(args)
         kwargs = self.flatten_kwargs(kwargs, True)
         if not args:
@@ -207,18 +209,17 @@ class IntrospectionInterpreter(AstInterpreter):
         if not isinstance(version, list):
             version = [version]
         assert isinstance(required, (bool, UnknownValue))
-        newdep = {
-            'name': name,
-            'required': required,
-            'version': version,
-            'has_fallback': has_fallback,
-            'conditional': node.condition_level > 0,
-            'node': node
-        }
+        newdep = MockDependency(
+            name=name,
+            required=required,
+            version=version,
+            has_fallback=has_fallback,
+            conditional=node.condition_level > 0,
+            node=node)
         self.dependencies += [newdep]
-        self.funcvals[node] = MockDependency(name=name, required=required, version=version, has_fallback=has_fallback, conditional=node.condition_level > 0, node=node)
+        self.funcvals[node] = newdep
 
-    def build_target(self, node: BaseNode, args: T.List[TYPE_var], kwargs_raw: T.Dict[str, TYPE_var], targetclass: T.Type[BuildTarget]) -> None:
+    def build_target(self, node: BaseNode, args: T.List[TYPE_var], kwargs_raw: T.Dict[str, TYPE_var], targetclass: T.Type[BuildTarget]) -> MockBuildTarget:
         assert isinstance(node, FunctionNode)
         args = self.flatten_args(args)
         if isinstance(args[0], UnknownValue):
@@ -268,23 +269,22 @@ class IntrospectionInterpreter(AstInterpreter):
                              self.environment, self.coredata.compilers[for_machine], kwargs_reduced)
         target.process_compilers_late()
 
-        new_target = {
-            'name': target.get_basename(),
-            'id': target.get_id(),
-            'type': target.get_typename(),
-            'defined_in': os.path.normpath(os.path.join(self.source_root, self.subdir, environment.build_filename)),
-            'subdir': self.subdir,
-            'build_by_default': target.build_by_default,
-            'installed': target.should_install(),
-            'outputs': target.get_outputs(),
-            'source_nodes': source_nodes,
-            'extra_files': extraf_nodes,
-            'kwargs': kwargs,
-            'node': node,
-        }
+        new_target = MockBuildTarget(
+            name=target.get_basename(),
+            id=target.get_id(),
+            typename=target.get_typename(),
+            defined_in=os.path.normpath(os.path.join(self.source_root, self.subdir, environment.build_filename)),
+            subdir=self.subdir,
+            build_by_default=target.build_by_default,
+            installed=target.should_install(),
+            outputs=target.get_outputs(),
+            source_nodes=source_nodes,
+            extra_files=extraf_nodes,
+            kwargs=kwargs,
+            node=node)
 
         self.targets += [new_target]
-        return MockBuildTarget(new_target)
+        return new_target
 
     def build_library(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
         default_library = self.coredata.get_option(OptionKey('default_library'))
@@ -352,11 +352,11 @@ class IntrospectionInterpreter(AstInterpreter):
            and also calls parse_project() on every subproject.
         '''
         if not self.ast.lines:
-            return
+            return None
         project = self.ast.lines[0]
         # first line is always project()
         if not isinstance(project, FunctionNode):
-            return
+            return None
         for kw, val in project.args.kwargs.items():
             assert isinstance(kw, IdNode), 'for mypy'
             if kw.value == 'subproject_dir':

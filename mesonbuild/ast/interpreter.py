@@ -68,6 +68,8 @@ from ..mparser import (
     PlusAssignmentNode,
     TernaryNode,
     TestCaseClauseNode,
+    SymbolNode,
+    Token,
 )
 
 if T.TYPE_CHECKING:
@@ -89,13 +91,13 @@ if T.TYPE_CHECKING:
 class DontCareObject(MesonInterpreterObject):
     pass
 
-class MockExecutable(MesonInterpreterObject):
+class MockExecutable(MesonInterpreterObject): # todo: rename Mock* to Introspection*
     pass
 
 class MockStaticLibrary(MesonInterpreterObject):
     pass
 
-class MockSharedLibrary(MesonInterpreterObject):
+class MockSharedLibrary(MesonInterpreterObject): # todo: remove, its unused
     pass
 
 class MockCustomTarget(MesonInterpreterObject):
@@ -124,11 +126,22 @@ class MockDependency(MesonInterpreterObject):
     version: T.List[str]
     has_fallback: bool
     conditional: bool
-    node: BaseNode
+    node: FunctionNode
 
 @dataclass
 class MockBuildTarget(MesonInterpreterObject):
-    inner: dict
+    name: str
+    id: str
+    typename: str
+    defined_in: str
+    subdir: str
+    build_by_default: bool
+    installed: bool
+    outputs: T.List[str]
+    source_nodes: T.List[BaseNode]
+    extra_files: BaseNode
+    kwargs: T.Dict[str, T.Union[T.Union[str, int, bool, T.List[T.Any], T.Dict[str, T.Any]], HoldableObject, MesonInterpreterObject]]
+    node: FunctionNode
 
 def flatten_nested_lists(ar: T.Any) -> T.List[T.Any]:
     flat_list = []
@@ -138,6 +151,9 @@ def flatten_nested_lists(ar: T.Any) -> T.List[T.Any]:
         else:
             flat_list.append(x)
     return flat_list
+
+def create_symbol(val: str) -> SymbolNode:
+    return SymbolNode(Token('', '', 0, 0, 0, (0, 0), val))
 
 class DataflowDAG:
     src_to_tgts: T.DefaultDict[T.Union[BaseNode, UnknownValue], T.Set[T.Union[BaseNode, UnknownValue]]]
@@ -163,11 +179,11 @@ class DataflowDAG:
             if reverse:
                 new: T.Set[T.Union[BaseNode, UnknownValue]] = set()
                 for tgt in active:
-                    new.update(src for src in self.tgt_to_srcs[tgt] if not ((isinstance(src, FunctionNode) and src.func_name not in ['files', 'get_variable']) or isinstance(src, MethodNode)))
+                    new.update(src for src in self.tgt_to_srcs[tgt] if not ((isinstance(src, FunctionNode) and src.func_name.value not in ['files', 'get_variable']) or isinstance(src, MethodNode)))
             else:
                 new = set()
                 for src in active:
-                    if (isinstance(src, FunctionNode) and src.func_name not in ['files', 'get_variable']) or isinstance(src, MethodNode):
+                    if (isinstance(src, FunctionNode) and src.func_name.value not in ['files', 'get_variable']) or isinstance(src, MethodNode):
                         continue
                     new.update(tgt for tgt in self.src_to_tgts[src])
             if len(new) == 0:
@@ -185,7 +201,7 @@ class DataflowDAG:
             cur, path = queue.pop()
             if cur == target:
                 paths.append(path)
-            if (isinstance(cur, FunctionNode) and cur.func_name not in ['files', 'get_variable']) or isinstance(cur, MethodNode):
+            if (isinstance(cur, FunctionNode) and cur.func_name.value not in ['files', 'get_variable']) or isinstance(cur, MethodNode):
                 continue
             next = [(tgt, path + [tgt]) for tgt in self.src_to_tgts[cur]]
             queue += next
@@ -214,7 +230,6 @@ class AstInterpreter(InterpreterBase):
         self.funcvals: T.Dict[BaseNode, T.Union[BaseNode, InterpreterObject]] = {}
         self.tainted = False
         self.assign_vals: T.Dict[str, T.Any] = {}
-        self.reverse_assignment: T.Dict[str, BaseNode] = {}
         self.build_func_dict()
         self.build_holder_map()
 
@@ -360,7 +375,7 @@ class AstInterpreter(InterpreterBase):
         invocable = node.source_object
         self.evaluate_statement(invocable)
         obj = self.node_to_runtime_value(invocable)
-        method_name = node.name
+        method_name = node.name.value
         (h_args, h_kwargs) = self.reduce_arguments(node.args)
         (args, kwargs) = self._unholder_args(h_args, h_kwargs)
         res: InterpreterObject
@@ -370,8 +385,8 @@ class AstInterpreter(InterpreterBase):
             res = self.inner_method_call(obj, method_name, args, kwargs)
         self.funcvals[node] = res
 
-    def evaluate_fstring(self, node: mparser.FormatStringNode) -> None:
-        assert isinstance(node, mparser.FormatStringNode)
+    def evaluate_fstring(self, node: T.Union[mparser.FormatStringNode, mparser.MultilineFormatStringNode]) -> None:
+        assert isinstance(node, (mparser.FormatStringNode, mparser.MultilineFormatStringNode))
 
     def evaluate_arraystatement(self, cur: mparser.ArrayNode) -> None:
         for arg in cur.args.arguments:
@@ -451,14 +466,14 @@ class AstInterpreter(InterpreterBase):
 
     def find_potential_writes(self, node: BaseNode) -> T.Set[str]:
         if isinstance(node, mparser.ForeachClauseNode):
-            return set(node.varnames) | self.find_potential_writes(node.block)
+            return {el.value for el in node.varnames} | self.find_potential_writes(node.block)
         elif isinstance(node, mparser.CodeBlockNode):
             ret = set()
             for line in node.lines:
                 ret.update(self.find_potential_writes(line))
             return ret
         elif isinstance(node, (AssignmentNode, PlusAssignmentNode)):
-            return set([node.var_name]) | self.find_potential_writes(node.value)
+            return set([node.var_name.value]) | self.find_potential_writes(node.value)
         elif isinstance(node, IdNode):
             return set()
         elif isinstance(node, ArrayNode):
@@ -488,10 +503,13 @@ class AstInterpreter(InterpreterBase):
             return ret
         elif isinstance(node, ArithmeticNode):
             return self.find_potential_writes(node.left) | self.find_potential_writes(node.right)
-        elif isinstance(node, (mparser.NumberNode, mparser.StringNode, mparser.BreakNode, EmptyNode, mparser.BooleanNode, mparser.FormatStringNode, mparser.ContinueNode)):
+        elif isinstance(node, (mparser.NumberNode, mparser.StringNode, mparser.BreakNode, mparser.BooleanNode, mparser.FormatStringNode, mparser.ContinueNode)):
             return set()
         elif isinstance(node, mparser.IfClauseNode):
-            ret = self.find_potential_writes(node.elseblock)
+            if isinstance(node.elseblock, EmptyNode):
+                ret = set()
+            else:
+                ret = self.find_potential_writes(node.elseblock.block)
             for i in node.ifs:
                 ret.update(self.find_potential_writes(i))
             return ret
@@ -602,7 +620,7 @@ class AstInterpreter(InterpreterBase):
     # ```
     # `node_to_runtime_value` will return `[123, UnknownValue()]`.
     def node_to_runtime_value(self, node: T.Union[UnknownValue, BaseNode, TYPE_var]) -> T.Any:
-        if isinstance(node, (mparser.StringNode, mparser.BooleanNode, mparser.NumberNode)):
+        if isinstance(node, (mparser.BaseStringNode, mparser.BooleanNode, mparser.NumberNode)):
             return node.value
         elif isinstance(node, list):
             return [self.node_to_runtime_value(x) for x in node]
@@ -674,6 +692,8 @@ class AstInterpreter(InterpreterBase):
                 return left != right
             elif node.ctype == 'in':
                 return left in right
+            elif node.ctype == 'notin':
+                return left not in right
         elif isinstance(node, mparser.FormatStringNode):
             return UnknownValue()
         elif isinstance(node, mparser.TernaryNode):
@@ -708,6 +728,8 @@ class AstInterpreter(InterpreterBase):
                 return val
             if isinstance(val, bool):
                 return not val
+        elif isinstance(node, mparser.ParenthesizedNode):
+            return self.node_to_runtime_value(node.inner)
         raise NotImplementedError
 
     def assignment(self, node: AssignmentNode) -> None:
@@ -719,14 +741,14 @@ class AstInterpreter(InterpreterBase):
     def evaluate_plusassign(self, node: PlusAssignmentNode) -> None:
         assert isinstance(node, PlusAssignmentNode)
         self.evaluate_statement(node.value)
-        lhs = self.get_cur_value(node.var_name)
+        lhs = self.get_cur_value(node.var_name.value)
         newval: T.Union[UnknownValue, ArithmeticNode]
         if isinstance(lhs, UnknownValue):
             newval = UnknownValue()
         else:
-            newval = mparser.ArithmeticNode(operation='add', left=lhs, right=node.value)
-        self.cur_assignments[node.var_name].append((self.nesting.copy(), newval))
-        self.all_assignment_nodes[node.var_name].append(node)
+            newval = mparser.ArithmeticNode(operation='add', left=lhs, operator=create_symbol('+'), right=node.value)
+        self.cur_assignments[node.var_name.value].append((self.nesting.copy(), newval))
+        self.all_assignment_nodes[node.var_name.value].append(node)
 
         self.dataflow_dag.add_edge(lhs, newval)
         self.dataflow_dag.add_edge(node.value, newval)
@@ -744,7 +766,7 @@ class AstInterpreter(InterpreterBase):
             self.tainted = True
             return
         assert isinstance(var_name, str)
-        equiv = AssignmentNode(var_name=var_name, value=value, filename='', lineno=0, colno=0)
+        equiv = AssignmentNode(var_name=IdNode(Token('', '', 0, 0, 0, (0, 0), var_name)), value=value, operator=create_symbol('='))
         equiv.ast_id = str(id(equiv))
         self.evaluate_statement(equiv)
 

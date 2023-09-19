@@ -28,7 +28,7 @@ from ..compilers import detect_compiler_for
 from ..interpreterbase import InvalidArguments, UnknownValue
 from ..mesonlib import MachineChoice, OptionKey
 from ..mparser import BaseNode, ElementaryNode, IdNode, BaseStringNode, FunctionNode
-from .interpreter import AstInterpreter, MockBuildTarget, MockDependency
+from .interpreter import AstInterpreter, IntrospectionBuildTarget, IntrospectionDependency
 
 if T.TYPE_CHECKING:
     from ..build import BuildTarget
@@ -76,8 +76,8 @@ class IntrospectionInterpreter(AstInterpreter):
         self.backend = backend
         self.default_options = {OptionKey('backend'): self.backend}
         self.project_data: T.Dict[str, T.Any] = {}
-        self.targets: T.List[MockBuildTarget] = []
-        self.dependencies: T.List[MockDependency] = []
+        self.targets: T.List[IntrospectionBuildTarget] = []
+        self.dependencies: T.List[IntrospectionDependency] = []
         self.project_node: FunctionNode = None
 
         self.funcs.update({
@@ -209,7 +209,7 @@ class IntrospectionInterpreter(AstInterpreter):
         if not isinstance(version, list):
             version = [version]
         assert isinstance(required, (bool, UnknownValue))
-        newdep = MockDependency(
+        newdep = IntrospectionDependency(
             name=name,
             required=required,
             version=version,
@@ -219,7 +219,7 @@ class IntrospectionInterpreter(AstInterpreter):
         self.dependencies += [newdep]
         self.funcvals[node] = newdep
 
-    def build_target(self, node: BaseNode, args: T.List[TYPE_var], kwargs_raw: T.Dict[str, TYPE_var], targetclass: T.Type[BuildTarget]) -> MockBuildTarget:
+    def build_target(self, node: BaseNode, args: T.List[TYPE_var], kwargs_raw: T.Dict[str, TYPE_var], targetclass: T.Type[BuildTarget]) -> IntrospectionBuildTarget:
         assert isinstance(node, FunctionNode)
         args = self.flatten_args(args)
         if isinstance(args[0], UnknownValue):
@@ -269,7 +269,7 @@ class IntrospectionInterpreter(AstInterpreter):
                              self.environment, self.coredata.compilers[for_machine], kwargs_reduced)
         target.process_compilers_late()
 
-        new_target = MockBuildTarget(
+        new_target = IntrospectionBuildTarget(
             name=target.get_basename(),
             id=target.get_id(),
             typename=target.get_typename(),
@@ -286,7 +286,7 @@ class IntrospectionInterpreter(AstInterpreter):
         self.targets += [new_target]
         return new_target
 
-    def build_library(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
+    def build_library(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> IntrospectionBuildTarget:
         default_library = self.coredata.get_option(OptionKey('default_library'))
         if default_library == 'shared':
             return self.build_target(node, args, kwargs, SharedLibrary)
@@ -296,28 +296,28 @@ class IntrospectionInterpreter(AstInterpreter):
             return self.build_target(node, args, kwargs, SharedLibrary)
         return None
 
-    def func_executable(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
+    def func_executable(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> IntrospectionBuildTarget:
         return self.build_target(node, args, kwargs, Executable)
 
-    def func_static_lib(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
+    def func_static_lib(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> IntrospectionBuildTarget:
         return self.build_target(node, args, kwargs, StaticLibrary)
 
-    def func_shared_lib(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
+    def func_shared_lib(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> IntrospectionBuildTarget:
         return self.build_target(node, args, kwargs, SharedLibrary)
 
-    def func_both_lib(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
+    def func_both_lib(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> IntrospectionBuildTarget:
         return self.build_target(node, args, kwargs, SharedLibrary)
 
-    def func_shared_module(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
+    def func_shared_module(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> IntrospectionBuildTarget:
         return self.build_target(node, args, kwargs, SharedModule)
 
-    def func_library(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
+    def func_library(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> IntrospectionBuildTarget:
         return self.build_library(node, args, kwargs)
 
-    def func_jar(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
+    def func_jar(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> IntrospectionBuildTarget:
         return self.build_target(node, args, kwargs, Jar)
 
-    def func_build_target(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> MockBuildTarget:
+    def func_build_target(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> IntrospectionBuildTarget:
         if 'target_type' not in kwargs:
             return None
         target_type = kwargs.pop('target_type')

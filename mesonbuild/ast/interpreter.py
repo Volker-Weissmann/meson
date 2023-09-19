@@ -37,7 +37,6 @@ from ..interpreterbase import (
     ContinueRequest,
     Disabler,
     default_resolve_key,
-    Disabler,
     is_disabled,
     UnknownValue,
     ObjectHolder,
@@ -88,26 +87,9 @@ if T.TYPE_CHECKING:
         UMinusNode,
     )
 
-class DontCareObject(MesonInterpreterObject):
-    pass
-
-class MockExecutable(MesonInterpreterObject): # todo: rename Mock* to Introspection*
-    pass
-
-class MockStaticLibrary(MesonInterpreterObject):
-    pass
-
-class MockSharedLibrary(MesonInterpreterObject): # todo: remove, its unused
-    pass
-
-class MockCustomTarget(MesonInterpreterObject):
-    pass
-
-class MockRunTarget(MesonInterpreterObject):
-    pass
-
+# `IntrospectionFile` is to the `IntrospectionInterpreter` what `File` is to the normal `Interpreter`.
 @dataclass
-class MockFile(HoldableObject):
+class IntrospectionFile(HoldableObject):
     subdir: str
     rel: str
     def to_abs_path(self, root_dir: Path) -> Path:
@@ -116,11 +98,13 @@ class MockFile(HoldableObject):
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.subdir, self.rel))
 
-class MockFileHolder(ObjectHolder[MockFile]):
+# `IntrospectionFileHolder` is to the `IntrospectionInterpreter` what `FileHolder` is to the normal `Interpreter`.
+class IntrospectionFileHolder(ObjectHolder[IntrospectionFile]):
     pass
 
+# `IntrospectionDependency` is to the `IntrospectionInterpreter` what `Dependency` is to the normal `Interpreter`.
 @dataclass
-class MockDependency(MesonInterpreterObject):
+class IntrospectionDependency(MesonInterpreterObject):
     name: str
     required: T.Union[bool, UnknownValue]
     version: T.List[str]
@@ -128,8 +112,9 @@ class MockDependency(MesonInterpreterObject):
     conditional: bool
     node: FunctionNode
 
+# `IntrospectionBuildTarget` is to the `IntrospectionInterpreter` what `BuildTarget` is to the normal `Interpreter`.
 @dataclass
-class MockBuildTarget(MesonInterpreterObject):
+class IntrospectionBuildTarget(MesonInterpreterObject):
     name: str
     id: str
     typename: str
@@ -214,7 +199,7 @@ class AstInterpreter(InterpreterBase):
         self.processed_buildfiles: T.Set[str] = set()
         self.nesting: T.List[int] = []
         self.cur_assignments: T.DefaultDict[str, T.List[T.Tuple[T.List[int], T.Union[BaseNode, UnknownValue]]]] = defaultdict(list)
-        self.all_assignment_nodes: T.DefaultDict[str, T.List[BaseNode]] = defaultdict(list)
+        self.all_assignment_nodes: T.DefaultDict[str, T.List[AssignmentNode]] = defaultdict(list)
         # dataflow_dag is an acyclic directed graph that contains an edge
         # from one instance of `BaseNode` to another instance of `BaseNode` if
         # data flows directly from one to the other. Example: If meson.build
@@ -305,7 +290,7 @@ class AstInterpreter(InterpreterBase):
             str: P_OBJ.StringHolder,
 
             # Meson types
-            MockFile: MockFileHolder,
+            IntrospectionFile: IntrospectionFileHolder,
         })
 
     def func_do_nothing(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> UnknownValue:
@@ -565,10 +550,10 @@ class AstInterpreter(InterpreterBase):
                 self.cur_assignments[var_name].append((self.nesting.copy(), uv))
 
     def func_files(self, node: BaseNode, args: T.List[TYPE_var], kwargs: T.Dict[str, TYPE_var]) -> None:
-        ret: T.List[T.Union[MockFile, UnknownValue]] =  []
+        ret: T.List[T.Union[IntrospectionFile, UnknownValue]] =  []
         for arg in args:
             if isinstance(arg, str):
-                ret.append(MockFile(self.subdir, arg))
+                ret.append(IntrospectionFile(self.subdir, arg))
             elif isinstance(arg, UnknownValue):
                 ret.append(UnknownValue())
             else:
@@ -673,7 +658,7 @@ class AstInterpreter(InterpreterBase):
             elif node.operation == 'mod':
                 if isinstance(left, int) and isinstance(right, int):
                     return left % right
-        elif isinstance(node, (UnknownValue, MockBuildTarget, MockFile, MockDependency, str, bool)):
+        elif isinstance(node, (UnknownValue, IntrospectionBuildTarget, IntrospectionFile, IntrospectionDependency, str, bool)):
             return node
         elif isinstance(node, mparser.IndexNode):
             iobject = self.node_to_runtime_value(node.iobject)
@@ -789,10 +774,10 @@ class AstInterpreter(InterpreterBase):
         self.cur_assignments[var_name].append((self.nesting.copy(), node))
 
     def nodes_to_pretty_filelist(self, root_path: Path, subdir: str, nodes: T.List[BaseNode]) -> T.List[T.Union[str, UnknownValue]]:
-        def src_to_abs(src: T.Union[str, MockFile, UnknownValue]) -> T.Union[str, UnknownValue]:
+        def src_to_abs(src: T.Union[str, IntrospectionFile, UnknownValue]) -> T.Union[str, UnknownValue]:
             if isinstance(src, str):
                 return os.path.normpath(os.path.join(root_path, subdir, src))
-            elif isinstance(src, MockFile):
+            elif isinstance(src, IntrospectionFile):
                 return str(src.to_abs_path(root_path))
             elif isinstance(src, UnknownValue):
                 return src
@@ -819,7 +804,7 @@ class AstInterpreter(InterpreterBase):
                     if not isinstance(resolved, list):
                         resolved = [resolved]
                     flattened_args += resolved
-            elif isinstance(i, (str, bool, int, float, UnknownValue, MockFile)) or include_unknown_args:
+            elif isinstance(i, (str, bool, int, float, UnknownValue, IntrospectionFile)) or include_unknown_args:
                 flattened_args += [i]
             else:
                 raise NotImplementedError

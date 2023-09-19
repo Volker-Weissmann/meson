@@ -73,7 +73,7 @@ else:
 # sane encoding. This should be a python default, but PEP 540 considered it not
 # backwards compatible. Instead, much line noise in diffs to update this, and in
 # python 3.10 we can also make it a warning when absent.
-#os.environ['PYTHONWARNDEFAULTENCODING'] = '0' # todo reset before pushing
+os.environ['PYTHONWARNDEFAULTENCODING'] = '1'
 # work around https://bugs.python.org/issue34624
 os.environ['MESON_RUNNING_IN_PROJECT_TESTS'] = '1'
 # python 3.11 adds a warning that in 3.15, UTF-8 mode will be default.

@@ -25,21 +25,19 @@
 from __future__ import annotations
 
 from .ast import IntrospectionInterpreter, AstConditionLevel, AstIDGenerator, AstIndentationGenerator, AstPrinter
-from .ast.interpreter import MockBuildTarget, MockDependency, flatten_nested_lists, create_symbol
+from .ast.interpreter import IntrospectionBuildTarget, IntrospectionDependency, flatten_nested_lists, create_symbol
 from .interpreterbase import UnknownValue, TV_func
 from mesonbuild.mesonlib import MesonException, setup_vsenv
 from . import mlog, environment
 from functools import wraps
-from .mparser import Token, ArrayNode, ArgumentNode, ArithmeticNode, AssignmentNode, BaseStringNode, BooleanNode, ElementaryNode, IdNode, FunctionNode, PlusAssignmentNode, StringNode, TernaryNode, MethodNode, SymbolNode
+from .mparser import Token, ArrayNode, ArgumentNode, ArithmeticNode, AssignmentNode, BaseNode, BaseStringNode, BooleanNode, ElementaryNode, IdNode, FunctionNode, PlusAssignmentNode, StringNode
 from .mintro import IntrospectionEncoder
 import json, os, re, sys
 import typing as T
 from pathlib import Path
-from debug import *
 
 if T.TYPE_CHECKING:
     import argparse
-    from .mparser import BaseNode
     from .mlog import AnsiDecorator
 
 BUILD_TARGET_FUNCTIONS = [
@@ -436,7 +434,7 @@ class Rewriter:
         return assigned_values
 
 
-    def find_target(self, target: str) -> T.Optional[MockBuildTarget]:
+    def find_target(self, target: str) -> T.Optional[IntrospectionBuildTarget]:
         for i in self.interpreter.targets:
             if target == i.id:
                 return i
@@ -449,7 +447,7 @@ class Rewriter:
         if len(potential_tgts) == 0:
             potenial_tgts_1 = self.all_assignments(target)
             potenial_tgts_1 = [self.interpreter.node_to_runtime_value(el) for el in potenial_tgts_1]
-            potential_tgts = [el for el in potenial_tgts_1 if isinstance(el, MockBuildTarget)]
+            potential_tgts = [el for el in potenial_tgts_1 if isinstance(el, IntrospectionBuildTarget)]
 
         if len(potential_tgts) == 0:
             return None
@@ -463,7 +461,7 @@ class Rewriter:
             self.handle_error()
             return None
 
-    def find_dependency(self, dependency: str) -> T.Optional[MockDependency]:
+    def find_dependency(self, dependency: str) -> T.Optional[IntrospectionDependency]:
         potential_deps = []
         for i in self.interpreter.dependencies:
             if i.name == dependency:
@@ -642,7 +640,11 @@ class Rewriter:
             self.modified_nodes += [node]
 
     def find_assignment_node(self, node: BaseNode) -> T.Optional[AssignmentNode]:
-        return None # todo
+        for k,v in self.interpreter.all_assignment_nodes.items():
+            for ass in v:
+                if ass.value == node:
+                    return ass
+        return None
 
     def affects_no_other_targets(self, candidate: BaseNode) -> bool:
         affected = self.interpreter.dataflow_dag.reachable(set([candidate]), False)
@@ -660,7 +662,7 @@ class Rewriter:
             return None
         return (cwd / next(x for x in all_paths[0] if isinstance(x, FunctionNode)).filename).parent
 
-    def add_src_or_extra(self, op: str, target: MockBuildTarget, newfiles: T.List[str], to_sort_nodes: T.List[T.Union[FunctionNode, ArrayNode]]) -> None:
+    def add_src_or_extra(self, op: str, target: IntrospectionBuildTarget, newfiles: T.List[str], to_sort_nodes: T.List[T.Union[FunctionNode, ArrayNode]]) -> None:
         assert op in set(['src_add', 'extra_files_add'])
 
         if op == 'src_add':
@@ -731,7 +733,7 @@ class Rewriter:
             if len({x for x in candidates2 if isinstance(x, ArrayNode)}) > 0:
                 candidates2 = {x for x in candidates2 if isinstance(x, ArrayNode)}
 
-            #chosen = max(candidates2, key=lambda x: (x.lineno, x.colno)) # todo: which candidate should we choose
+            # We choose one more or less arbitrary candidate
             chosen = min(candidates2, key=lambda x: (x.lineno, x.colno))
             flag_update_srcnodes = False
         elif op == 'src_add':
@@ -788,7 +790,7 @@ class Rewriter:
                         mlog.yellow(f'{chosen.filename}:{chosen.lineno}'))
             added.append(newf)
             mocktarget = self.interpreter.funcvals[target.node]
-            assert isinstance(mocktarget, MockBuildTarget)
+            assert isinstance(mocktarget, IntrospectionBuildTarget)
             print("adding ", str(newf), 'to', mocktarget.name)
 
             token = Token('string', chosen.filename, 0, 0, 0, None, str(os.path.relpath(newf, newfiles_relto)))
@@ -808,10 +810,7 @@ class Rewriter:
         if chosen not in self.modified_nodes and not new_kwarg_flag:
             self.modified_nodes += [chosen]
 
-        # if flag_update_srcnodes: # todo
-        #     target['source_nodes'] += to_append
-
-    def rm_src_or_extra(self, op: str, target: MockBuildTarget, to_be_removed: T.List[str], to_sort_nodes: T.List[T.Union[FunctionNode, ArrayNode]]) -> None:
+    def rm_src_or_extra(self, op: str, target: IntrospectionBuildTarget, to_be_removed: T.List[str], to_sort_nodes: T.List[T.Union[FunctionNode, ArrayNode]]) -> None:
         assert op in set(['src_rm', 'extra_files_rm'])
         cwd = Path(os.getcwd())
         source_root_abs = cwd / self.interpreter.source_root
@@ -897,10 +896,10 @@ class Rewriter:
 
         to_sort_nodes: T.List[T.Union[FunctionNode, ArrayNode]] = []
 
-        if cmd['operation'] in ['src_add', 'extra_files_add']:
+        if cmd['operation'] in {'src_add', 'extra_files_add'}:
             self.add_src_or_extra(cmd['operation'], target, cmd['sources'], to_sort_nodes)
 
-        elif cmd['operation'] in ['src_rm', 'extra_files_rm']:
+        elif cmd['operation'] in {'src_rm', 'extra_files_rm'}:
             self.rm_src_or_extra(cmd['operation'], target, cmd['sources'], to_sort_nodes)
 
         elif cmd['operation'] == 'target_add':

@@ -30,19 +30,23 @@ import sys
 import typing as T
 
 from . import build, mesonlib, coredata as cdata
-from .ast import IntrospectionInterpreter, BUILD_TARGET_FUNCTIONS, AstConditionLevel, AstIDGenerator, AstIndentationGenerator, AstJSONPrinter
+from .ast import IntrospectionInterpreter, AstConditionLevel, AstIDGenerator, AstIndentationGenerator, AstJSONPrinter
 from .backend import backends
 from .dependencies import Dependency
 from . import environment
-from .interpreterbase import ObjectHolder
+from .interpreterbase import ObjectHolder, UnknownValue
 from .mesonlib import OptionKey
-from .mparser import FunctionNode, ArrayNode, ArgumentNode, BaseStringNode
 
 if T.TYPE_CHECKING:
     import argparse
 
     from .interpreter import Interpreter
-    from .mparser import BaseNode
+
+class IntrospectionEncoder(json.JSONEncoder):
+    def default(self, obj: T.Any) -> T.Any:
+        if isinstance(obj, UnknownValue):
+            return 'unknown'
+        return json.JSONEncoder.default(self, obj)
 
 def get_meson_info_file(info_dir: str) -> str:
     return os.path.join(info_dir, 'meson-info.json')
@@ -64,8 +68,7 @@ class IntroCommand:
 
 def get_meson_introspection_types(coredata: T.Optional[cdata.CoreData] = None,
                                   builddata: T.Optional[build.Build] = None,
-                                  backend: T.Optional[backends.Backend] = None,
-                                  sourcedir: T.Optional[str] = None) -> 'T.Mapping[str, IntroCommand]':
+                                  backend: T.Optional[backends.Backend] = None) -> 'T.Mapping[str, IntroCommand]':
     if backend and builddata:
         benchmarkdata = backend.create_test_serialisation(builddata.get_benchmarks())
         testdata = backend.create_test_serialisation(builddata.get_tests())
@@ -177,55 +180,34 @@ def get_target_dir(coredata: cdata.CoreData, subdir: str) -> str:
     else:
         return subdir
 
-def list_targets_from_source(intr: IntrospectionInterpreter) -> T.List[T.Dict[str, T.Union[bool, str, T.List[T.Union[str, T.Dict[str, T.Union[str, T.List[str], bool]]]]]]]:
-    tlist: T.List[T.Dict[str, T.Union[bool, str, T.List[T.Union[str, T.Dict[str, T.Union[str, T.List[str], bool]]]]]]] = []
-    root_dir = Path(intr.source_root)
-
-    def nodes_to_paths(node_list: T.List[BaseNode]) -> T.List[Path]:
-        res: T.List[Path] = []
-        for n in node_list:
-            args: T.List[BaseNode] = []
-            if isinstance(n, FunctionNode):
-                args = list(n.args.arguments)
-                if n.func_name.value in BUILD_TARGET_FUNCTIONS:
-                    args.pop(0)
-            elif isinstance(n, ArrayNode):
-                args = n.args.arguments
-            elif isinstance(n, ArgumentNode):
-                args = n.arguments
-            for j in args:
-                if isinstance(j, BaseStringNode):
-                    assert isinstance(j.value, str)
-                    res += [Path(j.value)]
-                elif isinstance(j, str):
-                    res += [Path(j)]
-        res = [root_dir / i['subdir'] / x for x in res]
-        res = [x.resolve() for x in res]
-        return res
+def list_targets_from_source(intr: IntrospectionInterpreter) -> T.Any:
+    tlist = []
+    root_dir = Path(intr.source_root).resolve()
 
     for i in intr.targets:
-        sources = nodes_to_paths(i['sources'])
-        extra_f = nodes_to_paths(i['extra_files'])
-        outdir = get_target_dir(intr.coredata, i['subdir'])
+        sources = intr.nodes_to_pretty_filelist(root_dir, i.subdir, i.source_nodes)
+        extra_files = intr.nodes_to_pretty_filelist(root_dir, i.subdir, [i.extra_files] if i.extra_files else [])
+
+        outdir = get_target_dir(intr.coredata, i.subdir)
 
         tlist += [{
-            'name': i['name'],
-            'id': i['id'],
-            'type': i['type'],
-            'defined_in': i['defined_in'],
-            'filename': [os.path.join(outdir, x) for x in i['outputs']],
-            'build_by_default': i['build_by_default'],
+            'name': i.name,
+            'id': i.id,
+            'type': i.typename,
+            'defined_in': i.defined_in,
+            'filename': [os.path.join(outdir, x) for x in i.outputs],
+            'build_by_default': i.build_by_default,
             'target_sources': [{
                 'language': 'unknown',
                 'compiler': [],
                 'parameters': [],
-                'sources': [str(x) for x in sources],
+                'sources': sources,
                 'generated_sources': []
             }],
             'depends': [],
-            'extra_files': [str(x) for x in extra_f],
+            'extra_files': extra_files,
             'subproject': None, # Subprojects are not supported
-            'installed': i['installed']
+            'installed': i.installed
         }]
 
     return tlist
@@ -388,7 +370,7 @@ def list_deps_from_source(intr: IntrospectionInterpreter) -> T.List[T.Dict[str, 
             'has_fallback',
             'conditional',
         ]
-        result += [{k: v for k, v in i.items() if k in keys}]
+        result += [{k: v for k, v in i.__dict__.items() if k in keys}]
     return result
 
 def list_deps(coredata: cdata.CoreData, backend: backends.Backend) -> T.List[T.Dict[str, T.Union[str, T.List[str]]]]:
@@ -513,7 +495,7 @@ def print_results(options: argparse.Namespace, results: T.Sequence[T.Tuple[str, 
         return 1
     elif len(results) == 1 and not options.force_dict:
         # Make to keep the existing output format for a single option
-        print(json.dumps(results[0][1], indent=indent))
+        print(json.dumps(results[0][1], indent=indent, cls=IntrospectionEncoder))
     else:
         out = {}
         for i in results:
@@ -542,10 +524,11 @@ def run(options: argparse.Namespace) -> int:
         datadir = os.path.join(options.builddir, datadir)
     indent = 4 if options.indent else None
     results: T.List[T.Tuple[str, T.Union[dict, T.List[T.Any]]]] = []
-    sourcedir = '.' if options.builddir == 'meson.build' else options.builddir[:-11]
-    intro_types = get_meson_introspection_types(sourcedir=sourcedir)
+    intro_types = get_meson_introspection_types()
 
-    if 'meson.build' in [os.path.basename(options.builddir), options.builddir]:
+    # TODO: This if clause is undocumented.
+    if os.path.basename(options.builddir) == 'meson.build':
+        sourcedir = '.' if options.builddir == 'meson.build' else options.builddir[:-11]
         # Make sure that log entries in other parts of meson don't interfere with the JSON output
         with redirect_stdout(sys.stderr):
             backend = backends.get_backend_from_name(options.backend)

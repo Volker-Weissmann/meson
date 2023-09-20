@@ -204,7 +204,7 @@ class Lexer:
                         lines = value.split('\n')
                         if len(lines) > 1:
                             lineno += len(lines) - 1
-                            line_start = mo.end() - len(lines[-1])
+                            line_start = mo.end() - len(lines[-1]) - 3
                     elif tid == 'eol_cont':
                         lineno += 1
                         line_start = loc
@@ -372,6 +372,13 @@ class ArgumentNode(BaseNode):
             mlog.warning(f'Keyword argument "{name.value}" defined multiple times.', location=self)
             mlog.warning('This will be an error in future Meson releases.')
         self.kwargs[name] = value
+
+    def get_kwarg_or_default(self, name: str, default: BaseNode) -> BaseNode:
+        for k, v in self.kwargs.items():
+            assert isinstance(k, IdNode)
+            if k.value == name:
+                return v
+        return default
 
     def set_kwarg_no_check(self, name: BaseNode, value: BaseNode) -> None:
         self.kwargs[name] = value

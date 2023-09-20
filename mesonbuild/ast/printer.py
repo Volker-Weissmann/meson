@@ -53,8 +53,13 @@ def precedence_level(node: mparser.BaseNode) -> float:
         return 7.0
     elif isinstance(node, (mparser.ArrayNode, mparser.DictNode)):
         return 8.0
-    elif isinstance(node, (mparser.BooleanNode, mparser.IdNode, mparser.NumberNode, mparser.StringNode, mparser.FormatStringNode, mparser.MultilineFormatStringNode, mparser.EmptyNode)):
+    elif isinstance(node, (mparser.BooleanNode, mparser.IdNode, mparser.NumberNode, mparser.BaseStringNode, mparser.FormatStringNode, mparser.MultilineFormatStringNode, mparser.EmptyNode)):
         return 9.0
+    elif isinstance(node, mparser.ParenthesizedNode):
+        # Parenthesize have the highest binding power, but since the AstPrinter
+        # ignores ParanthesizedNode, the binding power of the inner node is
+        # relevant.
+        return precedence_level(node.inner)
     raise TypeError
 
 class AstPrinter(AstVisitor):

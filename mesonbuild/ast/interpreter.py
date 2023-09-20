@@ -488,7 +488,7 @@ class AstInterpreter(InterpreterBase):
             return ret
         elif isinstance(node, ArithmeticNode):
             return self.find_potential_writes(node.left) | self.find_potential_writes(node.right)
-        elif isinstance(node, (mparser.NumberNode, mparser.StringNode, mparser.BreakNode, mparser.BooleanNode, mparser.FormatStringNode, mparser.ContinueNode)):
+        elif isinstance(node, (mparser.NumberNode, mparser.BaseStringNode, mparser.BreakNode, mparser.BooleanNode, mparser.FormatStringNode, mparser.ContinueNode)):
             return set()
         elif isinstance(node, mparser.IfClauseNode):
             if isinstance(node.elseblock, EmptyNode):
@@ -510,6 +510,8 @@ class AstInterpreter(InterpreterBase):
             return self.find_potential_writes(node.condition) | self.find_potential_writes(node.trueblock) | self.find_potential_writes(node.falseblock)
         elif isinstance(node, mparser.UMinusNode):
             return self.find_potential_writes(node.value)
+        elif isinstance(node, mparser.ParenthesizedNode):
+            return self.find_potential_writes(node.inner)
         raise NotImplementedError
 
     def evaluate_foreach(self, node: ForeachClauseNode) -> None:

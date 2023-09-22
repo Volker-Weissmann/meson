@@ -32,7 +32,7 @@ from . import mlog, environment
 from functools import wraps
 from .mparser import Token, ArrayNode, ArgumentNode, ArithmeticNode, AssignmentNode, BaseNode, BaseStringNode, BooleanNode, ElementaryNode, IdNode, FunctionNode, PlusAssignmentNode, StringNode
 from .mintro import IntrospectionEncoder
-import json, os, re, sys
+import json, os, re, sys, codecs
 import typing as T
 from pathlib import Path
 
@@ -786,7 +786,9 @@ class Rewriter:
             assert isinstance(mocktarget, IntrospectionBuildTarget)
             print("adding ", str(newf), 'to', mocktarget.name)
 
-            token = Token('string', chosen.filename, 0, 0, 0, None, str(os.path.relpath(newf, newfiles_relto)))
+            path = str(os.path.relpath(newf, newfiles_relto))
+            path = codecs.encode(path, 'unicode_escape').decode() # Because the StringNode constructor does the inverse
+            token = Token('string', chosen.filename, 0, 0, 0, None, path)
             to_append += [StringNode(token)]
 
         assert isinstance(chosen, (FunctionNode, ArrayNode))

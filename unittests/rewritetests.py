@@ -270,6 +270,12 @@ class RewriterTests(BasePlatformTests):
                 }
             }
         }
+        for k1, v1 in expected.items():
+            for k2, v2 in v1.items():
+                for k3, v3 in v2.items():
+                    if isinstance(v3, list):
+                        for i in range(len(v3)):
+                            v3[i] = v3[i].replace('/', os.path.sep)
         self.assertDictEqual(out, expected)
 
     def test_target_same_name_skip(self):
